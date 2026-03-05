@@ -1,0 +1,22 @@
+export const POPULAR_VERSES = [
+  "Genesis 1:1", "Jeremiah 29:11", "John 3:16", "Romans 8:28", "Philippians 4:13",
+  "Proverbs 3:5-6", "Psalm 23:1", "Isaiah 40:31", "Joshua 1:9", "Romans 12:2",
+  "Matthew 28:19-20", "Galatians 5:22-23", "Ephesians 2:8-9", "2 Timothy 3:16", "Hebrews 11:1",
+  "1 Corinthians 13:4-7", "2 Corinthians 5:17", "1 Peter 5:7", "James 1:5", "Matthew 6:33",
+  "Psalm 46:1", "Romans 3:23", "Romans 6:23", "John 14:6", "Isaiah 41:10",
+  "Psalm 119:105", "Galatians 2:20", "Philippians 4:6-7", "Matthew 11:28", "John 1:1",
+  "Romans 10:9", "Proverbs 18:10", "Psalm 19:14", "Isaiah 9:6", "Lamentations 3:22-23",
+  "Micah 6:8", "Zephaniah 3:17", "John 10:10", "Acts 1:8", "Romans 5:8",
+  "1 Corinthians 10:13", "2 Corinthians 12:9", "Ephesians 6:10-11", "Philippians 1:6", "Colossians 3:23",
+  "1 Thessalonians 5:16-18", "Hebrews 4:12", "Hebrews 12:1-2", "James 1:2-3", "1 John 1:9",
+  "Revelation 3:20", "Psalm 27:1", "Psalm 34:8", "Psalm 37:4", "Psalm 56:3",
+  "Psalm 91:1-2", "Psalm 103:1-2", "Psalm 139:13-14", "Proverbs 16:3", "Proverbs 22:6",
+  "Isaiah 26:3", "Isaiah 53:5", "Isaiah 54:17", "Jeremiah 33:3", "Matthew 5:16",
+  "Matthew 22:37-39", "Mark 11:24", "Luke 1:37", "John 8:32", "John 13:34-35",
+  "John 15:5", "John 16:33", "Acts 4:12", "Romans 8:1", "Romans 8:31",
+  "Romans 8:38-39", "Romans 15:13", "1 Corinthians 16:14", "2 Corinthians 4:16-18", "Galatians 6:9",
+  "Ephesians 3:20", "Ephesians 4:32", "Philippians 2:3-4", "Philippians 4:19", "Colossians 3:2",
+  "1 Timothy 6:12", "2 Timothy 1:7", "Hebrews 13:5", "Hebrews 13:8", "James 4:7",
+  "1 Peter 2:9", "1 Peter 5:10", "1 John 3:1", "1 John 4:4", "1 John 4:18",
+  "1 John 4:19", "Revelation 21:4", "Psalm 1:1-3", "Psalm 16:11", "Psalm 18:2"
+];

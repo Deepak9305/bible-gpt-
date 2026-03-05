@@ -1,0 +1,121 @@
+export interface UserStats {
+  streak: number;
+  lastVisit: string;
+  totalVersesRead: number;
+  totalPrayers: number;
+  userName: string;
+  onboardingCompleted: boolean;
+  dailyUsageCount: number;
+  lastUsageDate: string;
+  isPremium: boolean;
+}
+
+const INITIAL_STATS: UserStats = {
+  streak: 0,
+  lastVisit: '',
+  totalVersesRead: 0,
+  totalPrayers: 0,
+  userName: '',
+  onboardingCompleted: false,
+  dailyUsageCount: 0,
+  lastUsageDate: '',
+  isPremium: false,
+};
+
+export const getStats = (): UserStats => {
+  const saved = localStorage.getItem('user_stats');
+  if (!saved) return INITIAL_STATS;
+  const parsed = JSON.parse(saved);
+  // Merge with INITIAL_STATS to ensure new fields exist for old users
+  return { ...INITIAL_STATS, ...parsed };
+};
+
+export const saveStats = (stats: UserStats) => {
+  localStorage.setItem('user_stats', JSON.stringify(stats));
+};
+
+export const checkDailyLimit = (): boolean => {
+  const stats = getStats();
+  if (stats.isPremium) return false; // No limit for premium
+
+  const today = new Date().toLocaleDateString('en-CA');
+  
+  // Reset if new day
+  if (stats.lastUsageDate !== today) {
+    const updated = { ...stats, dailyUsageCount: 0, lastUsageDate: today };
+    saveStats(updated);
+    return false;
+  }
+
+  return stats.dailyUsageCount >= 3;
+};
+
+export const incrementDailyUsage = () => {
+  const stats = getStats();
+  const today = new Date().toLocaleDateString('en-CA');
+  
+  let newCount = stats.dailyUsageCount;
+  
+  if (stats.lastUsageDate !== today) {
+    newCount = 1;
+  } else {
+    newCount += 1;
+  }
+
+  const updated = { ...stats, dailyUsageCount: newCount, lastUsageDate: today };
+  saveStats(updated);
+  return updated;
+};
+
+export const upgradeToPremium = () => {
+  const stats = getStats();
+  const updated = { ...stats, isPremium: true };
+  saveStats(updated);
+  return updated;
+};
+
+export const updateStreak = () => {
+  const stats = getStats();
+  const now = new Date();
+  const today = now.toLocaleDateString('en-CA'); // YYYY-MM-DD
+  
+  if (stats.lastVisit === today) return stats;
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+
+  let newStreak = stats.streak;
+  if (stats.lastVisit === yesterdayStr) {
+    newStreak += 1;
+  } else if (stats.lastVisit === '') {
+    newStreak = 1;
+  } else {
+    newStreak = 1; // Reset if missed a day
+  }
+
+  const updated = { ...stats, streak: newStreak, lastVisit: today };
+  saveStats(updated);
+  return updated;
+};
+
+export const incrementVersesRead = () => {
+  const stats = getStats();
+  const updated = { ...stats, totalVersesRead: stats.totalVersesRead + 1 };
+  saveStats(updated);
+  return updated;
+};
+
+export const incrementPrayers = () => {
+  const stats = getStats();
+  const updated = { ...stats, totalPrayers: stats.totalPrayers + 1 };
+  saveStats(updated);
+  return updated;
+};
+
+export const completeOnboarding = (name: string) => {
+  const stats = getStats();
+  const updated = { ...stats, userName: name, onboardingCompleted: true };
+  saveStats(updated);
+  return updated;
+};

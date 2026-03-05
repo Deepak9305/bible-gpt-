@@ -11,16 +11,21 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@google/genai": "^1.29.0",
+    "@google/genai": "^1.43.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "better-sqlite3": "^12.4.1",
     "dotenv": "^17.2.3",
+    "downloadjs": "^1.4.7",
     "express": "^4.21.2",
+    "groq-sdk": "^0.37.0",
+    "html-to-image": "^1.11.13",
+    "idb-keyval": "^6.2.2",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.13.1",
     "vite": "^6.2.0"
   },

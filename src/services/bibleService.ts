@@ -6,8 +6,16 @@ const API_BASE_URL = 'https://bible-api.com';
 const KJV_JSON_URL = 'https://raw.githubusercontent.com/thiagobodruk/bible/master/json/en_kjv.json';
 const DB_KEY = 'kjv_bible_full';
 
-// Initialize Gemini for semantic search
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Lazily initialize Gemini to avoid crash when GEMINI_API_KEY is undefined
+let _ai: GoogleGenAI | null = null;
+const getAI = () => {
+  if (!_ai) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error('GEMINI_API_KEY is not configured');
+    _ai = new GoogleGenAI({ apiKey });
+  }
+  return _ai;
+};
 
 export interface Verse {
   book_id: string;
@@ -30,7 +38,7 @@ export const isBibleReady = () => !!fullBibleCache;
 // Helper to load the full Bible
 export const loadFullBible = async (): Promise<any[]> => {
   if (fullBibleCache) return fullBibleCache;
-  
+
   // Prevent multiple simultaneous downloads
   if (isBibleDownloading) {
     // Wait for the existing download to finish
@@ -62,9 +70,9 @@ export const loadFullBible = async (): Promise<any[]> => {
     console.log('Downloading full Bible...');
     const response = await fetch(KJV_JSON_URL);
     if (!response.ok) throw new Error('Failed to download Bible');
-    
+
     const data = await response.json();
-    
+
     await set(DB_KEY, data);
     fullBibleCache = data;
     isBibleDownloading = false;
@@ -101,11 +109,11 @@ export const getChapter = async (bookName: string, chapter: number, translation:
   try {
     // Ensure Bible is loaded
     let bible = await loadFullBible();
-    
+
     // If loadFullBible returns empty array (failed download), try one more time or throw
     if (!bible || bible.length === 0) {
-       console.warn('Local Bible empty, retrying load...');
-       bible = await loadFullBible();
+      console.warn('Local Bible empty, retrying load...');
+      bible = await loadFullBible();
     }
 
     if (!bible || bible.length === 0) throw new Error('Local Bible not loaded');
@@ -154,7 +162,7 @@ export const searchVerses = async (keyword: string, mode: 'exact' | 'smart' = 'e
   // SMART SEARCH (Semantic)
   if (mode === 'smart') {
     try {
-      const response = await ai.models.generateContent({
+      const response = await getAI().models.generateContent({
         model: "gemini-2.5-flash",
         contents: `Find 5-10 specific Bible verses (KJV) that are most relevant to this topic or feeling: "${keyword}". 
         Return ONLY a JSON array of objects with this exact structure: 
@@ -165,7 +173,7 @@ export const searchVerses = async (keyword: string, mode: 'exact' | 'smart' = 'e
       let text = response.text || '';
       // Clean up markdown code blocks if present
       text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      
+
       let results: any[] = [];
       try {
         results = JSON.parse(text);
@@ -173,7 +181,7 @@ export const searchVerses = async (keyword: string, mode: 'exact' | 'smart' = 'e
         console.error("Failed to parse AI response", text);
         return [];
       }
-      
+
       if (!Array.isArray(results)) return [];
 
       return results.map((r: any) => ({
@@ -206,7 +214,7 @@ export const searchVerses = async (keyword: string, mode: 'exact' | 'smart' = 'e
 
     for (const book of bible) {
       if (!book.chapters || !Array.isArray(book.chapters)) continue;
-      
+
       for (let c = 0; c < book.chapters.length; c++) {
         const chapter = book.chapters[c];
         if (!Array.isArray(chapter)) continue;

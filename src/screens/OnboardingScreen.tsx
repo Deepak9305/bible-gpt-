@@ -28,7 +28,7 @@ const STEPS = [
   }
 ];
 
-export default function OnboardingScreen() {
+export default function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [name, setName] = useState('');
   const [isFinishing, setIsFinishing] = useState(false);
@@ -45,6 +45,7 @@ export default function OnboardingScreen() {
   const handleFinish = () => {
     if (!name.trim()) return;
     completeOnboarding(name.trim());
+    onComplete();
     navigate('/', { replace: true });
   };
 
@@ -63,7 +64,7 @@ export default function OnboardingScreen() {
             <div className={`w-24 h-24 rounded-[2rem] ${STEPS[currentStep].bg} ${STEPS[currentStep].color} flex items-center justify-center mx-auto mb-8 shadow-inner`}>
               {React.createElement(STEPS[currentStep].icon, { size: 48 })}
             </div>
-            
+
             <h1 className="text-3xl font-bold mb-4 dark:text-white">
               {STEPS[currentStep].title}
             </h1>
@@ -73,8 +74,8 @@ export default function OnboardingScreen() {
 
             <div className="flex justify-center gap-2 mb-12">
               {STEPS.map((_, i) => (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   className={`h-1.5 rounded-full transition-all duration-300 ${i === currentStep ? 'w-8 bg-blue-600' : 'w-2 bg-gray-200 dark:bg-gray-700'}`}
                 />
               ))}
@@ -104,7 +105,7 @@ export default function OnboardingScreen() {
             <p className="text-gray-600 dark:text-gray-400 mb-8">
               I'd love to address you by name as we explore the Word together.
             </p>
-            
+
             <input
               type="text"
               value={name}

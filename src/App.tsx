@@ -21,8 +21,7 @@ import TermsOfServiceScreen from './screens/TermsOfServiceScreen';
 function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
   const { user, isLoading } = useAuth();
-  const stats = getStats();
-  const showOnboarding = !stats.onboardingCompleted;
+  const [onboardingDone, setOnboardingDone] = useState(() => getStats().onboardingCompleted);
 
   if (isLoading) return null;
 
@@ -38,8 +37,8 @@ function AppContent() {
         <motion.div key="app" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="contents">
           <BrowserRouter>
             <Routes>
-              {showOnboarding && <Route path="/onboarding" element={<OnboardingScreen />} />}
-              <Route path="/" element={showOnboarding ? <Navigate to="/onboarding" replace /> : <Layout />}>
+              {!onboardingDone && <Route path="/onboarding" element={<OnboardingScreen onComplete={() => setOnboardingDone(true)} />} />}
+              <Route path="/" element={!onboardingDone ? <Navigate to="/onboarding" replace /> : <Layout />}>
                 <Route index element={<HomeScreen />} />
                 <Route path="chat" element={<ChatScreen />} />
                 <Route path="library" element={<LibraryScreen />} />

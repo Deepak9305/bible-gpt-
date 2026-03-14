@@ -42,7 +42,7 @@ export default async function handler(req: any, res: any) {
 
     // Dynamic Context from Preferences (Shadow Notes)
     let dynamicContext = "";
-    if (preferences) {
+    if (preferences && preferences.isPersonalizationEnabled !== false) {
         if (preferences.spiritualFocus) dynamicContext += `\nUser's Spiritual Focus: ${preferences.spiritualFocus}.`;
         if (preferences.lifeStage) dynamicContext += `\nUser's Life Context: ${preferences.lifeStage}.`;
         if (preferences.tone) dynamicContext += `\nAdjust your tone to be more ${preferences.tone}.`;

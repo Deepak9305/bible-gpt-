@@ -8,6 +8,7 @@ interface User {
   isGuest: boolean;
   avatar?: string;
   preferences?: {
+    isPersonalizationEnabled: boolean;
     lifeStage?: string;
     spiritualFocus?: string;
     tone?: 'pastoral' | 'gentle' | 'direct';

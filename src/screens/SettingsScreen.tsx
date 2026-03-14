@@ -17,6 +17,7 @@ export default function SettingsScreen() {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editName, setEditName] = useState(user?.name || '');
   const [editAvatar, setEditAvatar] = useState(user?.avatar || '👤');
+  const [isPersonalizationEnabled, setIsPersonalizationEnabled] = useState(user?.preferences?.isPersonalizationEnabled ?? true);
   const [editLifeStage, setEditLifeStage] = useState(user?.preferences?.lifeStage || '');
   const [editSpiritualFocus, setEditSpiritualFocus] = useState(user?.preferences?.spiritualFocus || '');
   const [editTone, setEditTone] = useState<any>(user?.preferences?.tone || 'pastoral');
@@ -61,6 +62,7 @@ export default function SettingsScreen() {
   const saveProfile = () => {
     if (editName.trim()) {
       updateProfile(editName, editAvatar, {
+        isPersonalizationEnabled,
         lifeStage: editLifeStage,
         spiritualFocus: editSpiritualFocus,
         tone: editTone
@@ -257,37 +259,58 @@ export default function SettingsScreen() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-2 opacity-70">AI Persona Focus (e.g. Peace, Growth)</label>
-                  <input
-                    type="text"
-                    value={editSpiritualFocus}
-                    onChange={(e) => setEditSpiritualFocus(e.target.value)}
-                    className={`w-full p-3 rounded-xl border ${theme === 'dark'
-                      ? 'bg-gray-700 border-gray-600 focus:border-blue-500'
-                      : 'bg-gray-50 border-gray-200 focus:border-blue-500'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all`}
-                    placeholder="What should Father AI focus on?"
-                  />
+                <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                  <div>
+                    <label className="block text-sm font-medium opacity-70">AI Personalization</label>
+                    <p className="text-[10px] opacity-50">Tailor Father AI's guidance to your needs</p>
+                  </div>
+                  <button
+                    onClick={() => setIsPersonalizationEnabled(!isPersonalizationEnabled)}
+                    className={`w-10 h-5 rounded-full p-0.5 transition-colors ${isPersonalizationEnabled ? 'bg-blue-600' : 'bg-gray-300'}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full bg-white transform transition-transform ${isPersonalizationEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-2 opacity-70">Guidance Tone</label>
-                  <div className="flex gap-2">
-                    {['pastoral', 'gentle', 'direct'].map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setEditTone(t)}
-                        className={`flex-1 py-2 rounded-lg text-sm capitalize transition-all ${editTone === t
-                          ? 'bg-blue-600 text-white shadow-md'
-                          : (theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600')
-                          }`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {isPersonalizationEnabled && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="space-y-4 pt-2"
+                  >
+                    <div>
+                      <label className="block text-sm font-medium mb-2 opacity-70">AI Persona Focus (e.g. Peace, Growth)</label>
+                      <input
+                        type="text"
+                        value={editSpiritualFocus}
+                        onChange={(e) => setEditSpiritualFocus(e.target.value)}
+                        className={`w-full p-3 rounded-xl border ${theme === 'dark'
+                          ? 'bg-gray-700 border-gray-600 focus:border-blue-500'
+                          : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+                          } focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all`}
+                        placeholder="What should Father AI focus on?"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2 opacity-70">Guidance Tone</label>
+                      <div className="flex gap-2">
+                        {['pastoral', 'gentle', 'direct'].map((t) => (
+                          <button
+                            key={t}
+                            onClick={() => setEditTone(t)}
+                            className={`flex-1 py-2 rounded-lg text-sm capitalize transition-all ${editTone === t
+                              ? 'bg-blue-600 text-white shadow-md'
+                              : (theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600')
+                              }`}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
 
                 <button
                   onClick={saveProfile}

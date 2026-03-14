@@ -25,7 +25,11 @@ export default function PrayerJournalScreen() {
   useEffect(() => {
     const saved = localStorage.getItem('prayers');
     if (saved) {
-      setPrayers(JSON.parse(saved));
+      try {
+        setPrayers(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse prayers", e);
+      }
     }
   }, []);
 

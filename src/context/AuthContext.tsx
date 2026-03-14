@@ -28,7 +28,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check for existing session
     const storedUser = localStorage.getItem('auth_user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Failed to parse user session", e);
+        localStorage.removeItem('auth_user');
+      }
     }
     setIsLoading(false);
   }, []);
@@ -70,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateProfile = (name: string, avatar?: string) => {
     if (user) {
-      const updatedUser = { ...user, name, avatar };
+      const updatedUser = { ...user, name, avatar: avatar || user.avatar };
       setUser(updatedUser);
       localStorage.setItem('auth_user', JSON.stringify(updatedUser));
     }

@@ -13,7 +13,11 @@ export default function BookmarksScreen() {
   useEffect(() => {
     const saved = localStorage.getItem('bookmarks');
     if (saved) {
-      setBookmarks(JSON.parse(saved));
+      try {
+        setBookmarks(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse bookmarks", e);
+      }
     }
   }, []);
 
@@ -28,6 +32,7 @@ export default function BookmarksScreen() {
     if (speakingVerse === id) {
       stopAudio();
       setSpeakingVerse(null);
+      setIsLoadingAudio(false);
       return;
     }
 
@@ -68,6 +73,7 @@ export default function BookmarksScreen() {
             onClick={() => {
               stopAudio();
               setSpeakingVerse(null);
+              setIsLoadingAudio(false);
             }}
             className="p-2 rounded-full bg-red-100 text-red-600 animate-pulse"
           >

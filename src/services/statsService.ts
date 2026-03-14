@@ -25,9 +25,14 @@ const INITIAL_STATS: UserStats = {
 export const getStats = (): UserStats => {
   const saved = localStorage.getItem('user_stats');
   if (!saved) return INITIAL_STATS;
-  const parsed = JSON.parse(saved);
-  // Merge with INITIAL_STATS to ensure new fields exist for old users
-  return { ...INITIAL_STATS, ...parsed };
+  try {
+    const parsed = JSON.parse(saved);
+    // Merge with INITIAL_STATS to ensure new fields exist for old users
+    return { ...INITIAL_STATS, ...parsed };
+  } catch (e) {
+    console.error("Failed to parse user stats", e);
+    return INITIAL_STATS;
+  }
 };
 
 export const saveStats = (stats: UserStats) => {

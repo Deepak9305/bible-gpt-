@@ -9,6 +9,7 @@ import LibraryScreen from './screens/LibraryScreen';
 import BookmarksScreen from './screens/BookmarksScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import PrayerJournalScreen from './screens/PrayerJournalScreen';
+import DigitalDetoxScreen from './screens/DigitalDetoxScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import LoginScreen from './screens/LoginScreen';
 import { getStats } from './services/statsService';
@@ -21,7 +22,13 @@ import TermsOfServiceScreen from './screens/TermsOfServiceScreen';
 function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
   const { user, isLoading } = useAuth();
-  const [onboardingDone, setOnboardingDone] = useState(() => getStats().onboardingCompleted);
+  const [showOnboarding, setShowOnboarding] = useState(!getStats().onboardingCompleted);
+
+  useEffect(() => {
+    if (user) {
+      setShowOnboarding(!getStats().onboardingCompleted);
+    }
+  }, [user]);
 
   if (isLoading) return null;
 
@@ -30,21 +37,22 @@ function AppContent() {
       {showSplash ? (
         <SplashScreen key="splash" onComplete={() => setShowSplash(false)} />
       ) : !user ? (
-        <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="contents">
+        <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full w-full">
           <LoginScreen />
         </motion.div>
       ) : (
-        <motion.div key="app" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="contents">
+        <motion.div key="app" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full w-full">
           <BrowserRouter>
             <Routes>
-              {!onboardingDone && <Route path="/onboarding" element={<OnboardingScreen onComplete={() => setOnboardingDone(true)} />} />}
-              <Route path="/" element={!onboardingDone ? <Navigate to="/onboarding" replace /> : <Layout />}>
+              {showOnboarding && <Route path="/onboarding" element={<OnboardingScreen onComplete={() => setShowOnboarding(false)} />} />}
+              <Route path="/" element={showOnboarding ? <Navigate to="/onboarding" replace /> : <Layout />}>
                 <Route index element={<HomeScreen />} />
                 <Route path="chat" element={<ChatScreen />} />
                 <Route path="library" element={<LibraryScreen />} />
                 <Route path="bookmarks" element={<BookmarksScreen />} />
                 <Route path="journal" element={<PrayerJournalScreen />} />
                 <Route path="settings" element={<SettingsScreen />} />
+                <Route path="detox" element={<DigitalDetoxScreen />} />
                 <Route path="privacy" element={<PrivacyPolicyScreen />} />
                 <Route path="terms" element={<TermsOfServiceScreen />} />
                 <Route path="*" element={<Navigate to="/" replace />} />

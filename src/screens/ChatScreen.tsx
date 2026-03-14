@@ -33,12 +33,14 @@ export default function ChatScreen() {
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isSpeechSupported, setIsSpeechSupported] = useState(true);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
   const isSendingRef = useRef(false);
   const initialPromptHandled = useRef(false);
+  const handleSendRef = useRef<any>(null);
 
   // Handle initial prompt from navigation state
   useEffect(() => {
@@ -72,6 +74,7 @@ export default function ChatScreen() {
     if (speakingMessageId === id) {
       stopAudio();
       setSpeakingMessageId(null);
+      setIsLoadingAudio(false);
       return;
     }
 
@@ -99,6 +102,10 @@ export default function ChatScreen() {
     }
   };
   useEffect(() => {
+    handleSendRef.current = handleSend;
+  });
+
+  useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
@@ -109,7 +116,9 @@ export default function ChatScreen() {
       recognitionRef.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setInput(transcript);
-        handleSend(transcript);
+        if (handleSendRef.current) {
+          handleSendRef.current(transcript);
+        }
       };
 
       recognitionRef.current.onend = () => {
@@ -120,10 +129,16 @@ export default function ChatScreen() {
         console.error('Speech recognition error', event.error);
         setIsListening(false);
       };
+    } else {
+      setIsSpeechSupported(false);
     }
   }, []);
 
   const toggleListening = () => {
+    if (!isSpeechSupported) {
+      alert("Voice input is not supported in your browser.");
+      return;
+    }
     if (isListening) {
       recognitionRef.current?.stop();
     } else {
@@ -135,6 +150,12 @@ export default function ChatScreen() {
   const handleSend = async (text: string = input) => {
     const cleanText = typeof text === 'string' ? text.trim() : '';
     if (!cleanText || isLoading || isSendingRef.current) return;
+
+    // Stop listening if manually sending
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    }
 
     // Check daily limit
     if (checkDailyLimit()) {
@@ -198,6 +219,7 @@ export default function ChatScreen() {
             onClick={() => {
               stopAudio();
               setSpeakingMessageId(null);
+              setIsLoadingAudio(false);
             }}
             className="p-2 rounded-full bg-red-100 text-red-600 animate-pulse"
           >

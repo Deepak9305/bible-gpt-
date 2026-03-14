@@ -16,18 +16,32 @@ export default function SettingsScreen() {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editName, setEditName] = useState(user?.name || '');
   const [editAvatar, setEditAvatar] = useState(user?.avatar || '👤');
+  const [confirmAction, setConfirmAction] = useState<{type: 'delete' | 'clear', title: string, message: string} | null>(null);
 
   const clearData = () => {
-    if (window.confirm('Are you sure you want to clear all bookmarks and settings?')) {
-      localStorage.clear();
-      window.location.reload();
-    }
+    setConfirmAction({
+      type: 'clear',
+      title: 'Clear All Data',
+      message: 'Are you sure you want to clear all bookmarks and settings?'
+    });
   };
 
   const handleDeleteAccount = () => {
-    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone and will remove all your data.')) {
+    setConfirmAction({
+      type: 'delete',
+      title: 'Delete Account',
+      message: 'Are you sure you want to delete your account? This action cannot be undone and will remove all your data.'
+    });
+  };
+
+  const executeConfirmAction = () => {
+    if (confirmAction?.type === 'delete') {
       deleteAccount();
+    } else if (confirmAction?.type === 'clear') {
+      localStorage.clear();
+      window.location.reload();
     }
+    setConfirmAction(null);
   };
 
   const handleLogout = () => {
@@ -178,16 +192,19 @@ export default function SettingsScreen() {
       {/* Edit Profile Modal */}
       <AnimatePresence>
         {isEditProfileOpen && (
-          <>
-            <div 
-              className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
+          <div key="edit-profile-modal" className="fixed inset-0 z-50">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
               onClick={() => setIsEditProfileOpen(false)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm z-50 p-6 rounded-2xl shadow-2xl ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
+              className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm p-6 rounded-2xl shadow-2xl ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
             >
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-semibold">Edit Profile</h3>
@@ -244,7 +261,45 @@ export default function SettingsScreen() {
                 </button>
               </div>
             </motion.div>
-          </>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Confirmation Modal */}
+      <AnimatePresence>
+        {confirmAction && (
+          <div key="confirm-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => setConfirmAction(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className={`relative w-full max-w-sm p-6 rounded-2xl shadow-2xl ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
+            >
+              <h3 className="text-lg font-semibold mb-2">{confirmAction.title}</h3>
+              <p className={`mb-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{confirmAction.message}</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmAction(null)}
+                  className={`flex-1 py-3 rounded-xl font-medium transition-colors ${theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeConfirmAction}
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors"
+                >
+                  Confirm
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

@@ -1,6 +1,6 @@
-import Groq from "groq-sdk";
+import { GoogleGenAI } from "@google/genai";
 
-const SYSTEM_PROMPT = `Role: You are "Bible GPT", a wise, compassionate, and ancient spiritual guide. You speak with the warmth of a loving parent and the depth of a seasoned pastor.
+const SYSTEM_PROMPT = `Role: You are "Father AI", a wise, compassionate, and ancient spiritual guide. You speak with the warmth of a loving parent and the depth of a seasoned pastor.
 
 Goal: Provide profound spiritual comfort, biblical wisdom, and practical guidance using the King James Version (KJV) of the Bible.
 
@@ -24,18 +24,18 @@ Formatting:
 - Use > Blockquotes for Bible verses.
 `;
 
-let groqClient: Groq | null = null;
+let aiClient: GoogleGenAI | null = null;
 
 const getClient = () => {
-  if (!groqClient) {
-    const apiKey = process.env.GROQ_API_KEY;
+  if (!aiClient) {
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      console.error("GROQ_API_KEY is missing");
+      console.error("GEMINI_API_KEY is missing");
       throw new Error("API Key missing");
     }
-    groqClient = new Groq({ apiKey, dangerouslyAllowBrowser: true });
+    aiClient = new GoogleGenAI({ apiKey });
   }
-  return groqClient;
+  return aiClient;
 };
 
 export const sendMessageStream = async (
@@ -43,39 +43,40 @@ export const sendMessageStream = async (
   history: { role: string; content: string }[], 
   onChunk: (chunk: string) => void
 ) => {
-  const client = getClient();
+  const ai = getClient();
 
   try {
-    const chatHistory = history
+    let chatHistory = history
       .filter(msg => msg.role !== 'system')
       .slice(-6)
       .map(msg => ({
-        role: (msg.role === 'model' || msg.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant',
-        content: msg.content
+        role: (msg.role === 'model' || msg.role === 'assistant' ? 'model' : 'user') as 'user' | 'model',
+        parts: [{ text: msg.content }]
       }));
 
-    const messages = [
-      { role: "system", content: SYSTEM_PROMPT },
-      ...chatHistory,
-      { role: "user", content: message }
-    ];
+    // Gemini requires history to start with a user message
+    if (chatHistory.length > 0 && chatHistory[0].role === 'model') {
+      chatHistory.shift();
+    }
 
-    const stream = await client.chat.completions.create({
-      messages: messages as any[],
-      model: "llama-3.1-8b-instant",
-      temperature: 0.7,
-      max_tokens: 1024,
-      stream: true,
+    const chat = ai.chats.create({
+      model: "gemini-3-flash-preview",
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        temperature: 0.7,
+      },
+      history: chatHistory,
     });
 
+    const stream = await chat.sendMessageStream({ message });
+
     for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content || "";
-      if (content) {
-        onChunk(content);
+      if (chunk.text) {
+        onChunk(chunk.text);
       }
     }
   } catch (error) {
-    console.error("Groq AI Error:", error);
+    console.error("Gemini AI Error:", error);
     throw error;
   }
 };

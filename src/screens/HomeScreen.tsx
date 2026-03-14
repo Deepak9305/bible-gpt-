@@ -49,11 +49,15 @@ export default function HomeScreen() {
       
       const storedData = localStorage.getItem('daily_verse_data');
       if (storedData) {
-        const parsed = JSON.parse(storedData);
-        if (parsed.date === dateKey) {
-          setDailyVerse(parsed.verse);
-          if (parsed.reflection) setDailyReflection(parsed.reflection);
-          return;
+        try {
+          const parsed = JSON.parse(storedData);
+          if (parsed.date === dateKey) {
+            setDailyVerse(parsed.verse);
+            if (parsed.reflection) setDailyReflection(parsed.reflection);
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to parse daily verse data", e);
         }
       }
 
@@ -67,6 +71,9 @@ export default function HomeScreen() {
 
       try {
         const response = await fetch(`https://bible-api.com/${encodeURIComponent(verseRef)}?translation=kjv`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch verse from API');
+        }
         const data = await response.json();
         const newVerse = {
           text: data.text.trim(),
@@ -111,9 +118,10 @@ export default function HomeScreen() {
   const handleSpeak = async () => {
     if (!dailyVerse) return;
     
-    if (isSpeaking) {
+    if (isSpeaking || isLoadingAudio) {
       stopAudio();
       setIsSpeaking(false);
+      setIsLoadingAudio(false);
       return;
     }
 
@@ -130,6 +138,7 @@ export default function HomeScreen() {
     } catch (error) {
       console.error("Audio failed", error);
       setIsSpeaking(false);
+    } finally {
       setIsLoadingAudio(false);
     }
   };
@@ -351,21 +360,21 @@ export default function HomeScreen() {
           </p>
         </Link>
 
-        <div className={`p-6 rounded-3xl border transition-all ${
+        <button 
+          onClick={() => navigate('/detox')}
+          className={`text-left p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${
           theme === 'dark' 
-            ? 'bg-gray-800/50 border-gray-700' 
-            : 'bg-gray-50 border-gray-100'
+            ? 'bg-gray-800 border-gray-700 hover:bg-gray-750' 
+            : 'bg-white border-gray-100 hover:bg-cyan-50/50'
         }`}>
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm mb-4 ${
-             theme === 'dark' ? 'bg-gray-700 text-gray-500' : 'bg-gray-200 text-gray-400'
-          }`}>
-            <Rocket size={24} />
+          <div className="w-12 h-12 rounded-2xl bg-cyan-100 text-cyan-600 flex items-center justify-center shadow-sm mb-4">
+            <CloudRain size={24} />
           </div>
-          <h3 className={`font-bold text-lg mb-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>Coming Soon</h3>
-          <p className={`text-xs ${theme === 'dark' ? 'text-gray-600' : 'text-gray-400'}`}>
-            More features ahead
+          <h3 className="font-bold text-lg mb-1">Digital Detox</h3>
+          <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+            Unplug and pray
           </p>
-        </div>
+        </button>
       </motion.div>
     </motion.div>
   );

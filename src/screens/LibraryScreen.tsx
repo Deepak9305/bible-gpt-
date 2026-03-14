@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { getBooks, getChapter, Verse, loadFullBible, isBibleReady } from '../services/bibleService';
+import { BIBLE_BOOKS } from '../data/books';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
 import { ChevronRight, ArrowLeft, Bookmark, Volume2, VolumeX, Loader2, Crown, Sparkles, Search, PlayCircle, PauseCircle, DownloadCloud } from 'lucide-react';
 import { incrementVersesRead, getStats } from '../services/statsService';
@@ -15,7 +16,7 @@ export default function LibraryScreen() {
   const stats = getStats();
   const isPremium = stats.isPremium;
   const [view, setView] = useState<ViewState>('books');
-  const [books, setBooks] = useState<any[]>([]);
+  const [books, setBooks] = useState<any[]>(BIBLE_BOOKS);
   const [selectedBook, setSelectedBook] = useState<any>(null);
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
   const [verses, setVerses] = useState<Verse[]>([]);
@@ -28,15 +29,12 @@ export default function LibraryScreen() {
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   
   // New State for Features
-  const [searchMode, setSearchMode] = useState<'exact' | 'smart'>('exact');
   const [isPlayingPlaylist, setIsPlayingPlaylist] = useState(false);
   const [currentPlaylistIndex, setCurrentPlaylistIndex] = useState<number>(-1);
   const [isBibleDownloading, setIsBibleDownloading] = useState(false);
   const [bibleReady, setBibleReady] = useState(false);
 
   useEffect(() => {
-    getBooks().then(setBooks);
-    
     // Check if Bible is ready, if not start downloading
     if (isBibleReady()) {
       setBibleReady(true);
@@ -88,8 +86,10 @@ export default function LibraryScreen() {
 
   const handleSpeak = async (text: string, id: string, isPlaylist = false) => {
     if (speakingVerse === id && !isPlaylist) {
+      setIsPlayingPlaylist(false);
       stopAudio();
       setSpeakingVerse(null);
+      setIsLoadingAudio(false);
       return;
     }
 
@@ -133,8 +133,7 @@ export default function LibraryScreen() {
         setIsSearching(true);
         try {
           const { searchVerses } = await import('../services/bibleService');
-          // Use the selected search mode
-          const results = await searchVerses(searchQuery, searchMode);
+          const results = await searchVerses(searchQuery);
           setSearchResults(results);
         } catch (error) {
           console.error(error);
@@ -147,7 +146,29 @@ export default function LibraryScreen() {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, searchMode]); // Re-run when mode changes
+  }, [searchQuery]);
+
+  const highlightText = (text: string, query: string) => {
+    if (!query) return text;
+    const stopWords = new Set(["i", "am", "feeling", "about", "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "with", "verses", "bible", "what", "does", "say", "is", "are", "of", "my", "me", "you", "your"]);
+    const words = query.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
+    
+    let highlightedText = text;
+    
+    // Highlight exact phrase first
+    const exactRegex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    if (exactRegex.test(text)) {
+      return text.replace(exactRegex, '<mark class="bg-yellow-200 dark:bg-yellow-900 text-inherit rounded px-0.5">$1</mark>');
+    }
+
+    // Highlight individual words
+    if (words.length > 0) {
+      const wordsRegex = new RegExp(`\\b(${words.join('|')})\\b`, 'gi');
+      highlightedText = text.replace(wordsRegex, '<mark class="bg-yellow-200 dark:bg-yellow-900 text-inherit rounded px-0.5">$1</mark>');
+    }
+    
+    return highlightedText;
+  };
 
   const handleBookSelect = (book: any) => {
     setSelectedBook(book);
@@ -168,12 +189,12 @@ export default function LibraryScreen() {
         setVerses(data);
         setView('verses');
       } else {
-        // If data is empty, it might be a download failure.
-        // We could show an error toast here.
+        alert("Failed to load chapter data. Please check your connection and try again.");
         console.error("Failed to load chapter data");
       }
     } catch (error) {
       console.error(error);
+      alert("An error occurred while loading chapter data. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -185,6 +206,8 @@ export default function LibraryScreen() {
       setVerses([]);
       setSelectedChapter(null);
       setIsPlayingPlaylist(false);
+      setSpeakingVerse(null);
+      setIsLoadingAudio(false);
       stopAudio();
     } else if (view === 'chapters') {
       setView('books');
@@ -197,7 +220,11 @@ export default function LibraryScreen() {
   useEffect(() => {
     const saved = localStorage.getItem('bookmarks');
     if (saved) {
-      setBookmarks(JSON.parse(saved));
+      try {
+        setBookmarks(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse bookmarks", e);
+      }
     }
   }, []);
 
@@ -290,6 +317,7 @@ export default function LibraryScreen() {
               onClick={() => {
                 stopAudio();
                 setSpeakingVerse(null);
+                setIsLoadingAudio(false);
               }}
               className="p-2 rounded-full bg-red-100 text-red-600 animate-pulse"
             >
@@ -301,77 +329,90 @@ export default function LibraryScreen() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
-        {/* Search Bar & Toggle */}
+        {/* Search Bar */}
         {view === 'books' && (
           <div className="mb-6 space-y-3">
             <div className="relative">
               <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
               <input
                 type="text"
-                placeholder={searchMode === 'smart' ? "Describe a feeling or topic..." : "Search Bible (e.g., 'Jesus wept')..."}
+                placeholder="Search Bible or describe a topic..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full pl-12 pr-4 py-3 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                className={`w-full pl-12 pr-10 py-3 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
                   theme === 'dark' 
                     ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400' 
                     : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
                 }`}
               />
-            </div>
-            
-            {/* Smart Toggle */}
-            <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
-              <button
-                onClick={() => setSearchMode('exact')}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  searchMode === 'exact' 
-                    ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' 
-                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                Exact Match
-              </button>
-              <button
-                onClick={() => {
-                  if (!isPremium) {
-                    setIsPremiumModalOpen(true);
-                  } else {
-                    setSearchMode('smart');
-                  }
-                }}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  searchMode === 'smart' 
-                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-sm' 
-                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                <Sparkles size={12} />
-                Smart Search
-                {!isPremium && <Crown size={10} className="text-yellow-500" />}
-              </button>
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  <VolumeX size={20} className="hidden" /> {/* Just to keep imports clean, using an inline SVG for X */}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+              )}
             </div>
           </div>
         )}
 
         <AnimatePresence mode="wait">
           {/* Search Results */}
-          {searchQuery.length >= 3 && view === 'books' ? (
+          {searchQuery.length > 0 && view === 'books' ? (
             <motion.div 
               key="search"
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="space-y-4"
+              className="space-y-6"
             >
-              <h2 className="text-sm font-semibold uppercase tracking-wider opacity-60 mb-2">
-                {isSearching ? 'Searching...' : `Found ${searchResults.length} results`}
-              </h2>
-              {searchResults.map((verse, idx) => (
-                <motion.div 
-                  variants={itemVariants}
-                  key={`${verse.book_id}-${verse.chapter}-${verse.verse}-${idx}`} 
-                  className={`p-4 rounded-xl ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow-sm`}
-                >
+              {(() => {
+                const matchingBooks = books.filter(b => b.name.toLowerCase().includes(searchQuery.toLowerCase().trim()));
+                return matchingBooks.length > 0 ? (
+                  <div>
+                    <h2 className="text-sm font-semibold uppercase tracking-wider opacity-60 mb-3">Matching Books</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {matchingBooks.map((book) => (
+                        <motion.button
+                          variants={itemVariants}
+                          key={book.id}
+                          onClick={() => {
+                            setSearchQuery('');
+                            handleBookSelect(book);
+                          }}
+                          className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-all active:scale-95 ${
+                            theme === 'dark' 
+                              ? 'bg-gray-800 border-gray-700 hover:bg-gray-750' 
+                              : 'bg-white border-gray-100 hover:bg-blue-50/50'
+                          }`}
+                        >
+                          <span className="font-bold text-lg mb-1">{book.name.substring(0, 3)}</span>
+                          <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {book.name}
+                          </span>
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+
+              {searchQuery.length >= 3 ? (
+                <div>
+                  <h2 className="text-sm font-semibold uppercase tracking-wider opacity-60 mb-3">
+                    {isSearching ? 'Searching Verses...' : `Found ${searchResults.length} Verses`}
+                  </h2>
+                  <div className="space-y-4">
+                    {searchResults.map((verse, idx) => (
+                      <motion.div 
+                        variants={itemVariants}
+                        initial="hidden"
+                        animate="visible"
+                        key={`${verse.book_id}-${verse.chapter}-${verse.verse}-${idx}`} 
+                        className={`p-4 rounded-xl ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow-sm`}
+                      >
                   <div className="flex justify-between items-start gap-4">
                     <div>
                       <span className="text-xs font-bold text-blue-500 block mb-1">
@@ -380,9 +421,7 @@ export default function LibraryScreen() {
                       <p 
                         className="leading-relaxed font-serif text-sm mt-1"
                         dangerouslySetInnerHTML={{
-                          __html: searchMode === 'exact' 
-                            ? verse.text.replace(new RegExp(`(${searchQuery})`, 'gi'), (match) => `<mark class="bg-yellow-200 dark:bg-yellow-900 text-inherit rounded px-0.5">${match}</mark>`)
-                            : verse.text
+                          __html: highlightText(verse.text, searchQuery)
                         }}
                       />
                     </div>
@@ -408,6 +447,13 @@ export default function LibraryScreen() {
                   </div>
                 </motion.div>
               ))}
+              </div>
+              </div>
+              ) : (
+                <div className="text-center py-8 opacity-50 text-sm">
+                  Type at least 3 characters to search for verses...
+                </div>
+              )}
             </motion.div>
           ) : (
             <div key="library">

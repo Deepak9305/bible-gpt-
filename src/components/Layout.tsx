@@ -48,9 +48,9 @@ export default function Layout() {
 
         <AnimatePresence>
           {isAccountMenuOpen && (
-            <>
+            <div key="account-menu" className="fixed inset-0 z-40">
               <div 
-                className="fixed inset-0 z-40" 
+                className="absolute inset-0" 
                 onClick={() => setIsAccountMenuOpen(false)}
               />
               <motion.div
@@ -58,7 +58,7 @@ export default function Layout() {
                 animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -10, x: 10 }}
                 transition={{ duration: 0.1 }}
-                className={`absolute right-0 top-12 w-64 rounded-2xl shadow-2xl border z-50 overflow-hidden ${
+                className={`absolute right-4 top-16 w-64 rounded-2xl shadow-2xl border z-50 overflow-hidden ${
                   theme === 'dark' 
                     ? 'bg-gray-800 border-gray-700' 
                     : 'bg-white border-gray-200'
@@ -103,7 +103,7 @@ export default function Layout() {
                   </button>
                 </div>
               </motion.div>
-            </>
+            </div>
           )}
         </AnimatePresence>
       </div>

@@ -3,6 +3,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Plus, Trash2, CheckCircle2, Circle, Calendar, Tag, Filter, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { incrementPrayers } from '../services/statsService';
+import { StorageService } from '../services/storageService';
 
 interface Prayer {
   id: string;
@@ -23,19 +24,25 @@ export default function PrayerJournalScreen() {
   const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('prayers');
-    if (saved) {
-      try {
-        setPrayers(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse prayers", e);
+    const loadPrayers = async () => {
+      const saved = await StorageService.get('prayers');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setPrayers(parsed);
+          }
+        } catch (e) {
+          console.error("Failed to parse prayers", e);
+        }
       }
-    }
+    };
+    loadPrayers();
   }, []);
 
-  const savePrayers = (updated: Prayer[]) => {
+  const savePrayers = async (updated: Prayer[]) => {
     setPrayers(updated);
-    localStorage.setItem('prayers', JSON.stringify(updated));
+    await StorageService.set('prayers', JSON.stringify(updated));
   };
 
   const addPrayer = () => {
@@ -132,6 +139,7 @@ export default function PrayerJournalScreen() {
         <AnimatePresence>
           {isAdding && (
             <motion.div 
+              key="add-prayer-form"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -192,11 +200,11 @@ export default function PrayerJournalScreen() {
           </div>
         ) : (
           <div className="space-y-4">
-            <AnimatePresence mode="popLayout">
-              {filteredPrayers.map((prayer) => (
-                <motion.div 
-                  layout
-                  key={prayer.id} 
+              <AnimatePresence>
+                {filteredPrayers.map((prayer) => (
+                  <motion.div 
+                    layout
+                    key={prayer.id} 
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
@@ -222,7 +230,7 @@ export default function PrayerJournalScreen() {
                         </span>
                         {prayer.isAnswered && <span className="ml-2 font-bold text-emerald-500 uppercase tracking-widest">Answered</span>}
                       </div>
-                      <p className={`leading-relaxed ${prayer.isAnswered ? 'line-through opacity-60' : ''}`}>
+                      <p className={`leading-relaxed whitespace-pre-wrap ${prayer.isAnswered ? 'line-through opacity-60' : ''}`}>
                         {prayer.text}
                       </p>
                     </div>

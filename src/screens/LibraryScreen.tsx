@@ -3,11 +3,13 @@ import { useTheme } from '../context/ThemeContext';
 import { getBooks, getChapter, Verse, loadFullBible, isBibleReady } from '../services/bibleService';
 import { BIBLE_BOOKS } from '../data/books';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
-import { ChevronRight, ArrowLeft, Bookmark, Volume2, VolumeX, Loader2, Crown, Sparkles, Search, PlayCircle, PauseCircle, DownloadCloud } from 'lucide-react';
+import { ChevronRight, ArrowLeft, Bookmark, Volume2, VolumeX, Loader2, Crown, Sparkles, Search, PlayCircle, PauseCircle, DownloadCloud, Share2 } from 'lucide-react';
 import { incrementVersesRead, getStats } from '../services/statsService';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import PremiumModal from '../components/PremiumModal';
+import { Share } from '@capacitor/share';
+import { StorageService } from '../services/storageService';
 
 type ViewState = 'books' | 'chapters' | 'verses';
 
@@ -126,6 +128,18 @@ export default function LibraryScreen() {
     }
   };
 
+  const handleShare = async (verse: Verse) => {
+    try {
+      await Share.share({
+        title: `${verse.book_name} ${verse.chapter}:${verse.verse}`,
+        text: `"${verse.text}" - ${verse.book_name} ${verse.chapter}:${verse.verse}`,
+        dialogTitle: 'Share Bible Verse',
+      });
+    } catch (error) {
+      console.error('Error sharing verse:', error);
+    }
+  };
+
   // Debounced search
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -218,17 +232,20 @@ export default function LibraryScreen() {
   const [bookmarks, setBookmarks] = useState<Verse[]>([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('bookmarks');
-    if (saved) {
-      try {
-        setBookmarks(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse bookmarks", e);
+    const loadBookmarks = async () => {
+      const saved = await StorageService.get('bookmarks');
+      if (saved) {
+        try {
+          setBookmarks(JSON.parse(saved));
+        } catch (e) {
+          console.error("Failed to parse bookmarks", e);
+        }
       }
-    }
+    };
+    loadBookmarks();
   }, []);
 
-  const toggleBookmark = (verse: Verse) => {
+  const toggleBookmark = async (verse: Verse) => {
     const newBookmarks = [...bookmarks];
     const index = newBookmarks.findIndex((b) => 
       b.book_id === verse.book_id && b.chapter === verse.chapter && b.verse === verse.verse
@@ -241,7 +258,7 @@ export default function LibraryScreen() {
     }
     
     setBookmarks(newBookmarks);
-    localStorage.setItem('bookmarks', JSON.stringify(newBookmarks));
+    await StorageService.set('bookmarks', JSON.stringify(newBookmarks));
   };
 
   const isBookmarked = (verse: Verse) => {
@@ -283,8 +300,8 @@ export default function LibraryScreen() {
           {/* Download Indicator */}
           {isBibleDownloading && (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-xs font-medium animate-pulse">
-              <DownloadCloud size={14} />
-              <span className="hidden sm:inline">Downloading Bible...</span>
+              <Loader2 size={14} className="animate-spin" />
+              <span className="hidden sm:inline">Loading Bible...</span>
             </div>
           )}
 
@@ -432,6 +449,12 @@ export default function LibraryScreen() {
                       >
                         <Bookmark size={18} fill={isBookmarked(verse) ? "currentColor" : "none"} />
                       </button>
+                      <button
+                        onClick={() => handleShare(verse)}
+                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-blue-500"
+                      >
+                        <Share2 size={18} />
+                      </button>
                       <button 
                         onClick={() => handleSpeak(verse.text, `search-${verse.book_id}-${verse.chapter}-${verse.verse}`)}
                         className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 ${speakingVerse === `search-${verse.book_id}-${verse.chapter}-${verse.verse}` ? 'text-blue-500' : 'text-gray-400'}`}
@@ -543,6 +566,12 @@ export default function LibraryScreen() {
                                 className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 ${isBookmarked(verse) ? 'text-blue-500' : 'text-gray-400'}`}
                               >
                                 <Bookmark size={18} fill={isBookmarked(verse) ? "currentColor" : "none"} />
+                              </button>
+                              <button
+                                onClick={() => handleShare(verse)}
+                                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-blue-500"
+                              >
+                                <Share2 size={18} />
                               </button>
                               <button 
                                 onClick={() => handleSpeak(verse.text, `${verse.chapter}-${verse.verse}`)}

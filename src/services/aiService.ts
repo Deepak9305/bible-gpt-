@@ -39,44 +39,32 @@ const getClient = () => {
 };
 
 export const sendMessageStream = async (
-  message: string, 
-  history: { role: string; content: string }[], 
+  message: string,
+  history: { role: string; content: string }[],
   onChunk: (chunk: string) => void
 ) => {
-  const ai = getClient();
-
   try {
-    let chatHistory = history
-      .filter(msg => msg.role !== 'system')
-      .slice(-6)
-      .map(msg => ({
-        role: (msg.role === 'model' || msg.role === 'assistant' ? 'model' : 'user') as 'user' | 'model',
-        parts: [{ text: msg.content }]
-      }));
-
-    // Gemini requires history to start with a user message
-    if (chatHistory.length > 0 && chatHistory[0].role === 'model') {
-      chatHistory.shift();
-    }
-
-    const chat = ai.chats.create({
-      model: "gemini-3-flash-preview",
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        temperature: 0.7,
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-      history: chatHistory,
+      body: JSON.stringify({ message, history }),
     });
 
-    const stream = await chat.sendMessageStream({ message });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to fetch AI response');
+    }
 
-    for await (const chunk of stream) {
-      if (chunk.text) {
-        onChunk(chunk.text);
-      }
+    const data = await response.json();
+    if (data.text) {
+      // Since we moved to a standard JSON response for the proxy stability,
+      // we just return the full text in one "chunk".
+      onChunk(data.text);
     }
   } catch (error) {
-    console.error("Gemini AI Error:", error);
+    console.error("AI Proxy Error:", error);
     throw error;
   }
 };

@@ -5,6 +5,7 @@ import { getStats } from '../services/statsService';
 import { Moon, Sun, Trash2, ChevronRight, LogOut, Edit2, X, Check, UserX } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
+import { StorageService } from '../services/storageService';
 
 const AVATARS = ['🙏', '👤', '✝️', '🕊️', '📖', '🕯️', '⛪', '🌟', '😇', '🦁', '🐑', '🍞', '🍷', '🔥', '💧'];
 
@@ -34,11 +35,11 @@ export default function SettingsScreen() {
     });
   };
 
-  const executeConfirmAction = () => {
+  const executeConfirmAction = async () => {
     if (confirmAction?.type === 'delete') {
       deleteAccount();
     } else if (confirmAction?.type === 'clear') {
-      localStorage.clear();
+      await StorageService.clear();
       window.location.reload();
     }
     setConfirmAction(null);

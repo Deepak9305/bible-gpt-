@@ -1,3 +1,5 @@
+import { StorageService } from './storageService';
+
 export interface UserStats {
   streak: number;
   lastVisit: string;
@@ -22,21 +24,26 @@ const INITIAL_STATS: UserStats = {
   isPremium: false,
 };
 
-export const getStats = (): UserStats => {
-  const saved = localStorage.getItem('user_stats');
-  if (!saved) return INITIAL_STATS;
+let cachedStats: UserStats = { ...INITIAL_STATS };
+
+export const initStats = async () => {
   try {
-    const parsed = JSON.parse(saved);
-    // Merge with INITIAL_STATS to ensure new fields exist for old users
-    return { ...INITIAL_STATS, ...parsed };
+    const saved = await StorageService.get('user_stats');
+    if (saved) {
+      cachedStats = { ...INITIAL_STATS, ...JSON.parse(saved) };
+    }
   } catch (e) {
     console.error("Failed to parse user stats", e);
-    return INITIAL_STATS;
   }
 };
 
+export const getStats = (): UserStats => {
+  return cachedStats;
+};
+
 export const saveStats = (stats: UserStats) => {
-  localStorage.setItem('user_stats', JSON.stringify(stats));
+  cachedStats = stats;
+  StorageService.set('user_stats', JSON.stringify(stats)).catch(e => console.error(e));
 };
 
 export const checkDailyLimit = (): boolean => {

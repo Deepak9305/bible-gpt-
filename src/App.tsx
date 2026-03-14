@@ -15,22 +15,33 @@ import LoginScreen from './screens/LoginScreen';
 import { getStats } from './services/statsService';
 import SplashScreen from './components/SplashScreen';
 import { AnimatePresence, motion } from 'motion/react';
+import { initializeNativeServices } from './services/nativeService';
 
 import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
 import TermsOfServiceScreen from './screens/TermsOfServiceScreen';
 
 function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
+  const [isNativeReady, setIsNativeReady] = useState(false);
   const { user, isLoading } = useAuth();
-  const [showOnboarding, setShowOnboarding] = useState(!getStats().onboardingCompleted);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    initializeNativeServices().then(() => {
+      setIsNativeReady(true);
+      if (user) {
+        setShowOnboarding(!getStats().onboardingCompleted);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (isNativeReady && user) {
       setShowOnboarding(!getStats().onboardingCompleted);
     }
-  }, [user]);
+  }, [user, isNativeReady]);
 
-  if (isLoading) return null;
+  if (isLoading || !isNativeReady) return null;
 
   return (
     <AnimatePresence mode="wait">

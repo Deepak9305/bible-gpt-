@@ -3,14 +3,16 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Check, Clock, Shield, Smartphone, Heart, CloudRain } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { AppBlocker } from '../plugins/AppBlocker';
+import { StorageService } from '../services/storageService';
 
 const APPS = [
-  { id: 'instagram', name: 'Instagram', color: 'bg-pink-500' },
-  { id: 'tiktok', name: 'TikTok', color: 'bg-black dark:bg-gray-800' },
-  { id: 'twitter', name: 'X (Twitter)', color: 'bg-gray-900 dark:bg-gray-700' },
-  { id: 'facebook', name: 'Facebook', color: 'bg-blue-600' },
-  { id: 'youtube', name: 'YouTube', color: 'bg-red-600' },
-  { id: 'reddit', name: 'Reddit', color: 'bg-orange-500' },
+  { id: 'instagram', bundleId: 'com.instagram.android', name: 'Instagram', color: 'bg-pink-500' },
+  { id: 'tiktok', bundleId: 'com.zhiliaoapp.musically', name: 'TikTok', color: 'bg-black dark:bg-gray-800' },
+  { id: 'twitter', bundleId: 'com.twitter.android', name: 'X (Twitter)', color: 'bg-gray-900 dark:bg-gray-700' },
+  { id: 'facebook', bundleId: 'com.facebook.katana', name: 'Facebook', color: 'bg-blue-600' },
+  { id: 'youtube', bundleId: 'com.google.android.youtube', name: 'YouTube', color: 'bg-red-600' },
+  { id: 'reddit', bundleId: 'com.reddit.frontpage', name: 'Reddit', color: 'bg-orange-500' },
 ];
 
 const DURATIONS = [
@@ -44,14 +46,20 @@ export default function DigitalDetoxScreen() {
   const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('prayers');
-      if (saved) {
-        setUserPrayers(JSON.parse(saved));
+    const loadPrayers = async () => {
+      try {
+        const saved = await StorageService.get('prayers');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setUserPrayers(parsed);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load prayers", e);
       }
-    } catch (e) {
-      console.error("Failed to load prayers", e);
-    }
+    };
+    loadPrayers();
   }, []);
 
   const toggleApp = (id: string) => {
@@ -60,15 +68,42 @@ export default function DigitalDetoxScreen() {
     );
   };
 
-  const startPreview = () => {
+  const startDetox = async () => {
+    try {
+      // Try to call the native plugin
+      const bundleIds = selectedApps.map(id => APPS.find(a => a.id === id)?.bundleId).filter(Boolean) as string[];
+      
+      // Request permissions first
+      const { granted } = await AppBlocker.requestPermissions().catch(() => ({ granted: false }));
+      
+      if (granted && bundleIds.length > 0) {
+        // We pass duration in minutes to the native plugin (for testing we'll pass the seconds / 60)
+        await AppBlocker.blockApps({ appBundleIds: bundleIds, durationMinutes: Math.max(1, Math.ceil(duration / 60)) });
+      }
+    } catch (e) {
+      console.log("Native AppBlocker not available (running in web browser). Falling back to web overlay.");
+    }
+
     setTimeLeft(duration);
     setIsPreviewMode(true);
+  };
+
+  const cancelDetox = async () => {
+    try {
+      await AppBlocker.unblockApps();
+    } catch (e) {
+      // Ignore web errors
+    }
+    setIsPreviewMode(false);
   };
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isPreviewMode && timeLeft > 0) {
       timer = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
+    } else if (isPreviewMode && timeLeft === 0) {
+      // Auto-unblock when timer finishes
+      AppBlocker.unblockApps().catch(() => {});
     }
     return () => clearTimeout(timer);
   }, [isPreviewMode, timeLeft]);
@@ -228,13 +263,13 @@ export default function DigitalDetoxScreen() {
         {/* Actions */}
         <div className="pt-6">
           <button
-            onClick={startPreview}
+            onClick={startDetox}
             className="w-full py-4 rounded-2xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-lg shadow-lg shadow-cyan-500/30 transition-all active:scale-[0.98]"
           >
-            Preview Detox Screen
+            Start Detox Session
           </button>
           <p className="text-center text-xs opacity-50 mt-4">
-            Note: As a web app, this is a simulated preview. In a native app, this would intercept app launches.
+            In the web preview, this shows an overlay timer. In the native app, it will block the selected apps via OS-level controls.
           </p>
         </div>
       </div>
@@ -292,17 +327,17 @@ export default function DigitalDetoxScreen() {
               >
                 {timeLeft === 0 ? (
                   <button
-                    onClick={() => setIsPreviewMode(false)}
+                    onClick={cancelDetox}
                     className="px-8 py-3 rounded-full bg-white text-gray-900 font-bold hover:bg-gray-100 transition-colors"
                   >
                     Continue to App
                   </button>
                 ) : (
                   <button
-                    onClick={() => setIsPreviewMode(false)}
+                    onClick={cancelDetox}
                     className="px-8 py-3 rounded-full border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors"
                   >
-                    Cancel
+                    Cancel Detox
                   </button>
                 )}
               </motion.div>

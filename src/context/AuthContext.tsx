@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { StorageService } from '../services/storageService';
 
 interface User {
   id: string;
@@ -26,19 +27,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check for existing session
-    const storedUser = localStorage.getItem('auth_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Failed to parse user session", e);
-        localStorage.removeItem('auth_user');
+    const loadUser = async () => {
+      const storedUser = await StorageService.get('auth_user');
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (e) {
+          console.error("Failed to parse user session", e);
+          await StorageService.remove('auth_user');
+        }
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+    loadUser();
   }, []);
 
-  const loginGuest = () => {
+  const loginGuest = async () => {
     const guestUser: User = {
       id: 'guest-' + Date.now(),
       name: 'Guest',
@@ -46,10 +50,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       avatar: '🙏',
     };
     setUser(guestUser);
-    localStorage.setItem('auth_user', JSON.stringify(guestUser));
+    await StorageService.set('auth_user', JSON.stringify(guestUser));
   };
 
-  const loginEmail = (email: string) => {
+  const loginEmail = async (email: string) => {
     // In a real app, this would validate with a backend
     const emailUser: User = {
       id: 'user-' + Date.now(),
@@ -59,25 +63,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       avatar: '👤',
     };
     setUser(emailUser);
-    localStorage.setItem('auth_user', JSON.stringify(emailUser));
+    await StorageService.set('auth_user', JSON.stringify(emailUser));
   };
 
-  const logout = () => {
+  const logout = async () => {
     setUser(null);
-    localStorage.removeItem('auth_user');
+    await StorageService.remove('auth_user');
   };
 
-  const deleteAccount = () => {
-    localStorage.clear();
+  const deleteAccount = async () => {
+    await StorageService.clear();
     setUser(null);
     window.location.reload();
   };
 
-  const updateProfile = (name: string, avatar?: string) => {
+  const updateProfile = async (name: string, avatar?: string) => {
     if (user) {
       const updatedUser = { ...user, name, avatar: avatar || user.avatar };
       setUser(updatedUser);
-      localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+      await StorageService.set('auth_user', JSON.stringify(updatedUser));
     }
   };
 

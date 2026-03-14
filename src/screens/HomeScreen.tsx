@@ -8,6 +8,7 @@ import { playTextToSpeech, stopAudio } from '../services/ttsService';
 import { sendMessageStream } from '../services/aiService';
 import { getStats, updateStreak, UserStats } from '../services/statsService';
 import { motion } from 'motion/react';
+import { StorageService } from '../services/storageService';
 
 const MOODS = [
   { name: 'Anxious', icon: Shield, color: 'bg-blue-100 text-blue-600', prompt: 'I am feeling anxious and need peace.' },
@@ -47,7 +48,7 @@ export default function HomeScreen() {
       
       const dateKey = cycleDate.toLocaleDateString("en-CA");
       
-      const storedData = localStorage.getItem('daily_verse_data');
+      const storedData = await StorageService.get('daily_verse_data');
       if (storedData) {
         try {
           const parsed = JSON.parse(storedData);
@@ -92,7 +93,7 @@ export default function HomeScreen() {
           setDailyReflection(reflection);
         });
 
-        localStorage.setItem('daily_verse_data', JSON.stringify({
+        await StorageService.set('daily_verse_data', JSON.stringify({
           date: dateKey,
           verse: newVerse,
           reflection: reflection

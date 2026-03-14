@@ -4,6 +4,7 @@ import { Home, MessageSquare, BookOpen, Bookmark, Settings, PenLine, Users, LogO
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
+import AdBanner from './AdBanner';
 
 export default function Layout() {
   const { theme } = useTheme();
@@ -164,6 +165,8 @@ export default function Layout() {
           ))}
         </div>
       </nav>
+      
+      <AdBanner />
     </div>
   );
 }

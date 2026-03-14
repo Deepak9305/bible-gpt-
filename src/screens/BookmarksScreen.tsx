@@ -3,6 +3,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Verse } from '../services/bibleService';
 import { Trash2, Volume2, VolumeX, Loader2 } from 'lucide-react';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
+import { StorageService } from '../services/storageService';
 
 export default function BookmarksScreen() {
   const { theme } = useTheme();
@@ -11,14 +12,17 @@ export default function BookmarksScreen() {
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('bookmarks');
-    if (saved) {
-      try {
-        setBookmarks(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse bookmarks", e);
+    const loadBookmarks = async () => {
+      const saved = await StorageService.get('bookmarks');
+      if (saved) {
+        try {
+          setBookmarks(JSON.parse(saved));
+        } catch (e) {
+          console.error("Failed to parse bookmarks", e);
+        }
       }
-    }
+    };
+    loadBookmarks();
   }, []);
 
   // Cleanup speech on unmount
@@ -56,12 +60,12 @@ export default function BookmarksScreen() {
     }
   };
 
-  const removeBookmark = (verse: Verse) => {
+  const removeBookmark = async (verse: Verse) => {
     const newBookmarks = bookmarks.filter((b) => 
       !(b.book_id === verse.book_id && b.chapter === verse.chapter && b.verse === verse.verse)
     );
     setBookmarks(newBookmarks);
-    localStorage.setItem('bookmarks', JSON.stringify(newBookmarks));
+    await StorageService.set('bookmarks', JSON.stringify(newBookmarks));
   };
 
   return (

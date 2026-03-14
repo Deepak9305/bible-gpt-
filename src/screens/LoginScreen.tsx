@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+import { Capacitor } from '@capacitor/core';
 
 export default function LoginScreen() {
   const { loginGuest, loginEmail } = useAuth();
@@ -9,6 +11,16 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) {
+      GoogleAuth.initialize({
+        clientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com', // Replace with actual Web Client ID
+        scopes: ['profile', 'email'],
+        grantOfflineAccess: true,
+      });
+    }
+  }, []);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,9 +39,22 @@ export default function LoginScreen() {
     }, 1500);
   };
 
-  const handleGoogleLogin = () => {
-    // In a real app, this would redirect to OAuth provider
-    alert("Google Login requires backend configuration. Please use Guest or Email login for this demo.");
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const googleUser = await GoogleAuth.signIn();
+      if (googleUser && googleUser.email) {
+        loginEmail(googleUser.email);
+      } else {
+        setError('Google login failed: No email returned.');
+      }
+    } catch (e: any) {
+      console.error("Google Auth Error", e);
+      setError(e?.message || 'Failed to sign in with Google');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGuestLogin = () => {

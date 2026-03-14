@@ -2,7 +2,7 @@ import { BIBLE_BOOKS } from '../data/books';
 import { get, set } from 'idb-keyval';
 
 const API_BASE_URL = 'https://bible-api.com';
-const KJV_JSON_URL = 'https://raw.githubusercontent.com/thiagobodruk/bible/master/json/en_kjv.json';
+const KJV_JSON_URL = '/bible.json'; // Bundled locally inside the app
 const DB_KEY = 'kjv_bible_full';
 
 export interface Verse {
@@ -54,8 +54,8 @@ export const loadFullBible = async (): Promise<any[]> => {
       return cached;
     }
 
-    // If not in DB, fetch from GitHub
-    console.log('Downloading full Bible...');
+    // If not in DB, fetch from local bundle
+    console.log('Loading bundled Bible...');
     const response = await fetch(KJV_JSON_URL);
     if (!response.ok) throw new Error('Failed to download Bible');
     

@@ -7,6 +7,8 @@ import PremiumModal from '../components/PremiumModal';
 import { Send, User, Bot, Volume2, VolumeX, Mic, MicOff, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useLocation } from 'react-router-dom';
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
+import { Capacitor } from '@capacitor/core';
 
 interface Message {
   id: string;
@@ -106,44 +108,88 @@ export default function ChatScreen() {
   });
 
   useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'en-US';
-
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInput(transcript);
-        if (handleSendRef.current) {
-          handleSendRef.current(transcript);
+    const initSpeech = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const { available } = await SpeechRecognition.available();
+          setIsSpeechSupported(available);
+          if (available) {
+            await SpeechRecognition.requestPermissions();
+          }
+        } catch (e) {
+          console.error("Speech recognition init failed", e);
+          setIsSpeechSupported(false);
         }
-      };
+      } else {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+          const WebSpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+          recognitionRef.current = new WebSpeechRecognition();
+          recognitionRef.current.continuous = false;
+          recognitionRef.current.interimResults = false;
+          recognitionRef.current.lang = 'en-US';
 
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
+          recognitionRef.current.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            setInput(transcript);
+            if (handleSendRef.current) {
+              handleSendRef.current(transcript);
+            }
+          };
 
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error', event.error);
-        setIsListening(false);
-      };
-    } else {
-      setIsSpeechSupported(false);
-    }
+          recognitionRef.current.onend = () => {
+            setIsListening(false);
+          };
+
+          recognitionRef.current.onerror = (event: any) => {
+            console.error('Speech recognition error', event.error);
+            setIsListening(false);
+          };
+        } else {
+          setIsSpeechSupported(false);
+        }
+      }
+    };
+    initSpeech();
   }, []);
 
-  const toggleListening = () => {
+  const toggleListening = async () => {
     if (!isSpeechSupported) {
-      alert("Voice input is not supported in your browser.");
+      alert("Voice input is not supported on your device.");
       return;
     }
+    
     if (isListening) {
-      recognitionRef.current?.stop();
+      if (Capacitor.isNativePlatform()) {
+        await SpeechRecognition.stop();
+      } else {
+        recognitionRef.current?.stop();
+      }
+      setIsListening(false);
     } else {
       setIsListening(true);
-      recognitionRef.current?.start();
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const { matches } = await SpeechRecognition.start({
+            language: 'en-US',
+            maxResults: 1,
+            prompt: 'Speak now',
+            partialResults: false,
+            popup: true,
+          });
+          if (matches && matches.length > 0) {
+            setInput(matches[0]);
+            if (handleSendRef.current) {
+              handleSendRef.current(matches[0]);
+            }
+          }
+        } catch (e) {
+          console.error("Speech recognition failed", e);
+        } finally {
+          setIsListening(false);
+        }
+      } else {
+        recognitionRef.current?.start();
+      }
     }
   };
 

@@ -15,7 +15,7 @@ const STEPS = [
   },
   {
     title: "Spiritual Guidance",
-    description: "Ask anything. Find comfort and scripture guidance. Note: This is spiritual support and not a substitute for professional medical or mental health advice.",
+    description: "Ask anything. Find comfort and scripture guidance. Note: This offers spiritual guidance and is not a substitute for professional healthcare or therapy.",
     icon: Shield,
     color: "text-emerald-500",
     bg: "bg-emerald-50 dark:bg-emerald-900/20"

@@ -17,11 +17,11 @@ interface Message {
 }
 
 const SUGGESTED_PROMPTS = [
-  "I feel anxious",
+  "I feel worried",
   "Verses for sleep",
   "Explain John 3:16",
   "How to pray?",
-  "Comfort for grief"
+  "Comfort in sorrow"
 ];
 
 const MessageItem = React.memo(({
@@ -356,8 +356,8 @@ export default function ChatScreen() {
               key={prompt}
               onClick={() => handleSend(prompt)}
               className={`whitespace-nowrap px-3 py-1.5 rounded-full text-sm border transition-colors ${theme === 'dark'
-                  ? 'border-gray-600 bg-gray-800 hover:bg-gray-700 text-gray-300'
-                  : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+                ? 'border-gray-600 bg-gray-800 hover:bg-gray-700 text-gray-300'
+                : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
                 }`}
             >
               {prompt}
@@ -373,8 +373,8 @@ export default function ChatScreen() {
           <button
             onClick={toggleListening}
             className={`p-3 rounded-xl transition-all ${isListening
-                ? 'bg-red-500 text-white animate-pulse'
-                : (theme === 'dark' ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
+              ? 'bg-red-500 text-white animate-pulse'
+              : (theme === 'dark' ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
               }`}
             title="Speak"
           >
@@ -388,8 +388,8 @@ export default function ChatScreen() {
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={isListening ? "Listening..." : "Ask for guidance..."}
             className={`flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 text-base ${theme === 'dark'
-                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
+              ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+              : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
               }`}
             disabled={isLoading}
           />

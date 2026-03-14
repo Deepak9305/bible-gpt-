@@ -350,14 +350,14 @@ export default function ChatScreen() {
 
       {/* Suggested Prompts */}
       {messages.length === 1 && (
-        <div className="px-4 pb-2 flex gap-2 overflow-x-auto no-scrollbar">
+        <div className="px-4 pb-2 flex gap-2 overflow-x-auto no-scrollbar scrollbar-hide">
           {SUGGESTED_PROMPTS.map((prompt) => (
             <button
               key={prompt}
               onClick={() => handleSend(prompt)}
               className={`whitespace-nowrap px-3 py-1.5 rounded-full text-sm border transition-colors ${theme === 'dark'
-                ? 'border-gray-600 bg-gray-800 hover:bg-gray-700 text-gray-300'
-                : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+                  ? 'border-gray-600 bg-gray-800 hover:bg-gray-700 text-gray-300'
+                  : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
                 }`}
             >
               {prompt}
@@ -367,14 +367,14 @@ export default function ChatScreen() {
       )}
 
       {/* Input */}
-      <div className={`p-4 border-t ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+      <div className={`p-4 border-t ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'} safe-area-bottom`}>
         <div className="flex gap-2">
           {/* Voice Input Button */}
           <button
             onClick={toggleListening}
             className={`p-3 rounded-xl transition-all ${isListening
-              ? 'bg-red-500 text-white animate-pulse'
-              : (theme === 'dark' ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
+                ? 'bg-red-500 text-white animate-pulse'
+                : (theme === 'dark' ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
               }`}
             title="Speak"
           >
@@ -388,8 +388,8 @@ export default function ChatScreen() {
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={isListening ? "Listening..." : "Ask for guidance..."}
             className={`flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 text-base ${theme === 'dark'
-              ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-              : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
+                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
               }`}
             disabled={isLoading}
           />
@@ -402,6 +402,9 @@ export default function ChatScreen() {
             <Send size={20} />
           </button>
         </div>
+        <p className={`mt-3 text-[10px] text-center opacity-60 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} leading-tight px-4`}>
+          For spiritual guidance only. Not a medical or mental health service. Seek professional help for clinical conditions.
+        </p>
       </div>
     </div>
   );

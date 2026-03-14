@@ -4,7 +4,6 @@ import { Home, MessageSquare, BookOpen, Bookmark, Settings, PenLine, Users, LogO
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
-import AdBanner from './AdBanner';
 
 export default function Layout() {
   const { theme } = useTheme();
@@ -38,8 +37,8 @@ export default function Layout() {
         <button
           onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
           className={`p-2 rounded-full shadow-lg transition-all active:scale-95 ${theme === 'dark'
-              ? 'bg-gray-800 text-gray-200 border border-gray-700 hover:bg-gray-700'
-              : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            ? 'bg-gray-800 text-gray-200 border border-gray-700 hover:bg-gray-700'
+            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
           title="Switch Account"
         >
@@ -59,8 +58,8 @@ export default function Layout() {
                 exit={{ opacity: 0, scale: 0.95, y: -10, x: 10 }}
                 transition={{ duration: 0.1 }}
                 className={`absolute right-4 top-16 w-64 rounded-2xl shadow-2xl border z-50 overflow-hidden ${theme === 'dark'
-                    ? 'bg-gray-800 border-gray-700'
-                    : 'bg-white border-gray-200'
+                  ? 'bg-gray-800 border-gray-700'
+                  : 'bg-white border-gray-200'
                   }`}
               >
                 <div className={`p-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-100'}`}>
@@ -80,8 +79,8 @@ export default function Layout() {
                   <button
                     onClick={handleAddAccount}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${theme === 'dark'
-                        ? 'hover:bg-gray-700 text-gray-300'
-                        : 'hover:bg-gray-50 text-gray-700'
+                      ? 'hover:bg-gray-700 text-gray-300'
+                      : 'hover:bg-gray-50 text-gray-700'
                       }`}
                   >
                     <Plus size={16} />
@@ -91,8 +90,8 @@ export default function Layout() {
                   <button
                     onClick={handleLogout}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-red-500 ${theme === 'dark'
-                        ? 'hover:bg-red-900/20'
-                        : 'hover:bg-red-50'
+                      ? 'hover:bg-red-900/20'
+                      : 'hover:bg-red-50'
                       }`}
                   >
                     <LogOut size={16} />
@@ -111,8 +110,8 @@ export default function Layout() {
 
       {/* Mobile Bottom Nav */}
       <nav className={`fixed bottom-0 left-0 right-0 border-t md:hidden backdrop-blur-lg ${theme === 'dark'
-          ? 'bg-gray-900/90 border-gray-800'
-          : 'bg-white/90 border-gray-200'
+        ? 'bg-gray-900/90 border-gray-800'
+        : 'bg-white/90 border-gray-200'
         } z-50 pb-[env(safe-area-inset-bottom)]`}>
         <div className="flex justify-around items-center h-16 px-2">
           {navItems.map(({ to, icon: Icon, label }) => (
@@ -159,7 +158,6 @@ export default function Layout() {
         </div>
       </nav>
 
-      <AdBanner />
     </div>
   );
 }

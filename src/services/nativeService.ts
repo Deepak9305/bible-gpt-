@@ -1,4 +1,3 @@
-import { AdMob } from '@capacitor-community/admob';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import { initStats } from './statsService';
@@ -18,9 +17,6 @@ export const initializeNativeServices = async () => {
         }
       }
 
-      // 2. Initialize AdMob
-      await AdMob.initialize({});
-      
       // 3. Request Notification Permissions & Schedule
       const permStatus = await LocalNotifications.requestPermissions();
       if (permStatus.display === 'granted') {
@@ -35,7 +31,7 @@ export const initializeNativeServices = async () => {
 const scheduleDailyDevotional = async () => {
   // Clear existing to avoid duplicates
   await LocalNotifications.cancel({ notifications: [{ id: 1 }] });
-  
+
   await LocalNotifications.schedule({
     notifications: [
       {

@@ -24,6 +24,54 @@ const SUGGESTED_PROMPTS = [
   "Comfort for grief"
 ];
 
+const MessageItem = React.memo(({
+  message,
+  theme,
+  speakingMessageId,
+  isLoadingAudio,
+  onSpeak
+}: {
+  message: Message;
+  theme: string;
+  speakingMessageId: string | null;
+  isLoadingAudio: boolean;
+  onSpeak: (text: string, id: string) => void;
+}) => {
+  const isSpeaking = speakingMessageId === message.id;
+
+  return (
+    <div className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
+      <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${message.role === 'user'
+        ? 'bg-blue-600 text-white rounded-br-none'
+        : (theme === 'dark' ? 'bg-gray-700 text-gray-100 rounded-bl-none' : 'bg-gray-100 text-gray-800 rounded-bl-none')
+        }`}>
+        {message.role === 'user' ? (
+          <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+        ) : (
+          <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed">
+            <ReactMarkdown>{message.content}</ReactMarkdown>
+          </div>
+        )}
+      </div>
+      {/* Audio Control for Assistant Messages */}
+      {message.role === 'assistant' && message.content && (
+        <button
+          onClick={() => onSpeak(message.content, message.id)}
+          className={`mt-1 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 transition-colors ${isSpeaking ? 'text-blue-500' : ''}`}
+          title="Listen to response"
+          disabled={isLoadingAudio && !isSpeaking && speakingMessageId !== null}
+        >
+          {isSpeaking ? (
+            isLoadingAudio ? <Loader2 size={16} className="animate-spin" /> : <VolumeX size={16} />
+          ) : (
+            <Volume2 size={16} />
+          )}
+        </button>
+      )}
+    </div>
+  );
+});
+
 export default function ChatScreen() {
   const { theme } = useTheme();
   const location = useLocation();
@@ -72,7 +120,7 @@ export default function ChatScreen() {
     };
   }, []);
 
-  const handleSpeak = async (text: string, id: string) => {
+  const handleSpeak = React.useCallback(async (text: string, id: string) => {
     if (speakingMessageId === id) {
       stopAudio();
       setSpeakingMessageId(null);
@@ -102,7 +150,7 @@ export default function ChatScreen() {
         return current;
       });
     }
-  };
+  }, [speakingMessageId]);
   useEffect(() => {
     handleSendRef.current = handleSend;
   });
@@ -157,7 +205,7 @@ export default function ChatScreen() {
       alert("Voice input is not supported on your device.");
       return;
     }
-    
+
     if (isListening) {
       if (Capacitor.isNativePlatform()) {
         await SpeechRecognition.stop();
@@ -227,18 +275,18 @@ export default function ChatScreen() {
 
     try {
       const history = messages.map(m => ({ role: m.role, content: m.content }));
-      
+
       let fullContent = "";
       await sendMessageStream(cleanText, history, (chunk) => {
         fullContent += chunk;
-        setMessages(prev => prev.map(msg => 
+        setMessages(prev => prev.map(msg =>
           msg.id === aiMsgId ? { ...msg, content: fullContent } : msg
         ));
       });
-      
+
     } catch (error) {
       console.error('Chat error:', error);
-      setMessages(prev => prev.map(msg => 
+      setMessages(prev => prev.map(msg =>
         msg.id === aiMsgId ? { ...msg, content: 'I apologize, but I am having trouble connecting right now. Please try again.' } : msg
       ));
     } finally {
@@ -249,19 +297,19 @@ export default function ChatScreen() {
 
   return (
     <div className={`flex flex-col h-[calc(100vh-4rem)] md:h-screen ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-      <PremiumModal 
-        isOpen={isPremiumModalOpen} 
+      <PremiumModal
+        isOpen={isPremiumModalOpen}
         onClose={() => setIsPremiumModalOpen(false)}
         onUpgrade={() => setIsPremiumModalOpen(false)}
       />
-      
+
       {/* Header */}
       <div className={`p-4 border-b flex justify-between items-center ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
         <h1 className="text-lg font-semibold flex items-center gap-2">
           <Bot className="text-blue-500" /> Father AI
         </h1>
         {speakingMessageId && (
-          <button 
+          <button
             onClick={() => {
               stopAudio();
               setSpeakingMessageId(null);
@@ -277,39 +325,17 @@ export default function ChatScreen() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => (
-          <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-            <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-              msg.role === 'user' 
-                ? 'bg-blue-600 text-white rounded-br-none' 
-                : (theme === 'dark' ? 'bg-gray-700 text-gray-100 rounded-bl-none' : 'bg-gray-100 text-gray-800 rounded-bl-none')
-            }`}>
-              {msg.role === 'user' ? (
-                <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-              ) : (
-                <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed">
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
-                </div>
-              )}
-            </div>
-            {/* Audio Control for Assistant Messages */}
-            {msg.role === 'assistant' && msg.content && (
-              <button 
-                onClick={() => handleSpeak(msg.content, msg.id)}
-                className={`mt-1 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 transition-colors ${speakingMessageId === msg.id ? 'text-blue-500' : ''}`}
-                title="Listen to response"
-                disabled={isLoadingAudio && speakingMessageId !== msg.id && speakingMessageId !== null}
-              >
-                {speakingMessageId === msg.id ? (
-                  isLoadingAudio ? <Loader2 size={16} className="animate-spin" /> : <VolumeX size={16} />
-                ) : (
-                  <Volume2 size={16} />
-                )}
-              </button>
-            )}
-          </div>
+          <MessageItem
+            key={msg.id}
+            message={msg}
+            theme={theme}
+            speakingMessageId={speakingMessageId}
+            isLoadingAudio={isLoadingAudio}
+            onSpeak={handleSpeak}
+          />
         ))}
         {isLoading && messages[messages.length - 1].role === 'user' && (
-           <div className="flex justify-start">
+          <div className="flex justify-start">
             <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <div className="flex space-x-2">
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
@@ -329,11 +355,10 @@ export default function ChatScreen() {
             <button
               key={prompt}
               onClick={() => handleSend(prompt)}
-              className={`whitespace-nowrap px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                theme === 'dark' 
-                  ? 'border-gray-600 bg-gray-800 hover:bg-gray-700 text-gray-300' 
-                  : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
-              }`}
+              className={`whitespace-nowrap px-3 py-1.5 rounded-full text-sm border transition-colors ${theme === 'dark'
+                ? 'border-gray-600 bg-gray-800 hover:bg-gray-700 text-gray-300'
+                : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+                }`}
             >
               {prompt}
             </button>
@@ -347,11 +372,10 @@ export default function ChatScreen() {
           {/* Voice Input Button */}
           <button
             onClick={toggleListening}
-            className={`p-3 rounded-xl transition-all ${
-              isListening 
-                ? 'bg-red-500 text-white animate-pulse' 
-                : (theme === 'dark' ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
-            }`}
+            className={`p-3 rounded-xl transition-all ${isListening
+              ? 'bg-red-500 text-white animate-pulse'
+              : (theme === 'dark' ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
+              }`}
             title="Speak"
           >
             {isListening ? <MicOff size={20} /> : <Mic size={20} />}
@@ -363,19 +387,17 @@ export default function ChatScreen() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={isListening ? "Listening..." : "Ask for guidance..."}
-            className={`flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 text-base ${
-              theme === 'dark' 
-                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
-            }`}
+            className={`flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 text-base ${theme === 'dark'
+              ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+              : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
             disabled={isLoading}
           />
           <button
             onClick={() => handleSend()}
             disabled={isLoading || !input.trim()}
-            className={`p-3 rounded-xl bg-blue-600 text-white transition-opacity ${
-              isLoading || !input.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
-            }`}
+            className={`p-3 rounded-xl bg-blue-600 text-white transition-opacity ${isLoading || !input.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+              }`}
           >
             <Send size={20} />
           </button>

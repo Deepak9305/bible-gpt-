@@ -1,4 +1,5 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { StatusBar } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
 import { initStats } from './statsService';
 import { AppTrackingTransparency } from 'capacitor-plugin-app-tracking-transparency';
@@ -16,6 +17,9 @@ export const initializeNativeServices = async () => {
           await AppTrackingTransparency.requestPermission();
         }
       }
+
+      // 0. Hide Status Bar (Immersive Mode)
+      await StatusBar.hide();
 
       // 3. Request Notification Permissions & Schedule
       const permStatus = await LocalNotifications.requestPermissions();

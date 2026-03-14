@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 
 const STEPS = [
   {
-    title: "Welcome to Bible GPT",
+    title: "Welcome to Bible Nova",
     description: "A sanctuary for your soul. Find peace, wisdom, and guidance through the word of God.",
     icon: Bot,
     color: "text-blue-500",
@@ -67,7 +67,7 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
             <div className={`w-24 h-24 rounded-[2rem] ${STEPS[currentStep].bg} ${STEPS[currentStep].color} flex items-center justify-center mx-auto mb-8 shadow-inner`}>
               {React.createElement(STEPS[currentStep].icon, { size: 48 })}
             </div>
-            
+
             <h1 className="text-3xl font-bold mb-4 dark:text-white">
               {STEPS[currentStep].title}
             </h1>
@@ -77,8 +77,8 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
 
             <div className="flex justify-center gap-2 mb-12">
               {STEPS.map((_, i) => (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   className={`h-1.5 rounded-full transition-all duration-300 ${i === currentStep ? 'w-8 bg-blue-600' : 'w-2 bg-gray-200 dark:bg-gray-700'}`}
                 />
               ))}
@@ -108,7 +108,7 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
             <p className="text-gray-600 dark:text-gray-400 mb-8">
               I'd love to address you by name as we explore the Word together.
             </p>
-            
+
             <input
               type="text"
               value={name}

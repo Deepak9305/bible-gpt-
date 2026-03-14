@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">BibleGPT</string>
-    <string name="title_activity_main">BibleGPT</string>
-    <string name="package_name">com.biblegpt.app</string>
-    <string name="custom_url_scheme">com.biblegpt.app</string>
+    <string name="app_name">Bible Nova</string>
+    <string name="title_activity_main">Bible Nova</string>
+    <string name="package_name">com.biblenova.app</string>
+    <string name="custom_url_scheme">com.biblenova.app</string>
 </resources>

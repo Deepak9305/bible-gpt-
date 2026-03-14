@@ -22,7 +22,7 @@ export default function PrivacyPolicyScreen() {
 
           <h3>1. Data Storage</h3>
           <p>
-            <strong>Your data belongs to you.</strong> Bible GPT operates on a "local-first" basis.
+            <strong>Your data belongs to you.</strong> Bible Nova operates on a "local-first" basis.
             All your bookmarks, prayer journals, settings, and reading history are stored <strong>locally on your device</strong>.
             We do not have access to your personal data, and it is never uploaded to our servers.
           </p>
@@ -44,7 +44,7 @@ export default function PrivacyPolicyScreen() {
 
           <h3>4. No Account Required</h3>
           <p>
-            You do not need to create an account to use Bible GPT. Your "profile" (name and avatar) is stored only on your device.
+            You do not need to create an account to use Bible Nova. Your "profile" (name and avatar) is stored only on your device.
             If you delete the app or clear your browser data, this information will be lost as we do not keep backups.
           </p>
 

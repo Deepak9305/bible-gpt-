@@ -13,11 +13,11 @@ export default function SettingsScreen() {
   const { theme, toggleTheme } = useTheme();
   const { logout, user, updateProfile, deleteAccount } = useAuth();
   const stats = getStats();
-  
+
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editName, setEditName] = useState(user?.name || '');
   const [editAvatar, setEditAvatar] = useState(user?.avatar || '👤');
-  const [confirmAction, setConfirmAction] = useState<{type: 'delete' | 'clear', title: string, message: string} | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'delete' | 'clear', title: string, message: string } | null>(null);
 
   const clearData = () => {
     setConfirmAction({
@@ -89,8 +89,8 @@ export default function SettingsScreen() {
                 </span>
               )}
             </div>
-            
-            <button 
+
+            <button
               onClick={openEditProfile}
               className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors border-b border-gray-100 dark:border-gray-700"
             >
@@ -101,7 +101,7 @@ export default function SettingsScreen() {
               <ChevronRight size={16} className="opacity-50" />
             </button>
 
-            <button 
+            <button
               onClick={handleLogout}
               className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors text-red-500 border-b border-gray-100 dark:border-gray-700"
             >
@@ -111,7 +111,7 @@ export default function SettingsScreen() {
               </div>
             </button>
 
-            <button 
+            <button
               onClick={handleDeleteAccount}
               className="w-full flex items-center justify-between p-4 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors text-red-600"
             >
@@ -127,7 +127,7 @@ export default function SettingsScreen() {
         <section>
           <h2 className="text-sm font-semibold uppercase tracking-wider opacity-60 mb-3 px-2">Appearance</h2>
           <div className={`rounded-xl overflow-hidden ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
-            <button 
+            <button
               onClick={toggleTheme}
               className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
             >
@@ -146,7 +146,7 @@ export default function SettingsScreen() {
         <section>
           <h2 className="text-sm font-semibold uppercase tracking-wider opacity-60 mb-3 px-2">Data</h2>
           <div className={`rounded-xl overflow-hidden ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
-            <button 
+            <button
               onClick={clearData}
               className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors text-red-500"
             >
@@ -164,22 +164,22 @@ export default function SettingsScreen() {
           <div className={`rounded-xl overflow-hidden ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
             <div className="p-4 border-b border-gray-100 dark:border-gray-700">
               <p className="mb-2 opacity-80">
-                Bible GPT is your spiritual companion, designed to provide comfort and guidance through Scripture.
+                Bible Nova is your spiritual companion, designed to provide comfort and guidance through Scripture.
               </p>
               <div className="flex items-center gap-2 opacity-60 text-sm">
                 <span>Version 1.0.0</span>
               </div>
             </div>
-            
-            <Link 
+
+            <Link
               to="/privacy"
               className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors border-b border-gray-100 dark:border-gray-700"
             >
               <span>Privacy Policy</span>
               <ChevronRight size={16} className="opacity-50" />
             </Link>
-            
-            <Link 
+
+            <Link
               to="/terms"
               className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
             >
@@ -194,7 +194,7 @@ export default function SettingsScreen() {
       <AnimatePresence>
         {isEditProfileOpen && (
           <div key="edit-profile-modal" className="fixed inset-0 z-50">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -209,7 +209,7 @@ export default function SettingsScreen() {
             >
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-semibold">Edit Profile</h3>
-                <button 
+                <button
                   onClick={() => setIsEditProfileOpen(false)}
                   className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
@@ -225,11 +225,10 @@ export default function SettingsScreen() {
                       <button
                         key={avatar}
                         onClick={() => setEditAvatar(avatar)}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all ${
-                          editAvatar === avatar 
-                            ? 'bg-blue-100 ring-2 ring-blue-500 scale-110' 
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all ${editAvatar === avatar
+                            ? 'bg-blue-100 ring-2 ring-blue-500 scale-110'
                             : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-                        }`}
+                          }`}
                       >
                         {avatar}
                       </button>
@@ -243,11 +242,10 @@ export default function SettingsScreen() {
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className={`w-full p-3 rounded-xl border ${
-                      theme === 'dark' 
-                        ? 'bg-gray-700 border-gray-600 focus:border-blue-500' 
+                    className={`w-full p-3 rounded-xl border ${theme === 'dark'
+                        ? 'bg-gray-700 border-gray-600 focus:border-blue-500'
                         : 'bg-gray-50 border-gray-200 focus:border-blue-500'
-                    } focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all`}
+                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all`}
                     placeholder="Enter your name"
                   />
                 </div>
@@ -270,7 +268,7 @@ export default function SettingsScreen() {
       <AnimatePresence>
         {confirmAction && (
           <div key="confirm-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}

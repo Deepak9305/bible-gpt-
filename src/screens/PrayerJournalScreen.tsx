@@ -61,7 +61,7 @@ export default function PrayerJournalScreen() {
   };
 
   const toggleAnswered = (id: string) => {
-    const updated = prayers.map((p) => 
+    const updated = prayers.map((p) =>
       p.id === id ? { ...p, isAnswered: !p.isAnswered } : p
     );
     savePrayers(updated);
@@ -73,8 +73,8 @@ export default function PrayerJournalScreen() {
   };
 
   const handleShare = async (prayer: Prayer) => {
-    const shareText = `Prayer: "${prayer.text}"\nCategory: ${prayer.category}\nDate: ${prayer.date}\n\nShared from Bible GPT 🙏`;
-    
+    const shareText = `Prayer: "${prayer.text}"\nCategory: ${prayer.category}\nDate: ${prayer.date}\n\nShared from Bible Nova 🙏`;
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -90,8 +90,8 @@ export default function PrayerJournalScreen() {
     }
   };
 
-  const filteredPrayers = filterCategory === 'All' 
-    ? prayers 
+  const filteredPrayers = filterCategory === 'All'
+    ? prayers
     : prayers.filter(p => p.category === filterCategory);
 
   return (
@@ -99,7 +99,7 @@ export default function PrayerJournalScreen() {
       <div className={`p-4 border-b flex justify-between items-center ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
         <h1 className="text-lg font-semibold">Prayer Journal</h1>
         <div className="flex gap-2">
-          <button 
+          <button
             onClick={() => setIsAdding(!isAdding)}
             className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
           >
@@ -112,11 +112,10 @@ export default function PrayerJournalScreen() {
       <div className="px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar border-b dark:border-gray-700">
         <button
           onClick={() => setFilterCategory('All')}
-          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-            filterCategory === 'All' 
-              ? 'bg-blue-600 text-white' 
+          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${filterCategory === 'All'
+              ? 'bg-blue-600 text-white'
               : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
-          }`}
+            }`}
         >
           All
         </button>
@@ -124,11 +123,10 @@ export default function PrayerJournalScreen() {
           <button
             key={cat}
             onClick={() => setFilterCategory(cat)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-              filterCategory === cat 
-                ? 'bg-blue-600 text-white' 
+            className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${filterCategory === cat
+                ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
-            }`}
+              }`}
           >
             {cat}
           </button>
@@ -138,7 +136,7 @@ export default function PrayerJournalScreen() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <AnimatePresence>
           {isAdding && (
-            <motion.div 
+            <motion.div
               key="add-prayer-form"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -149,11 +147,10 @@ export default function PrayerJournalScreen() {
                 value={newPrayer}
                 onChange={(e) => setNewPrayer(e.target.value)}
                 placeholder="What is on your heart today?"
-                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3 min-h-[100px] ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-900'
-                }`}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3 min-h-[100px] ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-900'
+                  }`}
               />
-              
+
               <div className="mb-4">
                 <p className="text-xs font-bold uppercase tracking-wider opacity-50 mb-2 flex items-center gap-1">
                   <Tag size={12} /> Category
@@ -163,11 +160,10 @@ export default function PrayerJournalScreen() {
                     <button
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
-                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
-                        selectedCategory === cat 
-                          ? 'bg-blue-600 text-white' 
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${selectedCategory === cat
+                          ? 'bg-blue-600 text-white'
                           : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                      }`}
+                        }`}
                     >
                       {cat}
                     </button>
@@ -176,13 +172,13 @@ export default function PrayerJournalScreen() {
               </div>
 
               <div className="flex justify-end gap-2">
-                <button 
+                <button
                   onClick={() => setIsAdding(false)}
                   className="px-4 py-2 rounded-xl text-sm font-medium opacity-60"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={addPrayer}
                   className="px-6 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold shadow-md hover:bg-blue-700 transition-all"
                 >
@@ -200,22 +196,21 @@ export default function PrayerJournalScreen() {
           </div>
         ) : (
           <div className="space-y-4">
-              <AnimatePresence>
-                {filteredPrayers.map((prayer) => (
-                  <motion.div 
-                    layout
-                    key={prayer.id} 
+            <AnimatePresence>
+              {filteredPrayers.map((prayer) => (
+                <motion.div
+                  layout
+                  key={prayer.id}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className={`p-5 rounded-2xl border transition-all ${
-                    prayer.isAnswered 
+                  className={`p-5 rounded-2xl border transition-all ${prayer.isAnswered
                       ? (theme === 'dark' ? 'bg-emerald-900/10 border-emerald-500/20 opacity-80' : 'bg-emerald-50 border-emerald-100 opacity-80')
                       : (theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100 shadow-sm')
-                  }`}
+                    }`}
                 >
                   <div className="flex justify-between items-start gap-4">
-                    <button 
+                    <button
                       onClick={() => toggleAnswered(prayer.id)}
                       className={`mt-1 transition-colors ${prayer.isAnswered ? 'text-emerald-500' : 'text-gray-400'}`}
                     >
@@ -235,14 +230,14 @@ export default function PrayerJournalScreen() {
                       </p>
                     </div>
                     <div className="flex flex-col gap-2">
-                      <button 
+                      <button
                         onClick={() => handleShare(prayer)}
                         className="p-2 text-gray-400 hover:text-blue-500 transition-colors"
                         title="Share Prayer"
                       >
                         <Share2 size={18} />
                       </button>
-                      <button 
+                      <button
                         onClick={() => deletePrayer(prayer.id)}
                         className="p-2 text-gray-400 hover:text-red-500 transition-colors"
                         title="Delete Prayer"

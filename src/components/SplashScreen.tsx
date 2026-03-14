@@ -23,16 +23,16 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
         <div className="absolute inset-0 bg-blue-400 blur-3xl opacity-20 rounded-full animate-pulse"></div>
         <BookOpen size={80} className="text-blue-600 dark:text-blue-300 relative z-10" strokeWidth={1.5} />
       </motion.div>
-      
+
       <motion.h1
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.5, duration: 1 }}
         className="mt-8 text-3xl font-serif font-medium text-gray-800 dark:text-gray-100 tracking-wide"
       >
-        Bible GPT
+        Bible Nova
       </motion.h1>
-      
+
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

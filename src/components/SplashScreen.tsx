@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { BookOpen } from 'lucide-react';
 
-export default function SplashScreen({ onComplete }: { onComplete: () => void }) {
+export default function SplashScreen({ onComplete }: { onComplete: () => void; key?: string }) {
   return (
     <motion.div
       className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-950"

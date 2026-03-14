@@ -55,7 +55,7 @@ function AppContent() {
         <motion.div key="app" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full w-full">
           <BrowserRouter>
             <Routes>
-              {showOnboarding && <Route path="/onboarding" element={<OnboardingScreen onComplete={() => setShowOnboarding(false)} />} />}
+              <Route path="/onboarding" element={showOnboarding ? <OnboardingScreen onComplete={() => setShowOnboarding(false)} /> : <Navigate to="/" replace />} />
               <Route path="/" element={showOnboarding ? <Navigate to="/onboarding" replace /> : <Layout />}>
                 <Route index element={<HomeScreen />} />
                 <Route path="chat" element={<ChatScreen />} />

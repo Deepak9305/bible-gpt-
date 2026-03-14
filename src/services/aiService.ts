@@ -44,7 +44,8 @@ export const sendMessageStream = async (
   onChunk: (chunk: string) => void
 ) => {
   try {
-    const response = await fetch('/api/chat', {
+    const baseUrl = process.env.APP_URL || '';
+    const response = await fetch(`${baseUrl}/api/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

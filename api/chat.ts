@@ -29,7 +29,7 @@ export default async function handler(req: any, res: any) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { message, history } = req.body;
+    const { message, history, preferences } = req.body;
 
     if (!message) {
         return res.status(400).json({ error: 'Message is required' });
@@ -40,11 +40,19 @@ export default async function handler(req: any, res: any) {
         return res.status(500).json({ error: 'Groq API Key missing on server' });
     }
 
+    // Dynamic Context from Preferences (Shadow Notes)
+    let dynamicContext = "";
+    if (preferences) {
+        if (preferences.spiritualFocus) dynamicContext += `\nUser's Spiritual Focus: ${preferences.spiritualFocus}.`;
+        if (preferences.lifeStage) dynamicContext += `\nUser's Life Context: ${preferences.lifeStage}.`;
+        if (preferences.tone) dynamicContext += `\nAdjust your tone to be more ${preferences.tone}.`;
+    }
+
     try {
         const groq = new Groq({ apiKey });
 
         const messages = [
-            { role: "system", content: SYSTEM_PROMPT },
+            { role: "system", content: SYSTEM_PROMPT + dynamicContext },
             ...history.map((msg: any) => ({
                 role: msg.role === "user" ? "user" : "assistant",
                 content: msg.content,

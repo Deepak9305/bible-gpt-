@@ -17,6 +17,9 @@ export default function SettingsScreen() {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editName, setEditName] = useState(user?.name || '');
   const [editAvatar, setEditAvatar] = useState(user?.avatar || '👤');
+  const [editLifeStage, setEditLifeStage] = useState(user?.preferences?.lifeStage || '');
+  const [editSpiritualFocus, setEditSpiritualFocus] = useState(user?.preferences?.spiritualFocus || '');
+  const [editTone, setEditTone] = useState<any>(user?.preferences?.tone || 'pastoral');
   const [confirmAction, setConfirmAction] = useState<{ type: 'delete' | 'clear', title: string, message: string } | null>(null);
 
   const clearData = () => {
@@ -57,7 +60,11 @@ export default function SettingsScreen() {
 
   const saveProfile = () => {
     if (editName.trim()) {
-      updateProfile(editName, editAvatar);
+      updateProfile(editName, editAvatar, {
+        lifeStage: editLifeStage,
+        spiritualFocus: editSpiritualFocus,
+        tone: editTone
+      });
       setIsEditProfileOpen(false);
     }
   };
@@ -226,8 +233,8 @@ export default function SettingsScreen() {
                         key={avatar}
                         onClick={() => setEditAvatar(avatar)}
                         className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all ${editAvatar === avatar
-                            ? 'bg-blue-100 ring-2 ring-blue-500 scale-110'
-                            : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          ? 'bg-blue-100 ring-2 ring-blue-500 scale-110'
+                          : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
                           }`}
                       >
                         {avatar}
@@ -243,11 +250,43 @@ export default function SettingsScreen() {
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     className={`w-full p-3 rounded-xl border ${theme === 'dark'
-                        ? 'bg-gray-700 border-gray-600 focus:border-blue-500'
-                        : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+                      ? 'bg-gray-700 border-gray-600 focus:border-blue-500'
+                      : 'bg-gray-50 border-gray-200 focus:border-blue-500'
                       } focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all`}
                     placeholder="Enter your name"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 opacity-70">AI Persona Focus (e.g. Peace, Growth)</label>
+                  <input
+                    type="text"
+                    value={editSpiritualFocus}
+                    onChange={(e) => setEditSpiritualFocus(e.target.value)}
+                    className={`w-full p-3 rounded-xl border ${theme === 'dark'
+                      ? 'bg-gray-700 border-gray-600 focus:border-blue-500'
+                      : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all`}
+                    placeholder="What should Father AI focus on?"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 opacity-70">Guidance Tone</label>
+                  <div className="flex gap-2">
+                    {['pastoral', 'gentle', 'direct'].map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setEditTone(t)}
+                        className={`flex-1 py-2 rounded-lg text-sm capitalize transition-all ${editTone === t
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : (theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600')
+                          }`}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <button

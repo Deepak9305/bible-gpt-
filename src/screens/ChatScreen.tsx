@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { sendMessageStream } from '../services/aiService';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
 import { checkDailyLimit, incrementDailyUsage } from '../services/statsService';
@@ -74,6 +75,7 @@ const MessageItem = React.memo(({
 
 export default function ChatScreen() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const location = useLocation();
   const [messages, setMessages] = useState<Message[]>([
     { id: '1', role: 'assistant', content: 'Peace be with you, my child. How may I guide you today?' }
@@ -277,12 +279,16 @@ export default function ChatScreen() {
       const history = messages.map(m => ({ role: m.role, content: m.content }));
 
       let fullContent = "";
-      await sendMessageStream(cleanText, history, (chunk) => {
-        fullContent += chunk;
-        setMessages(prev => prev.map(msg =>
-          msg.id === aiMsgId ? { ...msg, content: fullContent } : msg
-        ));
-      });
+      await sendMessageStream(
+        cleanText,
+        history,
+        user?.preferences,
+        (chunk) => {
+          fullContent += chunk;
+          setMessages(prev => prev.map(msg =>
+            msg.id === aiMsgId ? { ...msg, content: fullContent } : msg
+          ));
+        });
 
     } catch (error) {
       console.error('Chat error:', error);

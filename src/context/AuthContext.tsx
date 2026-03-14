@@ -7,6 +7,11 @@ interface User {
   email?: string;
   isGuest: boolean;
   avatar?: string;
+  preferences?: {
+    lifeStage?: string;
+    spiritualFocus?: string;
+    tone?: 'pastoral' | 'gentle' | 'direct';
+  };
 }
 
 interface AuthContextType {
@@ -16,7 +21,7 @@ interface AuthContextType {
   loginEmail: (email: string) => void;
   logout: () => void;
   deleteAccount: () => void;
-  updateProfile: (name: string, avatar?: string) => void;
+  updateProfile: (name: string, avatar?: string, preferences?: User['preferences']) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -77,9 +82,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.location.reload();
   };
 
-  const updateProfile = async (name: string, avatar?: string) => {
+  const updateProfile = async (name: string, avatar?: string, preferences?: User['preferences']) => {
     if (user) {
-      const updatedUser = { ...user, name, avatar: avatar || user.avatar };
+      const updatedUser = {
+        ...user,
+        name,
+        avatar: avatar || user.avatar,
+        preferences: preferences || user.preferences
+      };
       setUser(updatedUser);
       await StorageService.set('auth_user', JSON.stringify(updatedUser));
     }

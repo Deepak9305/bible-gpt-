@@ -41,6 +41,7 @@ const getClient = () => {
 export const sendMessageStream = async (
   message: string,
   history: { role: string; content: string }[],
+  preferences: any,
   onChunk: (chunk: string) => void
 ) => {
   try {
@@ -50,7 +51,7 @@ export const sendMessageStream = async (
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message, history }),
+      body: JSON.stringify({ message, history, preferences }),
     });
 
     if (!response.ok) {

@@ -47,8 +47,17 @@ export const saveStats = (stats: UserStats) => {
 };
 
 export const checkDailyLimit = (): boolean => {
-  // Pause buying premium: All users get unlimited access for now
-  return false;
+  const stats = getStats();
+  const today = new Date().toLocaleDateString('en-CA');
+
+  // If user is premium, no limit
+  if (stats.isPremium) return false;
+
+  // If it's a new day, limit is not reached
+  if (stats.lastUsageDate !== today) return false;
+
+  // Return true if usage count is 3 or more (meaning 4th message is blocked)
+  return stats.dailyUsageCount >= 3;
 };
 
 export const incrementDailyUsage = () => {

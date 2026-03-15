@@ -84,17 +84,19 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
 
               <div className="bg-stone-50 dark:bg-stone-800/50 rounded-2xl p-6 border border-amber-200/50 dark:border-amber-900/30 text-center">
                 <div className="bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-widest py-1 px-3 rounded-full inline-block mb-3">
-                  Service Update
+                  Daily Limit Reached
                 </div>
-                <h3 className="font-serif text-lg text-stone-800 dark:text-stone-200 mb-2">Subscriptions Paused</h3>
+                <h3 className="font-serif text-lg text-stone-800 dark:text-stone-200 mb-2">3 Message Daily Limit</h3>
                 <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mb-4">
-                  We are currently upgrading our sanctuary experience. New subscriptions are temporarily paused, but feel free to continue your journey—unlimited access is on us for now.
+                  To keep our sanctuary sustainable, we limit Father AI to 3 generations per day for free seekers.
+                  Subscriptions are temporarily paused while we upgrade our experience.
+                  Please return tomorrow for more guidance.
                 </p>
                 <button
                   onClick={onClose}
                   className="w-full py-2.5 bg-stone-800 dark:bg-stone-100 text-white dark:text-stone-900 rounded-xl text-sm font-medium transition-transform active:scale-95"
                 >
-                  Continue Journey
+                  Peace be with you
                 </button>
               </div>
 

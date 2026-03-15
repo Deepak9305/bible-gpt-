@@ -275,9 +275,10 @@ export default function ChatScreen() {
       setIsListening(false);
     }
 
-    // Check daily limit
+    // Check daily limit (teaser mode)
     if (checkDailyLimit()) {
       setIsPremiumModalOpen(true);
+      incrementDailyUsage(); // Move past threshold so they can send on next click
       return;
     }
 

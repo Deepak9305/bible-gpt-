@@ -82,17 +82,42 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
                 ))}
               </div>
 
-              <div className="bg-stone-50 dark:bg-stone-800/50 rounded-2xl p-6 border border-amber-200/50 dark:border-amber-900/30 text-center">
-                <div className="bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-widest py-1 px-3 rounded-full inline-block mb-3">
-                  Service Update
-                </div>
-                <h3 className="font-serif text-lg text-stone-800 dark:text-stone-200 mb-2">Subscriptions Paused</h3>
-                <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mb-4">
-                  We are currently upgrading our sanctuary experience. New subscriptions are temporarily paused, but feel free to continue your journey—unlimited access is on us for now.
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {[
+                  { id: 'monthly', name: 'Monthly', price: '$9.99', period: 'mo' },
+                  { id: 'yearly', name: 'Yearly', price: '$79.99', period: 'yr', savings: 'Save 33%' },
+                ].map((plan) => (
+                  <div
+                    key={plan.id}
+                    className="p-4 rounded-2xl border border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/30 flex flex-col items-center opacity-60 relative overflow-hidden"
+                  >
+                    {plan.savings && (
+                      <div className="absolute top-0 right-0 bg-sacred-amber text-[8px] font-black text-white px-2 py-0.5 rounded-bl-lg uppercase tracking-wider">
+                        {plan.savings}
+                      </div>
+                    )}
+                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-1">{plan.name}</span>
+                    <div className="flex items-baseline gap-0.5">
+                      <span className="text-xl font-bold">{plan.price}</span>
+                      <span className="text-[10px] opacity-40">/{plan.period}</span>
+                    </div>
+                    <div className="mt-3 w-full py-1.5 rounded-lg bg-stone-200 dark:bg-stone-700 text-[9px] font-black text-center text-stone-500 dark:text-stone-400 uppercase tracking-widest border border-stone-100 dark:border-stone-600">
+                      Unavailable
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-sacred-amber/5 dark:bg-sacred-amber/10 rounded-2xl p-5 border border-sacred-amber/20 mb-6 text-center">
+                <h3 className="font-serif text-base font-medium text-stone-800 dark:text-stone-100 mb-1.5 leading-tight">
+                  Ministry Expanding
+                </h3>
+                <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed mb-4">
+                  We're currently enhancing our sanctuary infrastructure. Subscriptions are temporarily paused, so please enjoy unlimited access on us during this time.
                 </p>
                 <button
                   onClick={onClose}
-                  className="w-full py-2.5 bg-stone-800 dark:bg-stone-100 text-white dark:text-stone-900 rounded-xl text-sm font-medium transition-transform active:scale-95"
+                  className="w-full py-3 bg-sacred-amber text-white rounded-xl text-sm font-bold shadow-lg shadow-sacred-amber/20 transition-all active:scale-95 flex items-center justify-center gap-2 group"
                 >
                   Continue Journey
                 </button>

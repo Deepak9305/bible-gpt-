@@ -47,8 +47,12 @@ export const saveStats = (stats: UserStats) => {
 };
 
 export const checkDailyLimit = (): boolean => {
-  // Pause buying premium: All users get unlimited access for now
-  return false;
+  const stats = getStats();
+  if (stats.isPremium) return false;
+
+  // Show premium teaser on specific usage thresholds
+  const thresholds = [10, 25, 50, 100];
+  return thresholds.includes(stats.dailyUsageCount);
 };
 
 export const incrementDailyUsage = () => {

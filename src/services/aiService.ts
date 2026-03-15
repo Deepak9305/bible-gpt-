@@ -1,4 +1,14 @@
+import { Capacitor } from "@capacitor/core";
 import { updateRemoteTtsConfig } from "./ttsService";
+
+const getApiUrl = () => {
+  const baseUrl = process.env.APP_URL || 'https://bible-gpt-ebon.vercel.app';
+  // If native, we must use absolute URL because relative paths resolve to localhost (app)
+  if (Capacitor.isNativePlatform()) {
+    return `${baseUrl}/api/chat`;
+  }
+  return '/api/chat';
+};
 
 export const sendMessageStream = async (
   message: string,
@@ -7,8 +17,7 @@ export const sendMessageStream = async (
   onChunk: (chunk: string) => void
 ) => {
   try {
-    // Use relative path so Vite proxy (in dev) or same-domain (in prod) is used.
-    const response = await fetch(`/api/chat`, {
+    const response = await fetch(getApiUrl(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

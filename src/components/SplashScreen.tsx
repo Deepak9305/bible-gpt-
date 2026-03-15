@@ -3,6 +3,11 @@ import { motion } from 'motion/react';
 import { BookOpen } from 'lucide-react';
 
 export default function SplashScreen({ onComplete }: { onComplete: () => void; key?: string }) {
+  React.useEffect(() => {
+    const timer = setTimeout(onComplete, 2500);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
   return (
     <motion.div
       className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-950"
@@ -10,9 +15,6 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void; k
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 1 }}
-      onAnimationComplete={() => {
-        setTimeout(onComplete, 2500);
-      }}
     >
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}

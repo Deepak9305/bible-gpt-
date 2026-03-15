@@ -6,6 +6,8 @@ import { Moon, Sun, Trash2, ChevronRight, LogOut, Edit2, X, Check, UserX } from 
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { StorageService } from '../services/storageService';
+import { getVoices, getPreferredVoiceIndex, setPreferredVoice, playTextToSpeech, stopAudio } from '../services/ttsService';
+import { Volume2, Play, Square } from 'lucide-react';
 
 const AVATARS = ['🙏', '👤', '✝️', '🕊️', '📖', '🕯️', '⛪', '🌟', '😇', '🦁', '🐑', '🍞', '🍷', '🔥', '💧'];
 
@@ -22,6 +24,38 @@ export default function SettingsScreen() {
   const [editSpiritualFocus, setEditSpiritualFocus] = useState(user?.preferences?.spiritualFocus || '');
   const [editTone, setEditTone] = useState<any>(user?.preferences?.tone || 'pastoral');
   const [confirmAction, setConfirmAction] = useState<{ type: 'delete' | 'clear', title: string, message: string } | null>(null);
+
+  const [availableVoices, setAvailableVoices] = useState<any[]>([]);
+  const [selectedVoiceIdx, setSelectedVoiceIdx] = useState<number | undefined>(undefined);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+
+  React.useEffect(() => {
+    async function loadVoices() {
+      const voices = await getVoices();
+      setAvailableVoices(voices);
+      const pref = await getPreferredVoiceIndex();
+      setSelectedVoiceIdx(pref);
+    }
+    loadVoices();
+  }, []);
+
+  const handleVoiceChange = async (idx: number | undefined) => {
+    setSelectedVoiceIdx(idx);
+    await setPreferredVoice(idx);
+  };
+
+  const previewVoice = async (voiceIdx: number | undefined) => {
+    if (isPreviewing) {
+      await stopAudio();
+      setIsPreviewing(false);
+      return;
+    }
+
+    setIsPreviewing(true);
+    await playTextToSpeech("I am your spiritual guide. Peace be with you.", () => {
+      setIsPreviewing(false);
+    });
+  };
 
   const clearData = () => {
     setConfirmAction({
@@ -132,13 +166,13 @@ export default function SettingsScreen() {
           </div>
         </section>
 
-        {/* Appearance */}
+        {/* Appearance & Voice */}
         <section>
-          <h2 className="text-sm font-semibold uppercase tracking-wider opacity-60 mb-3 px-2">Appearance</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wider opacity-60 mb-3 px-2">Preferences</h2>
           <div className={`rounded-xl overflow-hidden ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
             <button
               onClick={toggleTheme}
-              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors border-b border-gray-100 dark:border-gray-700"
             >
               <div className="flex items-center gap-3">
                 {theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
@@ -148,6 +182,35 @@ export default function SettingsScreen() {
                 <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-0'}`} />
               </div>
             </button>
+
+            <div className="p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <Volume2 size={20} />
+                <span className="font-medium">Father AI Voice</span>
+              </div>
+              <div className="flex gap-2 mb-3">
+                <select
+                  value={selectedVoiceIdx ?? ''}
+                  onChange={(e) => handleVoiceChange(e.target.value === '' ? undefined : parseInt(e.target.value))}
+                  className={`flex-1 p-2 rounded-lg text-sm border ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}
+                >
+                  <option value="">Auto-select (Male)</option>
+                  {availableVoices.filter(v => v.lang.startsWith('en')).map((voice, idx) => (
+                    <option key={idx} value={availableVoices.indexOf(voice)}>
+                      {voice.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => previewVoice(selectedVoiceIdx)}
+                  className={`p-2 rounded-lg transition-colors ${isPreviewing ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}
+                  title="Preview Voice"
+                >
+                  {isPreviewing ? <Square size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
+                </button>
+              </div>
+              <p className="text-[10px] opacity-50">Select your preferred guide's voice from your system voices.</p>
+            </div>
           </div>
         </section>
 

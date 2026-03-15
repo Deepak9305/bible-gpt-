@@ -37,17 +37,17 @@ export default function HomeScreen() {
       const now = new Date();
       const istDateString = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
       const istDate = new Date(istDateString);
-      
+
       const hours = istDate.getHours();
       const minutes = istDate.getMinutes();
-      
+
       let cycleDate = new Date(istDate);
       if (hours < 5 || (hours === 5 && minutes < 30)) {
         cycleDate.setDate(cycleDate.getDate() - 1);
       }
-      
+
       const dateKey = cycleDate.toLocaleDateString("en-CA");
-      
+
       const storedData = await StorageService.get('daily_verse_data');
       if (storedData) {
         try {
@@ -80,18 +80,24 @@ export default function HomeScreen() {
           text: data.text.trim(),
           reference: data.reference
         };
-        
+
         setDailyVerse(newVerse);
-        
+
         // Generate reflection
         setIsReflecting(true);
         let reflection = "";
         const prompt = `As "Father", provide a very short (1-2 sentences), warm, and wise reflection on this verse: "${newVerse.text}" (${newVerse.reference}). Speak directly to the user's heart.`;
-        
-        await sendMessageStream(prompt, [], (chunk) => {
-          reflection += chunk;
+
+        try {
+          await sendMessageStream(prompt, [], {}, (chunk) => {
+            reflection += chunk;
+            setDailyReflection(reflection);
+          });
+        } catch (aiErr) {
+          console.warn("AI reflection failed, using default", aiErr);
+          reflection = "May this word guide your path today and bring peace to your heart.";
           setDailyReflection(reflection);
-        });
+        }
 
         await StorageService.set('daily_verse_data', JSON.stringify({
           date: dateKey,
@@ -99,11 +105,24 @@ export default function HomeScreen() {
           reflection: reflection
         }));
       } catch (err) {
-        console.error("Failed to fetch daily verse:", err);
-        setDailyVerse({
-          text: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
-          reference: "John 3:16"
-        });
+        console.error("Failed to fetch daily verse, falling back to local:", err);
+        const { getRandomVerseLocally } = await import('../services/bibleService');
+        const localVerse = await getRandomVerseLocally();
+
+        if (localVerse) {
+          const fallbackVerse = {
+            text: localVerse.text,
+            reference: `${localVerse.book_name} ${localVerse.chapter}:${localVerse.verse}`
+          };
+          setDailyVerse(fallbackVerse);
+          setDailyReflection("The Word of the Lord endures forever, even when the world fades.");
+        } else {
+          setDailyVerse({
+            text: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
+            reference: "John 3:16"
+          });
+          setDailyReflection("A timeless promise for your soul today.");
+        }
       } finally {
         setIsReflecting(false);
       }
@@ -118,7 +137,7 @@ export default function HomeScreen() {
 
   const handleSpeak = async () => {
     if (!dailyVerse) return;
-    
+
     if (isSpeaking || isLoadingAudio) {
       stopAudio();
       setIsSpeaking(false);
@@ -128,9 +147,9 @@ export default function HomeScreen() {
 
     setIsLoadingAudio(true);
     setIsSpeaking(true);
-    
+
     const textToSpeak = `${dailyVerse.text}. ${dailyReflection || ''}`;
-    
+
     try {
       await playTextToSpeech(textToSpeak, () => {
         setIsSpeaking(false);
@@ -151,7 +170,7 @@ export default function HomeScreen() {
   const handleShare = async () => {
     if (!dailyVerse) return;
     const shareText = `"${dailyVerse.text}" - ${dailyVerse.reference}\n\nShared from Father AI 🙏`;
-    
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -170,7 +189,7 @@ export default function HomeScreen() {
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { 
+    visible: {
       opacity: 1,
       transition: { staggerChildren: 0.1 }
     }
@@ -182,7 +201,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <motion.div 
+    <motion.div
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -195,7 +214,7 @@ export default function HomeScreen() {
             Your spiritual companion is ready.
           </p>
         </div>
-        
+
         {/* Growth Stats Mini-Widget */}
         <div className="flex gap-4">
           <div className="flex flex-col items-center">
@@ -216,31 +235,39 @@ export default function HomeScreen() {
       </motion.header>
 
       {/* Daily Verse Card */}
-      <motion.div 
+      <motion.div
         variants={itemVariants}
-        className={`relative overflow-hidden p-6 md:p-8 rounded-[2.5rem] shadow-2xl mb-10 ${
-        theme === 'dark' 
-          ? 'bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900' 
+        className={`relative overflow-hidden p-6 md:p-8 rounded-[2.5rem] shadow-2xl mb-10 ${theme === 'dark'
+          ? 'bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900'
           : 'bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700'
-      } text-white group transition-all`}>
+          } text-white group transition-all`}>
         <div className="absolute top-0 right-0 p-4 opacity-10">
           <BookOpen size={160} />
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white leading-tight truncate">
+              Welcome, {user?.name || 'Beloved'}
+            </h1>
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+              Your sanctuary is ready.
+            </p>
+          </div>
         </div>
-        
+
         <div className="flex justify-between items-center relative z-10 mb-6">
           <h2 className="text-xs font-bold uppercase tracking-[0.2em] opacity-70 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
             Daily Bread
           </h2>
           <div className="flex gap-2">
-            <button 
+            <button
               onClick={handleShare}
               className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all backdrop-blur-md border border-white/10 text-white"
               title="Share Verse"
             >
               <Share2 size={20} />
             </button>
-            <button 
+            <button
               onClick={handleSpeak}
               className={`p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all backdrop-blur-md border border-white/10 ${isSpeaking ? 'text-yellow-300' : 'text-white'}`}
               title="Listen"
@@ -249,7 +276,7 @@ export default function HomeScreen() {
             </button>
           </div>
         </div>
-        
+
         {dailyVerse ? (
           <div className="relative z-10">
             <p className="text-2xl md:text-4xl font-serif leading-tight mb-6 drop-shadow-md italic">
@@ -286,11 +313,10 @@ export default function HomeScreen() {
             <button
               key={mood.name}
               onClick={() => handleMoodClick(mood.prompt)}
-              className={`flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all active:scale-95 hover:shadow-md ${
-                theme === 'dark' 
-                  ? 'bg-gray-800 border-gray-700 hover:bg-gray-750' 
-                  : 'bg-white border-gray-100 hover:bg-gray-50'
-              }`}
+              className={`flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all active:scale-95 hover:shadow-md ${theme === 'dark'
+                ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
+                : 'bg-white border-gray-100 hover:bg-gray-50'
+                }`}
             >
               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${mood.color} shadow-sm`}>
                 <mood.icon size={24} />
@@ -303,11 +329,10 @@ export default function HomeScreen() {
 
       {/* Quick Actions */}
       <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <Link to="/chat" className={`col-span-2 md:col-span-1 p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${
-          theme === 'dark' 
-            ? 'bg-gray-800 border-gray-700 hover:bg-gray-750' 
-            : 'bg-white border-gray-100 hover:bg-blue-50/50'
-        }`}>
+        <Link to="/chat" className={`col-span-2 md:col-span-1 p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${theme === 'dark'
+          ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
+          : 'bg-white border-gray-100 hover:bg-blue-50/50'
+          }`}>
           <div className="flex items-center gap-4 mb-3">
             <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center shadow-sm">
               <MessageSquare size={24} />
@@ -319,11 +344,10 @@ export default function HomeScreen() {
           </p>
         </Link>
 
-        <Link to="/library" className={`p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${
-          theme === 'dark' 
-            ? 'bg-gray-800 border-gray-700 hover:bg-gray-750' 
-            : 'bg-white border-gray-100 hover:bg-emerald-50/50'
-        }`}>
+        <Link to="/library" className={`p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${theme === 'dark'
+          ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
+          : 'bg-white border-gray-100 hover:bg-emerald-50/50'
+          }`}>
           <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm mb-4">
             <BookOpen size={24} />
           </div>
@@ -333,11 +357,10 @@ export default function HomeScreen() {
           </p>
         </Link>
 
-        <Link to="/bookmarks" className={`p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${
-          theme === 'dark' 
-            ? 'bg-gray-800 border-gray-700 hover:bg-gray-750' 
-            : 'bg-white border-gray-100 hover:bg-purple-50/50'
-        }`}>
+        <Link to="/bookmarks" className={`p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${theme === 'dark'
+          ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
+          : 'bg-white border-gray-100 hover:bg-purple-50/50'
+          }`}>
           <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center shadow-sm mb-4">
             <Bookmark size={24} />
           </div>
@@ -347,11 +370,10 @@ export default function HomeScreen() {
           </p>
         </Link>
 
-        <Link to="/journal" className={`p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${
-          theme === 'dark' 
-            ? 'bg-gray-800 border-gray-700 hover:bg-gray-750' 
-            : 'bg-white border-gray-100 hover:bg-orange-50/50'
-        }`}>
+        <Link to="/journal" className={`p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${theme === 'dark'
+          ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
+          : 'bg-white border-gray-100 hover:bg-orange-50/50'
+          }`}>
           <div className="w-12 h-12 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center shadow-sm mb-4">
             <PenLine size={24} />
           </div>
@@ -361,13 +383,12 @@ export default function HomeScreen() {
           </p>
         </Link>
 
-        <button 
+        <button
           onClick={() => navigate('/detox')}
-          className={`text-left p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${
-          theme === 'dark' 
-            ? 'bg-gray-800 border-gray-700 hover:bg-gray-750' 
+          className={`text-left p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${theme === 'dark'
+            ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
             : 'bg-white border-gray-100 hover:bg-cyan-50/50'
-        }`}>
+            }`}>
           <div className="w-12 h-12 rounded-2xl bg-cyan-100 text-cyan-600 flex items-center justify-center shadow-sm mb-4">
             <CloudRain size={24} />
           </div>

@@ -26,7 +26,7 @@ export const isBibleReady = () => !!fullBibleCache;
 // Helper to load the full Bible
 export const loadFullBible = async (): Promise<any[]> => {
   if (fullBibleCache) return fullBibleCache;
-  
+
   // Prevent multiple simultaneous downloads
   if (isBibleDownloading) {
     // Wait for the existing download to finish
@@ -58,9 +58,9 @@ export const loadFullBible = async (): Promise<any[]> => {
     console.log('Loading bundled Bible...');
     const response = await fetch(KJV_JSON_URL);
     if (!response.ok) throw new Error('Failed to download Bible');
-    
+
     const data = await response.json();
-    
+
     await set(DB_KEY, data);
     fullBibleCache = data;
     isBibleDownloading = false;
@@ -73,74 +73,70 @@ export const loadFullBible = async (): Promise<any[]> => {
 };
 
 export const getChapter = async (bookName: string, chapter: number, translation: string = 'kjv'): Promise<Verse[]> => {
-  // If translation is NOT KJV, we must use the API
-  if (translation.toLowerCase() !== 'kjv') {
-    try {
-      const encodedBook = encodeURIComponent(bookName);
-      const response = await fetch(`${API_BASE_URL}/${encodedBook}+${chapter}?translation=${translation}`);
-      if (!response.ok) throw new Error('Failed to fetch chapter');
-      const data = await response.json();
-      return data.verses.map((v: any) => ({
-        book_id: v.book_id,
-        book_name: v.book_name,
-        chapter: v.chapter,
-        verse: v.verse,
-        text: v.text
-      }));
-    } catch (error) {
-      console.error('Error fetching chapter from API:', error);
-      return [];
-    }
-  }
-
-  // For KJV, try to use local data first
+  // 1. Always attempt Web API first for 'Pure Web' experience
   try {
-    // Ensure Bible is loaded
-    let bible = await loadFullBible();
-    
-    // If loadFullBible returns empty array (failed download), try one more time or throw
-    if (!bible || bible.length === 0) {
-       console.warn('Local Bible empty, retrying load...');
-       bible = await loadFullBible();
-    }
-
-    if (!bible || bible.length === 0) throw new Error('Local Bible not loaded');
-
-    const book = bible.find((b: any) => b.name === bookName);
-    if (!book) throw new Error('Book not found locally');
-
-    // Chapters are 0-indexed in array but 1-indexed in Bible
-    const chapterData = book.chapters[chapter - 1];
-    if (!chapterData) throw new Error('Chapter not found locally');
-
-    // Map strings to Verse objects
-    return chapterData.map((text: string, index: number) => ({
-      book_id: book.abbrev || book.name.substring(0, 3).toLowerCase(),
-      book_name: book.name,
-      chapter: chapter,
-      verse: index + 1,
-      text: text
+    const encodedBook = encodeURIComponent(bookName);
+    const response = await fetch(`${API_BASE_URL}/${encodedBook}+${chapter}?translation=${translation}`);
+    if (!response.ok) throw new Error('API request failed');
+    const data = await response.json();
+    return data.verses.map((v: any) => ({
+      book_id: v.book_id,
+      book_name: v.book_name,
+      chapter: v.chapter,
+      verse: v.verse,
+      text: v.text
     }));
+  } catch (apiError) {
+    console.warn('Web API failed, attempting local fallback:', apiError);
 
-  } catch (error) {
-    console.warn('Falling back to API for KJV:', error);
-    // Fallback to API if local fails
-    try {
-      const encodedBook = encodeURIComponent(bookName);
-      const response = await fetch(`${API_BASE_URL}/${encodedBook}+${chapter}?translation=kjv`);
-      if (!response.ok) throw new Error('Failed to fetch chapter');
-      const data = await response.json();
-      return data.verses.map((v: any) => ({
-        book_id: v.book_id,
-        book_name: v.book_name,
-        chapter: v.chapter,
-        verse: v.verse,
-        text: v.text
-      }));
-    } catch (apiError) {
-      console.error('Error fetching chapter from API fallback:', apiError);
-      return [];
+    // 2. Fallback to local data ONLY if API fails
+    if (translation.toLowerCase() === 'kjv') {
+      try {
+        let bible = await loadFullBible();
+        if (!bible || bible.length === 0) throw new Error('Local Bible not available');
+
+        const book = bible.find((b: any) => b.name === bookName);
+        if (!book) throw new Error('Book not found locally');
+
+        const chapterData = book.chapters[chapter - 1];
+        if (!chapterData) throw new Error('Chapter not found locally');
+
+        return chapterData.map((text: string, index: number) => ({
+          book_id: book.abbrev || book.name.substring(0, 3).toLowerCase(),
+          book_name: book.name,
+          chapter: chapter,
+          verse: index + 1,
+          text: text
+        }));
+      } catch (localError) {
+        console.error('Local fallback also failed:', localError);
+        return [];
+      }
     }
+    return [];
+  }
+};
+
+export const getRandomVerseLocally = async (): Promise<Verse | null> => {
+  try {
+    const bible = await loadFullBible();
+    if (!bible || !Array.isArray(bible) || bible.length === 0) return null;
+
+    const randomBook = bible[Math.floor(Math.random() * bible.length)];
+    const randomChapterIdx = Math.floor(Math.random() * randomBook.chapters.length);
+    const randomChapter = randomBook.chapters[randomChapterIdx];
+    const randomVerseIdx = Math.floor(Math.random() * randomChapter.length);
+
+    return {
+      book_id: randomBook.abbrev || randomBook.name.substring(0, 3).toLowerCase(),
+      book_name: randomBook.name,
+      chapter: randomChapterIdx + 1,
+      verse: randomVerseIdx + 1,
+      text: randomChapter[randomVerseIdx]
+    };
+  } catch (error) {
+    console.error('Error getting random verse:', error);
+    return null;
   }
 };
 
@@ -216,7 +212,7 @@ export const searchVerses = async (keyword: string): Promise<Verse[]> => {
     const words = lowerKeyword.replace(/[^\w\s]/g, '').split(/\s+/);
     const originalTerms = new Set<string>();
     const expandedTerms = new Set<string>();
-    
+
     words.forEach(word => {
       // Basic stemming: remove trailing 's', 'ing', 'ed' if word is long enough
       let baseWord = word;
@@ -229,7 +225,7 @@ export const searchVerses = async (keyword: string): Promise<Verse[]> => {
       if (!stopWords.has(word) && word.length > 2) {
         originalTerms.add(word);
         if (baseWord !== word) originalTerms.add(baseWord);
-        
+
         expandedTerms.add(word);
         if (baseWord !== word) expandedTerms.add(baseWord);
 
@@ -249,6 +245,12 @@ export const searchVerses = async (keyword: string): Promise<Verse[]> => {
 
     const originalTermsArray = Array.from(originalTerms);
     const expandedTermsArray = Array.from(expandedTerms);
+
+    // Optimization: Pre-compile regexes for all terms
+    const originalRegexes = originalTermsArray.map(term => new RegExp(`\\b${term}`, 'i'));
+    const expandedRegexes = expandedTermsArray.filter(term => !originalTerms.has(term)).map(term => new RegExp(`\\b${term}`, 'i'));
+    const keywordRegex = new RegExp(lowerKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
     const scoredResults: { verse: Verse, score: number }[] = [];
 
     for (const book of bible) {
@@ -260,22 +262,20 @@ export const searchVerses = async (keyword: string): Promise<Verse[]> => {
           const text = chapter[v];
           const lowerText = text.toLowerCase();
           let score = 0;
-          
+
           // 1. Exact phrase match (Highest priority)
-          if (lowerText.includes(lowerKeyword)) {
+          if (keywordRegex.test(lowerText)) {
             score += 2000;
           }
 
           // 2. Original terms match
           let originalMatches = 0;
-          originalTermsArray.forEach(term => {
-            // Match whole words or prefixes
-            const termRegex = new RegExp(`\\b${term}`, 'i');
-            if (termRegex.test(lowerText)) {
+          for (let i = 0; i < originalRegexes.length; i++) {
+            if (originalRegexes[i].test(lowerText)) {
               score += 100;
               originalMatches++;
             }
-          });
+          }
 
           // Boost if ALL original terms are present
           if (originalMatches === originalTermsArray.length && originalTermsArray.length > 1) {
@@ -283,16 +283,11 @@ export const searchVerses = async (keyword: string): Promise<Verse[]> => {
           }
 
           // 3. Expanded terms (Synonyms) match
-          let expandedMatches = 0;
-          expandedTermsArray.forEach(term => {
-            if (!originalTerms.has(term)) {
-              const termRegex = new RegExp(`\\b${term}`, 'i');
-              if (termRegex.test(lowerText)) {
-                score += 15;
-                expandedMatches++;
-              }
+          for (let i = 0; i < expandedRegexes.length; i++) {
+            if (expandedRegexes[i].test(lowerText)) {
+              score += 15;
             }
-          });
+          }
 
           if (score > 0) {
             scoredResults.push({

@@ -1,134 +1,64 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Heart, Shield, Sparkles, ArrowRight, Bot } from 'lucide-react';
+import React from 'react';
+import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { completeOnboarding } from '../services/statsService';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const STEPS = [
-  {
-    title: "Welcome to Bible Nova",
-    description: "A sanctuary for your soul. Find peace, wisdom, and guidance through the word of God.",
-    icon: Bot,
-    color: "text-blue-500",
-    bg: "bg-blue-50 dark:bg-blue-900/20"
-  },
-  {
-    title: "Spiritual Guidance",
-    description: "Ask anything. Find comfort and scripture guidance. Note: This offers spiritual guidance and is not a substitute for professional healthcare or therapy.",
-    icon: Shield,
-    color: "text-emerald-500",
-    bg: "bg-emerald-50 dark:bg-emerald-900/20"
-  },
-  {
-    title: "Your Prayer Journal",
-    description: "Keep track of your conversations with God. Watch as your prayers are answered over time.",
-    icon: Heart,
-    color: "text-red-500",
-    bg: "bg-red-50 dark:bg-red-900/20"
-  }
-];
-
 export default function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [name, setName] = useState('');
-  const [isFinishing, setIsFinishing] = useState(false);
   const navigate = useNavigate();
   const { updateProfile } = useAuth();
 
-  const handleNext = () => {
-    if (currentStep < STEPS.length - 1) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      setIsFinishing(true);
-    }
-  };
-
   const handleFinish = () => {
-    if (!name.trim()) return;
-    completeOnboarding(name.trim());
-    updateProfile(name.trim());
+    // We don't have the name from the iframe easily, 
+    // so we'll use a default or let them update it in settings later
+    completeOnboarding('Beloved');
+    updateProfile('Beloved');
     onComplete();
     navigate('/', { replace: true });
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-6">
-      <AnimatePresence mode="wait">
-        {!isFinishing ? (
-          <motion.div
-            key={currentStep}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="max-w-md w-full text-center"
-          >
-            <div className={`w-24 h-24 rounded-[2rem] ${STEPS[currentStep].bg} ${STEPS[currentStep].color} flex items-center justify-center mx-auto mb-8 shadow-inner`}>
-              {React.createElement(STEPS[currentStep].icon, { size: 48 })}
-            </div>
+    <div className="fixed inset-0 z-[100] bg-white dark:bg-gray-950 flex flex-col">
+      {/* Header with Exit option */}
+      <div className="p-4 flex justify-between items-center border-b dark:border-gray-800 bg-white dark:bg-gray-900 safe-area-top">
+        <button
+          onClick={handleFinish}
+          className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 transition-colors"
+        >
+          <ArrowLeft size={18} /> Skip
+        </button>
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Identity Setup</span>
+        </div>
+        <button
+          onClick={handleFinish}
+          className="px-6 py-2 bg-blue-600 text-white rounded-full text-xs font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-500/20 flex items-center gap-2"
+        >
+          Done <CheckCircle2 size={14} />
+        </button>
+      </div>
 
-            <h1 className="text-3xl font-bold mb-4 dark:text-white">
-              {STEPS[currentStep].title}
-            </h1>
-            <p className="text-lg text-gray-600 dark:text-gray-400 mb-12 leading-relaxed">
-              {STEPS[currentStep].description}
-            </p>
+      {/* Web Onboarding Content */}
+      <div className="flex-1 w-full h-full relative bg-gray-50 dark:bg-gray-950">
+        <iframe
+          src="https://bible-gpt-ebon.vercel.app/onboarding"
+          className="absolute inset-0 w-full h-full border-0"
+          title="Bible Nova Onboarding"
+          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+        />
 
-            <div className="flex justify-center gap-2 mb-12">
-              {STEPS.map((_, i) => (
-                <div
-                  key={i}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${i === currentStep ? 'w-8 bg-blue-600' : 'w-2 bg-gray-200 dark:bg-gray-700'}`}
-                />
-              ))}
-            </div>
+        {/* Loading Indicator Overlay (Hidden when iframe loads) */}
+        <div className="absolute inset-0 -z-10 flex flex-col items-center justify-center opacity-40">
+          <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+          <p className="text-sm font-medium">Connecting to sanctuary...</p>
+        </div>
+      </div>
 
-            <button
-              onClick={handleNext}
-              className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-500/30 hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-2"
-            >
-              {currentStep === STEPS.length - 1 ? "Get Started" : "Continue"}
-              <ArrowRight size={20} />
-            </button>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="finish"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="max-w-md w-full text-center"
-          >
-            <div className="w-20 h-20 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mx-auto mb-8">
-              <Sparkles size={40} />
-            </div>
-            <h1 className="text-3xl font-bold mb-4 dark:text-white">
-              What should I call you?
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-8">
-              I'd love to address you by name as we explore the Word together.
-            </p>
-
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
-              autoFocus
-              className="w-full p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-800 dark:bg-gray-800 dark:text-white focus:border-blue-500 outline-none mb-8 text-center text-xl font-medium transition-all"
-              onKeyDown={(e) => e.key === 'Enter' && handleFinish()}
-            />
-
-            <button
-              onClick={handleFinish}
-              disabled={!name.trim()}
-              className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-500/30 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all"
-            >
-              Enter Sanctuary
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Footer hint */}
+      <div className="p-3 bg-gray-50 dark:bg-gray-900 border-t dark:border-gray-800 text-center safe-area-bottom">
+        <p className="text-[10px] text-gray-400 font-medium">Click "Done" when you've finished the setup above</p>
+      </div>
     </div>
   );
 }

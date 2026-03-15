@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
       'process.env.GROQ_API_KEY': JSON.stringify(env.GROQ_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.APP_URL': JSON.stringify(env.APP_URL),
+      'process.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(env.VITE_GOOGLE_CLIENT_ID),
     },
     build: {
       rollupOptions: {
@@ -32,6 +33,13 @@ export default defineConfig(({ mode }) => {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
+      proxy: {
+        '/api': {
+          target: env.APP_URL || 'https://bible-gpt-ebon.vercel.app',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, '/api'),
+        }
+      }
     },
   };
 });

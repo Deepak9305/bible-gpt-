@@ -15,7 +15,7 @@ export default function LoginScreen() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) {
       GoogleAuth.initialize({
-        clientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com', // Replace with actual Web Client ID
+        clientId: process.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
         scopes: ['profile', 'email'],
         grantOfflineAccess: true,
       });
@@ -28,10 +28,10 @@ export default function LoginScreen() {
       setError('Please fill in all fields');
       return;
     }
-    
+
     setIsLoading(true);
     setError('');
-    
+
     // Simulate API call
     setTimeout(() => {
       loginEmail(email);
@@ -73,7 +73,7 @@ export default function LoginScreen() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-100/40 dark:bg-indigo-900/10 rounded-full blur-[120px]" />
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
@@ -128,7 +128,7 @@ export default function LoginScreen() {
                   {error}
                 </div>
               )}
-              
+
               <div className="space-y-4">
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -142,7 +142,7 @@ export default function LoginScreen() {
                     placeholder="Email address"
                   />
                 </div>
-                
+
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Lock size={18} className="text-slate-400 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-500 transition-colors" />

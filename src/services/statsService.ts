@@ -48,10 +48,11 @@ export const saveStats = (stats: UserStats) => {
 
 export const checkDailyLimit = (): boolean => {
   const stats = getStats();
-  if (stats.isPremium) return false; // No limit for premium
+  // No limit for premium or local development testing
+  if (stats.isPremium || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return false;
 
   const today = new Date().toLocaleDateString('en-CA');
-  
+
   // Reset if new day
   if (stats.lastUsageDate !== today) {
     const updated = { ...stats, dailyUsageCount: 0, lastUsageDate: today };
@@ -65,9 +66,9 @@ export const checkDailyLimit = (): boolean => {
 export const incrementDailyUsage = () => {
   const stats = getStats();
   const today = new Date().toLocaleDateString('en-CA');
-  
+
   let newCount = stats.dailyUsageCount;
-  
+
   if (stats.lastUsageDate !== today) {
     newCount = 1;
   } else {
@@ -90,7 +91,7 @@ export const updateStreak = () => {
   const stats = getStats();
   const now = new Date();
   const today = now.toLocaleDateString('en-CA'); // YYYY-MM-DD
-  
+
   if (stats.lastVisit === today) return stats;
 
   const yesterday = new Date();

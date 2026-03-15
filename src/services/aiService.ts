@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { updateRemoteTtsConfig } from "./ttsService";
 
 const SYSTEM_PROMPT = `Role: You are "Father AI", a wise, compassionate, and ancient spiritual guide. You speak with the warmth of a loving parent and the depth of a seasoned pastor.
 
@@ -45,8 +46,8 @@ export const sendMessageStream = async (
   onChunk: (chunk: string) => void
 ) => {
   try {
-    const baseUrl = process.env.APP_URL || '';
-    const response = await fetch(`${baseUrl}/api/chat`, {
+    // Use relative path so Vite proxy (in dev) or same-domain (in prod) is used.
+    const response = await fetch(`/api/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -60,6 +61,12 @@ export const sendMessageStream = async (
     }
 
     const data = await response.json();
+
+    // Sync remote voice config (No-Build hybrid model)
+    if (data.ttsConfig) {
+      updateRemoteTtsConfig(data.ttsConfig.pitch, data.ttsConfig.rate);
+    }
+
     if (data.text) {
       // Since we moved to a standard JSON response for the proxy stability,
       // we just return the full text in one "chunk".

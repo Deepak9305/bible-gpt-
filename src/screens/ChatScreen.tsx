@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { sendMessageStream } from '../services/aiService';
@@ -58,12 +59,20 @@ const MessageItem = React.memo(({
       {message.role === 'assistant' && message.content && (
         <button
           onClick={() => onSpeak(message.content, message.id)}
-          className={`mt-1 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 transition-colors ${isSpeaking ? 'text-blue-500' : ''}`}
+          className={`mt-1 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative ${isSpeaking ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-400'}`}
           title="Listen to response"
           disabled={isLoadingAudio && !isSpeaking && speakingMessageId !== null}
         >
+          {isSpeaking && !isLoadingAudio && (
+            <motion.div
+              layoutId={`pulse-${message.id}`}
+              className="absolute inset-0 rounded-full bg-blue-400/20"
+              animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            />
+          )}
           {isSpeaking ? (
-            isLoadingAudio ? <Loader2 size={16} className="animate-spin" /> : <VolumeX size={16} />
+            isLoadingAudio ? <Loader2 size={16} className="animate-spin" /> : <VolumeX size={16} className="relative z-10" />
           ) : (
             <Volume2 size={16} />
           )}

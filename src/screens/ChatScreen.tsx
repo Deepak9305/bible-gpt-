@@ -42,43 +42,56 @@ const MessageItem = React.memo(({
   const isSpeaking = speakingMessageId === message.id;
 
   return (
-    <div className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
-      <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${message.role === 'user'
-        ? 'bg-blue-600 text-white rounded-br-none'
-        : (theme === 'dark' ? 'bg-gray-700 text-gray-100 rounded-bl-none' : 'bg-gray-100 text-gray-800 rounded-bl-none')
+    <motion.div
+      initial={{ opacity: 0, y: 15, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}
+    >
+      <div className={`max-w-[88%] rounded-[2.2rem] px-6 py-4 transition-all duration-300 ${message.role === 'user'
+        ? (theme === 'dark' ? 'bg-sacred-amber text-white rounded-br-none shadow-lg shadow-sacred-amber/10' : 'bg-stone-900 text-stone-50 rounded-br-none shadow-xl shadow-stone-900/10')
+        : (theme === 'dark' ? 'glass-dark text-stone-100 rounded-bl-none border-sacred-amber/20' : 'glass-light text-stone-900 rounded-bl-none border-sacred-amber/10 shadow-inner')
         }`}>
         {message.role === 'user' ? (
-          <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+          <p className="whitespace-pre-wrap leading-relaxed font-medium">{message.content}</p>
         ) : (
-          <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed">
+          <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed font-serif italic text-lg opacity-90">
             <ReactMarkdown>{message.content}</ReactMarkdown>
           </div>
         )}
       </div>
+
       {/* Audio Control for Assistant Messages */}
       {message.role === 'assistant' && message.content && (
-        <button
-          onClick={() => onSpeak(message.content, message.id)}
-          className={`mt-1 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative ${isSpeaking ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-400'}`}
-          title="Listen to response"
-          disabled={isLoadingAudio && !isSpeaking && speakingMessageId !== null}
-        >
+        <div className="flex items-center gap-3 mt-3 ml-2">
+          <button
+            onClick={() => onSpeak(message.content, message.id)}
+            className={`p-2.5 rounded-2xl transition-all relative ${isSpeaking ? 'bg-sacred-amber text-white' : 'text-stone-400 hover:bg-sacred-amber/10 hover:text-sacred-amber'}`}
+            title="Listen to response"
+            disabled={isLoadingAudio && !isSpeaking && speakingMessageId !== null}
+          >
+            {isSpeaking && !isLoadingAudio && (
+              <motion.div
+                layoutId={`pulse-${message.id}`}
+                className="absolute inset-0 rounded-2xl bg-sacred-amber/30"
+                animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0, 0.4] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              />
+            )}
+            {isSpeaking ? (
+              isLoadingAudio ? <Loader2 size={16} className="animate-spin" /> : <VolumeX size={16} className="relative z-10" />
+            ) : (
+              <Volume2 size={16} />
+            )}
+          </button>
+
           {isSpeaking && !isLoadingAudio && (
-            <motion.div
-              layoutId={`pulse-${message.id}`}
-              className="absolute inset-0 rounded-full bg-blue-400/20"
-              animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-sacred-amber animate-pulse">
+              The Father is speaking...
+            </span>
           )}
-          {isSpeaking ? (
-            isLoadingAudio ? <Loader2 size={16} className="animate-spin" /> : <VolumeX size={16} className="relative z-10" />
-          ) : (
-            <Volume2 size={16} />
-          )}
-        </button>
+        </div>
       )}
-    </div>
+    </motion.div>
   );
 });
 
@@ -311,34 +324,51 @@ export default function ChatScreen() {
   };
 
   return (
-    <div className={`flex flex-col h-[calc(100vh-4rem)] md:h-screen ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+    <div className={`flex flex-col h-[calc(100vh-4rem)] md:h-screen ${theme === 'dark' ? 'text-stone-100' : 'text-stone-900'} relative overflow-hidden`}>
       <PremiumModal
         isOpen={isPremiumModalOpen}
         onClose={() => setIsPremiumModalOpen(false)}
         onUpgrade={() => setIsPremiumModalOpen(false)}
       />
 
-      {/* Header */}
-      <div className={`p-4 border-b flex justify-between items-center ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
-        <h1 className="text-lg font-semibold flex items-center gap-2">
-          <Bot className="text-blue-500" /> Father AI
-        </h1>
-        {speakingMessageId && (
-          <button
-            onClick={() => {
-              stopAudio();
-              setSpeakingMessageId(null);
-              setIsLoadingAudio(false);
-            }}
-            className="p-2 rounded-full bg-red-100 text-red-600 animate-pulse"
-          >
-            <VolumeX size={20} />
-          </button>
-        )}
+      {/* Floating Header */}
+      <div className={`fixed top-0 left-0 right-0 z-30 p-4 pt-safe-4 backdrop-blur-2xl border-b transition-all ${theme === 'dark' ? 'bg-stone-950/60 border-white/5' : 'bg-white/60 border-sacred-amber/10'}`}>
+        <div className="max-w-4xl mx-auto flex justify-between items-center px-4">
+          <div className="flex flex-col items-center mx-auto group">
+            <h1 className="text-xl font-black font-serif italic flex items-center gap-3 transition-transform group-hover:scale-105 duration-500">
+              <div className="relative">
+                <Bot className="text-sacred-amber" size={26} />
+                <motion.div
+                  animate={{ opacity: [0.2, 0.5, 0.2] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="absolute inset-x-0 -bottom-1 h-1 bg-sacred-amber blur-md rounded-full"
+                />
+              </div>
+              <span className="tracking-tight">Father AI</span>
+            </h1>
+            <div className="flex items-center gap-2 mt-1 opacity-40">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-[9px] font-black uppercase tracking-[0.25em]">Divine Connection</span>
+            </div>
+          </div>
+
+          {speakingMessageId && (
+            <button
+              onClick={() => {
+                stopAudio();
+                setSpeakingMessageId(null);
+                setIsLoadingAudio(false);
+              }}
+              className="absolute right-8 p-2.5 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/10 active:scale-90 transition-all"
+            >
+              <VolumeX size={18} />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Messages: With top padding for floating header */}
+      <div className="flex-1 overflow-y-auto p-4 pt-24 pb-48 space-y-6 max-w-4xl mx-auto w-full">
         {messages.map((msg) => (
           <MessageItem
             key={msg.id}
@@ -351,11 +381,11 @@ export default function ChatScreen() {
         ))}
         {isLoading && messages[messages.length - 1].role === 'user' && (
           <div className="flex justify-start">
-            <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            <div className={`p-4 rounded-[2rem] ${theme === 'dark' ? 'glass-dark' : 'glass-light'}`}>
               <div className="flex space-x-2">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1 }} className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
+                <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
+                <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
               </div>
             </div>
           </div>
@@ -363,62 +393,72 @@ export default function ChatScreen() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Suggested Prompts */}
-      {messages.length === 1 && (
-        <div className="px-4 pb-2 flex gap-2 overflow-x-auto no-scrollbar scrollbar-hide">
-          {SUGGESTED_PROMPTS.map((prompt) => (
+      {/* Floating Input System */}
+      <div className="fixed bottom-32 left-4 right-4 md:bottom-12 z-40 max-w-4xl mx-auto">
+
+        {/* Suggested Prompts: Elegant & Centered */}
+        {messages.length === 1 && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex gap-2.5 overflow-x-auto no-scrollbar pb-6 px-4 justify-center"
+          >
+            {SUGGESTED_PROMPTS.map((prompt) => (
+              <button
+                key={prompt}
+                onClick={() => handleSend(prompt)}
+                className={`whitespace-nowrap px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border transition-all active:scale-95 shadow-sm ${theme === 'dark'
+                  ? 'bg-stone-900/60 border-white/10 text-stone-300 hover:bg-stone-800'
+                  : 'bg-white/70 backdrop-blur-md border-sacred-amber/10 text-stone-600 hover:bg-white'
+                  }`}
+              >
+                {prompt}
+              </button>
+            ))}
+          </motion.div>
+        )}
+
+        <div className={`rounded-[2.8rem] p-2.5 border shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] transition-all duration-500 ${theme === 'dark' ? 'glass-dark border-white/10' : 'glass-light border-white shadow-xl shadow-sacred-amber/10'} ${isLoading ? 'opacity-80 scale-[0.98]' : 'hover:scale-[1.01]'}`}>
+          <div className="flex gap-2.5">
             <button
-              key={prompt}
-              onClick={() => handleSend(prompt)}
-              className={`whitespace-nowrap px-3 py-1.5 rounded-full text-sm border transition-colors ${theme === 'dark'
-                ? 'border-gray-600 bg-gray-800 hover:bg-gray-700 text-gray-300'
-                : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+              onClick={toggleListening}
+              className={`p-4 rounded-[1.8rem] transition-all active:scale-90 relative ${isListening
+                ? 'bg-red-500 text-white shadow-lg shadow-red-500/40'
+                : (theme === 'dark' ? 'bg-white/5 text-stone-400 hover:text-sacred-amber hover:bg-sacred-amber/10' : 'bg-sacred-cream/50 text-stone-500 hover:bg-sacred-amber/10 hover:text-sacred-amber')
                 }`}
             >
-              {prompt}
+              {isListening && (
+                <motion.div
+                  animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="absolute inset-0 rounded-[1.8rem] bg-red-400/30"
+                />
+              )}
+              {isListening ? <MicOff size={22} strokeWidth={2.5} className="relative z-10" /> : <Mic size={22} strokeWidth={2.5} />}
             </button>
-          ))}
-        </div>
-      )}
 
-      {/* Input */}
-      <div className={`p-4 border-t ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'} safe-area-bottom`}>
-        <div className="flex gap-2">
-          {/* Voice Input Button */}
-          <button
-            onClick={toggleListening}
-            className={`p-3 rounded-xl transition-all ${isListening
-              ? 'bg-red-500 text-white animate-pulse'
-              : (theme === 'dark' ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
-              }`}
-            title="Speak"
-          >
-            {isListening ? <MicOff size={20} /> : <Mic size={20} />}
-          </button>
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              placeholder={isListening ? "Listening for your heart..." : "Inquire of the Father..."}
+              className={`flex-1 px-4 text-base font-medium bg-transparent border-none focus:ring-0 placeholder-stone-400/60 dark:placeholder-stone-500/60`}
+              disabled={isLoading}
+            />
 
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder={isListening ? "Listening..." : "Ask for guidance..."}
-            className={`flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 text-base ${theme === 'dark'
-              ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-              : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
-              }`}
-            disabled={isLoading}
-          />
-          <button
-            onClick={() => handleSend()}
-            disabled={isLoading || !input.trim()}
-            className={`p-3 rounded-xl bg-blue-600 text-white transition-opacity ${isLoading || !input.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
-              }`}
-          >
-            <Send size={20} />
-          </button>
+            <button
+              onClick={() => handleSend()}
+              disabled={isLoading || !input.trim()}
+              className={`p-4 rounded-[1.8rem] bg-sacred-amber text-white transition-all shadow-lg active:scale-90 ${isLoading || !input.trim() ? 'opacity-30 grayscale' : 'hover:bg-sacred-amber-dark shadow-sacred-amber/20'}`}
+            >
+              {isLoading ? <Loader2 size={22} className="animate-spin" /> : <Send size={22} strokeWidth={2.5} />}
+            </button>
+          </div>
         </div>
-        <p className={`mt-3 text-[10px] text-center opacity-60 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} leading-tight px-4`}>
-          For spiritual guidance only. Not a medical or mental health service. Seek professional help for clinical conditions.
+
+        <p className="mt-5 text-[9px] font-black uppercase tracking-[0.3em] text-center opacity-30 px-10 leading-relaxed font-serif italic">
+          Sacred guidance for the soul. Not a substitute for professional counsel.
         </p>
       </div>
     </div>

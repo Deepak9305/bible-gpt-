@@ -1,6 +1,67 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Spiritual Organic Palette (HSL for precision) */
+  --color-sacred-cream: hsl(36, 33%, 98%);
+  --color-sacred-amber: hsl(28, 54%, 64%);
+  --color-sacred-amber-dark: hsl(28, 44%, 54%);
+  --color-peaceful-olive: hsl(74, 10%, 40%);
+  --color-deep-sanctuary: hsl(20, 10%, 6%);
+
+  /* Legacy mapping for compatibility while migrating */
+  --color-stone-50: var(--color-sacred-cream);
+  --color-stone-100: #f5f2ed;
+  --color-stone-200: #e9e4d9;
+  --color-stone-300: #d6cebc;
+  --color-stone-800: #292724;
+  --color-stone-900: #1c1a18;
+  --color-stone-950: var(--color-deep-sanctuary);
+
+  --color-amber-500: var(--color-sacred-amber);
+  --color-amber-600: var(--color-sacred-amber-dark);
+}
+
+@layer base {
+  body {
+    @apply font-sans antialiased selection:bg-amber-100 selection:text-stone-900;
+  }
+}
+
+@layer components {
+  .glass-light {
+    @apply bg-white/60 backdrop-blur-2xl border border-white/40 shadow-[0_8px_40px_-12px_rgba(212, 163, 115, 0.15)];
+  }
+
+  .glass-dark {
+    @apply bg-stone-950/60 backdrop-blur-2xl border border-white/5 shadow-[0_20px_50px_-12px_rgba(0, 0, 0, 0.5)];
+  }
+
+  .premium-gradient {
+    @apply bg-[radial-gradient(circle_at_top_left, var(--color-sacred-cream), #f5f2ed)];
+  }
+
+  .premium-gradient-dark {
+    @apply bg-[radial-gradient(circle_at_top_right, var(--color-deep-sanctuary), #000)];
+  }
+
+  .organic-glow {
+    @apply relative overflow-hidden;
+  }
+
+  .organic-glow::before {
+    content: '';
+    @apply absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-[radial-gradient(circle, rgba(212, 163, 115, 0.05)_0%, transparent_70%)] pointer-events-none;
+  }
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
 }

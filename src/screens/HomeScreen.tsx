@@ -205,198 +205,228 @@ export default function HomeScreen() {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className={`p-6 max-w-4xl mx-auto ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+      className={`min-h-full p-6 max-w-4xl mx-auto flex flex-col relative z-10 ${theme === 'dark' ? 'text-stone-100' : 'text-stone-900'}`}
     >
-      <motion.header variants={itemVariants} className="mb-8 flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Welcome, {user?.name || 'Beloved'}</h1>
-          <p className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-            Your spiritual companion is ready.
+      {/* Dynamic Background Auras */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            x: [0, 50, 0],
+            y: [0, -30, 0],
+            opacity: [0.1, 0.2, 0.1]
+          }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+          className="absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-sacred-amber/10 blur-[120px]"
+        />
+        <motion.div
+          animate={{
+            scale: [1.2, 1, 1.2],
+            x: [0, -40, 0],
+            y: [0, 50, 0],
+            opacity: [0.05, 0.15, 0.05]
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute -bottom-[10%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-500/5 blur-[100px]"
+        />
+      </div>
+      <motion.header variants={itemVariants} className="mb-12 flex justify-between items-start pt-4">
+        <div className="flex-1">
+          <h1 className="text-4xl font-black font-serif italic leading-tight tracking-tight">
+            Welcome, <span className="text-sacred-amber dark:text-sacred-amber">{user?.name || 'Beloved'}</span>
+          </h1>
+          <p className={`text-[10px] font-black mt-2 opacity-40 tracking-[0.2em] uppercase flex items-center gap-2`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-sacred-amber animate-pulse"></span>
+            Your spiritual sanctuary
           </p>
         </div>
 
         {/* Growth Stats Mini-Widget */}
-        <div className="flex gap-4">
-          <div className="flex flex-col items-center">
-            <div className="flex items-center gap-1 text-orange-500 font-bold">
-              <Flame size={18} fill="currentColor" />
+        <div className={`flex gap-4 p-2.5 rounded-3xl border ${theme === 'dark' ? 'glass-dark border-white/5' : 'glass-light border-amber-500/10'}`}>
+          <div className="flex flex-col items-center px-2">
+            <div className="flex items-center gap-1.5 text-orange-500 font-black">
+              <Flame size={16} fill="currentColor" />
               <span>{stats.streak}</span>
             </div>
-            <span className="text-[10px] uppercase tracking-tighter opacity-50">Streak</span>
+            <span className="text-[8px] font-bold uppercase tracking-widest opacity-40">Day</span>
           </div>
-          <div className="flex flex-col items-center">
-            <div className="flex items-center gap-1 text-blue-500 font-bold">
-              <Trophy size={18} />
+          <div className="w-px h-6 bg-stone-300/20 self-center" />
+          <div className="flex flex-col items-center px-2">
+            <div className="flex items-center gap-1.5 text-sacred-amber font-black">
+              <Sparkles size={16} />
               <span>{stats.totalVersesRead + stats.totalPrayers}</span>
             </div>
-            <span className="text-[10px] uppercase tracking-tighter opacity-50">Points</span>
+            <span className="text-[8px] font-bold uppercase tracking-widest opacity-40">Soul</span>
           </div>
         </div>
       </motion.header>
 
-      {/* Daily Verse Card */}
+      {/* Daily Verse Card: Fluid & Elegant */}
       <motion.div
         variants={itemVariants}
-        className={`relative overflow-hidden p-6 md:p-8 rounded-[2.5rem] shadow-2xl mb-10 ${theme === 'dark'
-          ? 'bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900'
-          : 'bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700'
-          } text-white group transition-all`}>
-        <div className="absolute top-0 right-0 p-4 opacity-10">
-          <BookOpen size={160} />
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-black text-gray-900 dark:text-white leading-tight truncate">
-              Welcome, {user?.name || 'Beloved'}
-            </h1>
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-              Your sanctuary is ready.
-            </p>
-          </div>
-        </div>
+        className={`relative overflow-hidden p-8 md:p-14 rounded-[3.5rem] mb-12 border transition-all duration-700 hover:scale-[1.01] ${theme === 'dark'
+          ? 'bg-stone-900/40 border-white/5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)]'
+          : 'bg-white/40 backdrop-blur-md border-white/60 shadow-[0_20px_50px_-15px_rgba(212,163,115,0.15)]'
+          } group`}>
 
-        <div className="flex justify-between items-center relative z-10 mb-6">
-          <h2 className="text-xs font-bold uppercase tracking-[0.2em] opacity-70 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-            Daily Bread
-          </h2>
+        {/* Inner Card Glows */}
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-sacred-amber/5 blur-[80px] rounded-full group-hover:bg-sacred-amber/10 transition-colors" />
+
+        <div className="flex justify-between items-center relative z-10 mb-12">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${theme === 'dark' ? 'bg-sacred-amber/10 text-sacred-amber shadow-inner' : 'bg-sacred-amber/10 text-sacred-amber shadow-inner'}`}>
+              <BookOpen size={20} strokeWidth={2.5} />
+            </div>
+            <h2 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">
+              Morning Manna
+            </h2>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={handleShare}
-              className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all backdrop-blur-md border border-white/10 text-white"
+              className={`p-3 rounded-2xl transition-all active:scale-90 ${theme === 'dark' ? 'bg-white/5 hover:bg-white/10' : 'bg-white/80 hover:bg-white'}`}
               title="Share Verse"
             >
-              <Share2 size={20} />
+              <Share2 size={18} className="opacity-70" />
             </button>
             <button
               onClick={handleSpeak}
-              className={`p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all backdrop-blur-md border border-white/10 ${isSpeaking ? 'text-yellow-300' : 'text-white'}`}
+              className={`p-3 rounded-2xl transition-all active:scale-90 ${isSpeaking ? 'bg-sacred-amber text-white' : (theme === 'dark' ? 'bg-white/5 hover:bg-white/10' : 'bg-white/80 hover:bg-white')}`}
               title="Listen"
             >
-              {isLoadingAudio ? <Loader2 size={20} className="animate-spin" /> : (isSpeaking ? <VolumeX size={20} /> : <Volume2 size={20} />)}
+              {isLoadingAudio ? <Loader2 size={18} className="animate-spin" /> : (isSpeaking ? <VolumeX size={18} /> : <Volume2 size={18} className="opacity-70" />)}
             </button>
           </div>
         </div>
 
         {dailyVerse ? (
-          <div className="relative z-10">
-            <p className="text-2xl md:text-4xl font-serif leading-tight mb-6 drop-shadow-md italic">
+          <div className="relative z-10 text-center px-4">
+            <h3 className="text-3xl md:text-5xl font-serif leading-[1.3] mb-10 italic text-stone-900 dark:text-stone-50 transition-all">
               "{dailyVerse.text}"
-            </p>
-            <div className="flex items-center gap-3 mb-8">
-              <div className="h-px w-10 bg-white/40"></div>
-              <p className="font-bold text-xl tracking-wide opacity-90">{dailyVerse.reference}</p>
-            </div>
+            </h3>
 
-            {/* AI Reflection */}
-            <div className={`p-5 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 transition-all ${isReflecting ? 'animate-pulse' : ''}`}>
-              <p className="text-sm md:text-base font-medium leading-relaxed opacity-95">
-                {dailyReflection || (isReflecting ? "Father is reflecting on this word..." : "")}
+            <div className="flex flex-col items-center gap-8">
+              <p className="font-black text-[10px] tracking-[0.5em] uppercase opacity-30 pb-8 border-b border-stone-200/50 dark:border-white/5 w-32">
+                {dailyVerse.reference}
               </p>
+
+              {/* AI Reflection in a premium container */}
+              <div className={`w-full max-w-2xl p-8 rounded-[3rem] transition-all relative overflow-hidden ${isReflecting ? 'animate-pulse' : ''} ${theme === 'dark' ? 'bg-white/5 border border-white/5' : 'bg-white/60 border border-white/80 shadow-inner'}`}>
+                <div className="flex items-center justify-center gap-2 mb-4 text-sacred-amber">
+                  <Sparkles size={14} fill="currentColor" className="opacity-50" />
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-60">The Father's Heart</span>
+                </div>
+                <p className="text-lg md:text-xl font-medium leading-relaxed italic opacity-80 font-serif">
+                  {dailyReflection || (isReflecting ? "Listening for the Spirit's voice..." : "")}
+                </p>
+              </div>
             </div>
           </div>
         ) : (
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-white/20 rounded-xl w-3/4"></div>
-            <div className="h-8 bg-white/20 rounded-xl w-full"></div>
-            <div className="h-24 bg-white/10 rounded-2xl w-full"></div>
+          <div className="animate-pulse flex flex-col items-center gap-8 py-10">
+            <div className={`h-12 rounded-[2rem] w-full ${theme === 'dark' ? 'bg-white/5' : 'bg-stone-100'}`}></div>
+            <div className={`h-6 rounded-full w-24 ${theme === 'dark' ? 'bg-white/5' : 'bg-stone-100'}`}></div>
+            <div className={`h-32 rounded-[2.5rem] w-full ${theme === 'dark' ? 'bg-white/5' : 'bg-stone-100'}`}></div>
           </div>
         )}
       </motion.div>
 
-      {/* Mood Guidance */}
-      <motion.section variants={itemVariants} className="mb-10">
-        <h2 className="text-xl font-bold mb-5 flex items-center gap-2">
-          <Heart size={20} className="text-red-500" /> How is your heart today?
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* Mood Guidance: Soft & Approachable */}
+      <motion.section variants={itemVariants} className="mb-14 px-2">
+        <div className="flex items-center justify-between mb-8 opacity-40">
+          <h2 className="text-xs font-black uppercase tracking-[0.2em] flex items-center gap-3">
+            Inquire of the Heart
+          </h2>
+          <div className="h-px flex-1 bg-sacred-amber/20 ml-6" />
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {MOODS.map((mood) => (
             <button
               key={mood.name}
               onClick={() => handleMoodClick(mood.prompt)}
-              className={`flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all active:scale-95 hover:shadow-md ${theme === 'dark'
-                ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
-                : 'bg-white border-gray-100 hover:bg-gray-50'
+              className={`flex flex-col items-center gap-4 p-6 rounded-[2.5rem] border transition-all active:scale-95 group ${theme === 'dark'
+                ? 'bg-stone-900/40 border-white/5 hover:bg-stone-800/60 hover:border-sacred-amber/30'
+                : 'bg-white/50 backdrop-blur-sm border-white/80 hover:bg-white hover:shadow-2xl hover:shadow-sacred-amber/10'
                 }`}
             >
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${mood.color} shadow-sm`}>
-                <mood.icon size={24} />
+              <div className={`w-14 h-14 rounded-[1.4rem] flex items-center justify-center transition-all bg-sacred-cream/50 shadow-inner group-hover:scale-110 ${mood.color.split(' ')[1]}`}>
+                <mood.icon size={26} strokeWidth={2.5} />
               </div>
-              <span className="font-bold text-sm">{mood.name}</span>
+              <span className="font-black text-xs uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">{mood.name}</span>
             </button>
           ))}
         </div>
       </motion.section>
 
-      {/* Quick Actions */}
-      <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <Link to="/chat" className={`col-span-2 md:col-span-1 p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${theme === 'dark'
-          ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
-          : 'bg-white border-gray-100 hover:bg-blue-50/50'
+      {/* Deep Exploration Grid */}
+      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-16 px-2">
+        <Link to="/chat" className={`p-10 rounded-[3.5rem] border transition-all active:scale-95 group relative overflow-hidden ${theme === 'dark'
+          ? 'bg-stone-900/40 border-white/5 hover:bg-stone-800/60'
+          : 'bg-white/50 backdrop-blur-md border-white/80 hover:bg-white hover:shadow-2xl'
           }`}>
-          <div className="flex items-center gap-4 mb-3">
-            <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center shadow-sm">
-              <MessageSquare size={24} />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-sacred-amber/5 blur-3xl rounded-full" />
+          <div className="flex items-center gap-6 mb-8">
+            <div className="w-16 h-16 rounded-[1.8rem] bg-sacred-amber/10 text-sacred-amber flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+              <MessageSquare size={32} strokeWidth={2.5} />
             </div>
-            <h3 className="font-bold text-xl">Ask Father</h3>
+            <div>
+              <h3 className="font-black text-[22px] font-serif italic">Seek Wisdom</h3>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-sacred-amber mt-1.5">Dialogue with Father AI</p>
+            </div>
           </div>
-          <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Seek wisdom and comfort in your time of need.
+          <p className={`text-base leading-relaxed opacity-60 font-medium font-serif italic`}>
+            "Ask, and it shall be given you; seek, and ye shall find; knock, and it shall be opened unto you."
           </p>
         </Link>
 
-        <Link to="/library" className={`p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${theme === 'dark'
-          ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
-          : 'bg-white border-gray-100 hover:bg-emerald-50/50'
-          }`}>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm mb-4">
-            <BookOpen size={24} />
-          </div>
-          <h3 className="font-bold text-lg mb-1">Read Bible</h3>
-          <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Explore the KJV Scriptures
-          </p>
-        </Link>
-
-        <Link to="/bookmarks" className={`p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${theme === 'dark'
-          ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
-          : 'bg-white border-gray-100 hover:bg-purple-50/50'
-          }`}>
-          <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center shadow-sm mb-4">
-            <Bookmark size={24} />
-          </div>
-          <h3 className="font-bold text-lg mb-1">Saved</h3>
-          <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Your treasured verses
-          </p>
-        </Link>
-
-        <Link to="/journal" className={`p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${theme === 'dark'
-          ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
-          : 'bg-white border-gray-100 hover:bg-orange-50/50'
-          }`}>
-          <div className="w-12 h-12 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center shadow-sm mb-4">
-            <PenLine size={24} />
-          </div>
-          <h3 className="font-bold text-lg mb-1">Journal</h3>
-          <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Write your prayers
-          </p>
-        </Link>
-
-        <button
-          onClick={() => navigate('/detox')}
-          className={`text-left p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${theme === 'dark'
-            ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
-            : 'bg-white border-gray-100 hover:bg-cyan-50/50'
+        <div className="grid grid-cols-2 gap-4">
+          <Link to="/library" className={`p-6 rounded-[2.5rem] border transition-all active:scale-95 group ${theme === 'dark'
+            ? 'bg-stone-900/40 border-white/5 hover:bg-stone-800/60'
+            : 'bg-white/50 border-white/80 hover:bg-white hover:shadow-xl'
             }`}>
-          <div className="w-12 h-12 rounded-2xl bg-cyan-100 text-cyan-600 flex items-center justify-center shadow-sm mb-4">
-            <CloudRain size={24} />
-          </div>
-          <h3 className="font-bold text-lg mb-1">Digital Detox</h3>
-          <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Unplug and pray
-          </p>
-        </button>
+            <div className="w-12 h-12 rounded-2xl bg-sacred-cream/50 text-emerald-600 flex items-center justify-center mb-5 shadow-inner group-hover:scale-110 transition-transform">
+              <BookOpen size={24} strokeWidth={2.5} />
+            </div>
+            <h3 className="font-black text-sm uppercase tracking-widest mb-1">Bible</h3>
+            <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Scripture</p>
+          </Link>
+
+          <Link to="/bookmarks" className={`p-6 rounded-[2.5rem] border transition-all active:scale-95 group ${theme === 'dark'
+            ? 'bg-stone-900/40 border-white/5 hover:bg-stone-800/60'
+            : 'bg-white/50 border-white/80 hover:bg-white hover:shadow-xl'
+            }`}>
+            <div className="w-12 h-12 rounded-2xl bg-sacred-cream/50 text-purple-600 flex items-center justify-center mb-5 shadow-inner group-hover:scale-110 transition-transform">
+              <Bookmark size={24} strokeWidth={2.5} />
+            </div>
+            <h3 className="font-black text-sm uppercase tracking-widest mb-1">Treasury</h3>
+            <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Saved</p>
+          </Link>
+
+          <Link to="/journal" className={`p-6 rounded-[2.5rem] border transition-all active:scale-95 group ${theme === 'dark'
+            ? 'bg-stone-900/40 border-white/5 hover:bg-stone-800/60'
+            : 'bg-white/50 border-white/80 hover:bg-white hover:shadow-xl'
+            }`}>
+            <div className="w-12 h-12 rounded-2xl bg-sacred-cream/50 text-orange-600 flex items-center justify-center mb-5 shadow-inner group-hover:scale-110 transition-transform">
+              <PenLine size={24} strokeWidth={2.5} />
+            </div>
+            <h3 className="font-black text-sm uppercase tracking-widest mb-1">Journal</h3>
+            <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Prayers</p>
+          </Link>
+
+          <button
+            onClick={() => navigate('/detox')}
+            className={`p-6 text-left rounded-[2.5rem] border transition-all active:scale-95 group ${theme === 'dark'
+              ? 'bg-stone-900/40 border-white/5 hover:bg-stone-800/60'
+              : 'bg-white/50 border-white/80 hover:bg-white hover:shadow-xl'
+              }`}>
+            <div className="w-12 h-12 rounded-2xl bg-sacred-cream/50 text-cyan-600 flex items-center justify-center mb-5 shadow-inner group-hover:scale-110 transition-transform">
+              <CloudRain size={24} strokeWidth={2.5} />
+            </div>
+            <h3 className="font-black text-sm uppercase tracking-widest mb-1">Detox</h3>
+            <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Peace</p>
+          </button>
+        </div>
       </motion.div>
     </motion.div>
   );

@@ -47,20 +47,8 @@ export const saveStats = (stats: UserStats) => {
 };
 
 export const checkDailyLimit = (): boolean => {
-  const stats = getStats();
-  // No limit for premium or local development testing
-  if (stats.isPremium || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return false;
-
-  const today = new Date().toLocaleDateString('en-CA');
-
-  // Reset if new day
-  if (stats.lastUsageDate !== today) {
-    const updated = { ...stats, dailyUsageCount: 0, lastUsageDate: today };
-    saveStats(updated);
-    return false;
-  }
-
-  return stats.dailyUsageCount >= 3;
+  // Pause buying premium: All users get unlimited access for now
+  return false;
 };
 
 export const incrementDailyUsage = () => {
@@ -81,10 +69,8 @@ export const incrementDailyUsage = () => {
 };
 
 export const upgradeToPremium = () => {
-  const stats = getStats();
-  const updated = { ...stats, isPremium: true };
-  saveStats(updated);
-  return updated;
+  // Paused: Purchases are currently disabled
+  return getStats();
 };
 
 export const updateStreak = () => {

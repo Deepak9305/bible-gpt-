@@ -355,15 +355,7 @@ export default function LibraryScreen() {
               {isPlayingPlaylist ? 'Stop' : 'Listen All'}
             </button>
           )}
-          {!isPremium && (
-            <button
-              onClick={() => setIsPremiumModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[10px] font-black uppercase tracking-tighter shadow-lg shadow-yellow-500/20 active:scale-95 transition-all"
-            >
-              <Crown size={12} fill="currentColor" />
-              Premium
-            </button>
-          )}
+          {/* Premium button hidden while buying is paused */}
           {speakingVerse && (
             <button
               onClick={() => { stopAudio(); setSpeakingVerse(null); setIsLoadingAudio(false); }}

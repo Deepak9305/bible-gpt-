@@ -40,14 +40,14 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
             className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm"
             onClick={onClose}
           />
-          
+
           <motion.div
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
             className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-3xl shadow-2xl overflow-hidden border border-stone-100 dark:border-stone-800"
           >
-            <button 
+            <button
               onClick={onClose}
               className="absolute top-3 right-3 p-2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors z-10"
             >
@@ -82,35 +82,19 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
                 ))}
               </div>
 
-              <div className="grid grid-cols-1 gap-2.5 mb-3">
-                <button 
-                  onClick={() => handleSubscribe('test_subscription_yearly')}
-                  disabled={isLoading}
-                  className="relative w-full p-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/20 hover:shadow-amber-500/30 transition-all active:scale-[0.98] group disabled:opacity-70"
+              <div className="bg-stone-50 dark:bg-stone-800/50 rounded-2xl p-6 border border-amber-200/50 dark:border-amber-900/30 text-center">
+                <div className="bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-widest py-1 px-3 rounded-full inline-block mb-3">
+                  Service Update
+                </div>
+                <h3 className="font-serif text-lg text-stone-800 dark:text-stone-200 mb-2">Subscriptions Paused</h3>
+                <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mb-4">
+                  We are currently upgrading our sanctuary experience. New subscriptions are temporarily paused, but feel free to continue your journey—unlimited access is on us for now.
+                </p>
+                <button
+                  onClick={onClose}
+                  className="w-full py-2.5 bg-stone-800 dark:bg-stone-100 text-white dark:text-stone-900 rounded-xl text-sm font-medium transition-transform active:scale-95"
                 >
-                  <div className="flex items-center justify-between px-2">
-                    <div className="text-left">
-                      <div className="text-[10px] font-medium text-amber-100 uppercase tracking-wider">Yearly Plan</div>
-                      <div className="text-lg font-bold leading-none">$99.99 <span className="text-xs font-normal opacity-80">/ year</span></div>
-                    </div>
-                    <div className="bg-white/20 px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-sm">
-                      {isLoading ? <Loader2 size={12} className="animate-spin" /> : '-17%'}
-                    </div>
-                  </div>
-                </button>
-                
-                <button 
-                  onClick={() => handleSubscribe('test_subscription_monthly')}
-                  disabled={isLoading}
-                  className="w-full p-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-white hover:bg-stone-50 dark:hover:bg-stone-750 transition-all active:scale-[0.98] disabled:opacity-70"
-                >
-                  <div className="flex items-center justify-between px-2">
-                    <div className="text-left">
-                      <div className="text-[10px] font-medium text-stone-500 uppercase tracking-wider">Monthly Plan</div>
-                      <div className="text-lg font-bold leading-none">$9.99 <span className="text-xs font-normal text-stone-500">/ month</span></div>
-                    </div>
-                    {isLoading && <Loader2 size={16} className="animate-spin text-stone-400" />}
-                  </div>
+                  Continue Journey
                 </button>
               </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
@@ -34,55 +34,57 @@ function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [isNativeReady, setIsNativeReady] = useState(false);
   const { user, isLoading } = useAuth();
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    initializeNativeServices().then(() => {
+    const bootApp = async () => {
+      // Safety timeout for native services (5s)
+      const nativeBoot = initializeNativeServices();
+      const timeout = new Promise(resolve => setTimeout(resolve, 5000));
+
+      await Promise.race([nativeBoot, timeout]);
       setIsNativeReady(true);
-      if (user) {
-        setShowOnboarding(!getStats().onboardingCompleted);
-      }
-    });
+      setIsInitializing(false);
+    };
+
+    bootApp();
   }, []);
 
-  useEffect(() => {
-    if (isNativeReady && user) {
-      setShowOnboarding(!getStats().onboardingCompleted);
-    }
-  }, [user, isNativeReady]);
-
-  if (isLoading || !isNativeReady) return null;
+  if (isLoading || isInitializing) return null;
 
   return (
     <AnimatePresence mode="wait">
       {showSplash ? (
         <SplashScreen key="splash" onComplete={() => setShowSplash(false)} />
-      ) : !user ? (
-        <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full w-full">
-          <LoginScreen />
-        </motion.div>
       ) : (
-        <motion.div key="app" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full w-full">
-          <BrowserRouter>
-            <Suspense fallback={<LoadingFallback />}>
-              <Routes>
-                <Route path="/onboarding" element={showOnboarding ? <OnboardingScreen onComplete={() => setShowOnboarding(false)} /> : <Navigate to="/" replace />} />
-                <Route path="/" element={showOnboarding ? <Navigate to="/onboarding" replace /> : <Layout />}>
-                  <Route index element={<HomeScreen />} />
-                  <Route path="chat" element={<ChatScreen />} />
-                  <Route path="library" element={<LibraryScreen />} />
-                  <Route path="bookmarks" element={<BookmarksScreen />} />
-                  <Route path="journal" element={<PrayerJournalScreen />} />
-                  <Route path="settings" element={<SettingsScreen />} />
-                  <Route path="detox" element={<DigitalDetoxScreen />} />
-                  <Route path="privacy" element={<PrivacyPolicyScreen />} />
-                  <Route path="terms" element={<TermsOfServiceScreen />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Route>
-              </Routes>
-            </Suspense>
-          </BrowserRouter>
-        </motion.div>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            {/* Auth Guarded Routes */}
+            {!user ? (
+              <>
+                <Route path="/login" element={<LoginScreen />} />
+                <Route path="*" element={<Navigate to="/login" replace />} />
+              </>
+            ) : (
+              <Route element={<Layout />}>
+                <Route index element={<HomeScreen />} />
+                <Route path="chat" element={<ChatScreen />} />
+                <Route path="library" element={<LibraryScreen />} />
+                <Route path="bookmarks" element={<BookmarksScreen />} />
+                <Route path="journal" element={<PrayerJournalScreen />} />
+                <Route path="settings" element={<SettingsScreen />} />
+                <Route path="detox" element={<DigitalDetoxScreen />} />
+                <Route path="privacy" element={<PrivacyPolicyScreen />} />
+                <Route path="terms" element={<TermsOfServiceScreen />} />
+                <Route
+                  path="onboarding"
+                  element={<OnboardingScreen onComplete={() => window.location.hash = '#/'} />}
+                />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Route>
+            )}
+          </Routes>
+        </Suspense>
       )}
     </AnimatePresence>
   );
@@ -92,7 +94,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppContent />
+        <Router>
+          <AppContent />
+        </Router>
       </AuthProvider>
     </ThemeProvider>
   );

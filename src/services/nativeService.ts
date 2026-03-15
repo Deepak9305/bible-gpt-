@@ -5,30 +5,38 @@ import { initStats } from './statsService';
 import { AppTrackingTransparency } from 'capacitor-plugin-app-tracking-transparency';
 
 export const initializeNativeServices = async () => {
-  // 1. Initialize Storage (Stats)
-  await initStats();
+  try {
+    // 1. Initialize Storage (Stats) - CRITICAL
+    await initStats();
 
-  if (Capacitor.isNativePlatform()) {
-    try {
+    if (Capacitor.isNativePlatform()) {
+      // 0. Hide Status Bar (Immersive Mode)
+      await StatusBar.hide().catch(e => console.warn("StatusBar hide failed", e));
+
       // 1.5 Request App Tracking Transparency (iOS)
       if (Capacitor.getPlatform() === 'ios') {
-        const attStatus = await AppTrackingTransparency.getStatus();
-        if (attStatus.status === 'notDetermined') {
-          await AppTrackingTransparency.requestPermission();
+        try {
+          const attStatus = await AppTrackingTransparency.getStatus();
+          if (attStatus.status === 'notDetermined') {
+            await AppTrackingTransparency.requestPermission();
+          }
+        } catch (e) {
+          console.warn("ATT request failed", e);
         }
       }
 
-      // 0. Hide Status Bar (Immersive Mode)
-      await StatusBar.hide();
-
       // 3. Request Notification Permissions & Schedule
-      const permStatus = await LocalNotifications.requestPermissions();
-      if (permStatus.display === 'granted') {
-        await scheduleDailyDevotional();
+      try {
+        const permStatus = await LocalNotifications.requestPermissions();
+        if (permStatus.display === 'granted') {
+          await scheduleDailyDevotional();
+        }
+      } catch (e) {
+        console.warn("Notifications init failed", e);
       }
-    } catch (e) {
-      console.error("Failed to initialize some native services", e);
     }
+  } catch (globalErr) {
+    console.error("Critical native service failure:", globalErr);
   }
 };
 

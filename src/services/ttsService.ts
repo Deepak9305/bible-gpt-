@@ -110,13 +110,11 @@ export const playTextToSpeech = async (text: string, onEnded?: () => void): Prom
       .replace(/\s+/g, ' ') // Collapse whitespace
       .trim();
 
-    // 2. Respiratory Pre-processing: Add slight pauses for a more "human" breath/rhythm
-    // We add extra punctuation specifically to force the TTS engine to pause more naturally.
+    // 2. Respiratory Pre-processing: Standard punctuation is usually better for modern engines
+    // Remove the artificial '...' stuttering and use natural punctuation for better flow.
     cleanText = cleanText
-      .replace(/\.(?!\d)/g, '. ... ') // Longer pause after sentences
-      .replace(/,(?!\d)/g, ', ... ') // Slight pause after commas
-      .replace(/\?(?!\d)/g, '? ... ') // Pause after questions
-      .replace(/!(?!\d)/g, '! ... '); // Pause after exclamations
+      .replace(/\s+\./g, '.')
+      .replace(/\s+,/g, ',');
 
     if (!cleanText) {
       if (onEnded) onEnded();

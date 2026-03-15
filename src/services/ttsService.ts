@@ -44,14 +44,21 @@ const getMaleVoice = async () => {
 
     const { voices } = await TextToSpeech.getSupportedVoices();
 
-    // Comprehensive list of keywords/names likely to be male
-    const malePatterns = ['male', 'guy', 'father', 'man', 'david', 'mark', 'james', 'richard', 'george', 'sam', 'stefan', 'jason', 'peter', 'oliver', 'harry'];
-    const femalePatterns = ['female', 'girl', 'mother', 'woman', 'zira', 'hazel', 'susan', 'catherine', 'linda', 'elena', 'serena', 'martha', 'victoria'];
-
     // 1. Filter English voices
     const enVoices = voices.filter(v => v.lang.startsWith('en'));
 
-    // 2. Prioritize "Studio", "Neural", "Pro", or "Premium" male voices for high-fidelity "attractive" sound
+    // 2. Harmonized Primary Selection: Target "Google US English"
+    // This voice is high-quality and exists on both Chrome (Web) and Android (Native).
+    const googleVoice = enVoices.find(v => {
+      const name = v.name.toLowerCase();
+      return name.includes('google') && name.includes('us english') && !name.includes('female');
+    });
+    if (googleVoice) return voices.indexOf(googleVoice);
+
+    // 3. Platform fallback prioritizing "attractive" male voices
+    const malePatterns = ['male', 'guy', 'father', 'man', 'david', 'mark', 'james', 'richard', 'george', 'stefan', 'peter', 'arthur', 'daniel'];
+    const femalePatterns = ['female', 'girl', 'mother', 'woman', 'zira', 'susan', 'catherine'];
+
     const attractiveMaleVoices = enVoices.filter(v => {
       const name = v.name.toLowerCase();
       const isMale = malePatterns.some(p => name.includes(p)) && !femalePatterns.some(p => name.includes(p));
@@ -60,7 +67,6 @@ const getMaleVoice = async () => {
     });
 
     if (attractiveMaleVoices.length > 0) {
-      // Prioritize "Studio" or "Wavenet" or "Neural" if specifically found
       const bestVoice = attractiveMaleVoices.sort((a, b) => {
         const nameA = a.name.toLowerCase();
         const nameB = b.name.toLowerCase();
@@ -71,15 +77,12 @@ const getMaleVoice = async () => {
       return voices.indexOf(bestVoice);
     }
 
-    // 3. Fallback to any male voice
     const maleVoices = enVoices.filter(v => {
       const name = v.name.toLowerCase();
       return malePatterns.some(p => name.includes(p)) && !femalePatterns.some(p => name.includes(p));
     });
 
-    if (maleVoices.length > 0) {
-      return voices.indexOf(maleVoices[0]);
-    }
+    if (maleVoices.length > 0) return voices.indexOf(maleVoices[0]);
 
     const enVoiceIdx = voices.findIndex(v => v.lang.startsWith('en'));
     return enVoiceIdx !== -1 ? enVoiceIdx : undefined;

@@ -9,7 +9,7 @@ import { StorageService } from '../services/storageService';
 import { getVoices, getPreferredVoiceIndex, setPreferredVoice, playTextToSpeech, stopAudio } from '../services/ttsService';
 import { Volume2, Play, Square } from 'lucide-react';
 
-const AVATARS = ['🙏', '👤', '✝️', '🕊️', '📖', '🕯️', '⛪', '🌟', '😇', '🦁', '🐑', '🍞', '🍷', '🔥', '💧'];
+const AVATARS = ['✝️', '👤', '🕊️', '📖', '🕯️', '⛪', '🌟', '😇', '🦁', '🐑', '🍞', '🍷', '🔥', '💧'];
 
 export default function SettingsScreen() {
   const { theme, toggleTheme } = useTheme();

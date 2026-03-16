@@ -136,7 +136,7 @@ export default function Layout() {
       <nav className={`hidden md:flex fixed top-0 left-0 bottom-0 w-64 flex-col border-r ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="p-6">
           <h1 className="text-xl font-bold flex items-center gap-2">
-            🙏 Bible Nova
+            ✝️ Bible Nova
           </h1>
         </div>
         <div className="flex-1 px-4 space-y-2">

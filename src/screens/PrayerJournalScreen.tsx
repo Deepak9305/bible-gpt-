@@ -73,7 +73,7 @@ export default function PrayerJournalScreen() {
   };
 
   const handleShare = async (prayer: Prayer) => {
-    const shareText = `Prayer: "${prayer.text}"\nCategory: ${prayer.category}\nDate: ${prayer.date}\n\nShared from Bible Nova 🙏`;
+    const shareText = `Prayer: "${prayer.text}"\nCategory: ${prayer.category}\nDate: ${prayer.date}\n\nShared from Bible Nova ✝️`;
 
     if (navigator.share) {
       try {

@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       id: 'guest-' + Date.now(),
       name: 'Guest',
       isGuest: true,
-      avatar: '🙏',
+      avatar: '✝️',
       preferences: {
         isPersonalizationEnabled: true,
       }

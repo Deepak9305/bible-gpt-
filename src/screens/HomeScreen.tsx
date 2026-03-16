@@ -169,7 +169,7 @@ export default function HomeScreen() {
 
   const handleShare = async () => {
     if (!dailyVerse) return;
-    const shareText = `"${dailyVerse.text}" - ${dailyVerse.reference}\n\nShared from Father AI 🙏`;
+    const shareText = `"${dailyVerse.text}" - ${dailyVerse.reference}\n\nShared from Father AI ✝️`;
 
     if (navigator.share) {
       try {

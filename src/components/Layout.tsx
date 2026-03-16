@@ -33,16 +33,16 @@ export default function Layout() {
     <div className={`min-h-screen flex flex-col ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
 
       {/* Sticky Switch IDs Button & Popup */}
-      <div className="fixed top-4 right-4 z-50">
+      <div className="fixed top-2 right-2 z-50">
         <button
           onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
-          className={`p-2 rounded-full shadow-lg transition-all active:scale-95 ${theme === 'dark'
+          className={`p-1.5 rounded-full shadow-lg transition-all active:scale-95 ${theme === 'dark'
             ? 'bg-gray-800 text-gray-200 border border-gray-700 hover:bg-gray-700'
             : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
           title="Switch Account"
         >
-          <Users size={20} />
+          <Users size={18} />
         </button>
 
         <AnimatePresence>
@@ -104,7 +104,7 @@ export default function Layout() {
         </AnimatePresence>
       </div>
 
-      <main className="flex-1 overflow-y-auto pb-20 md:pb-0 md:pl-64">
+      <main className="flex-1 h-full overflow-hidden pb-16 md:pb-0 md:pl-64">
         <Outlet />
       </main>
 

@@ -308,7 +308,7 @@ export default function ChatScreen() {
   };
 
   return (
-    <div className={`flex flex-col h-[calc(100vh-4rem)] md:h-screen ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+    <div className={`flex flex-col h-full ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
       <PremiumModal
         isOpen={isPremiumModalOpen}
         onClose={() => setIsPremiumModalOpen(false)}

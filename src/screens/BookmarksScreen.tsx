@@ -46,22 +46,22 @@ export default function BookmarksScreen() {
 
     try {
       await playTextToSpeech(text, () => {
-        setSpeakingVerse(current => current === id ? null : current);
-        setIsLoadingAudio(current => speakingVerse === id ? false : current);
+        setSpeakingVerse(current => {
+          if (current === id) setIsLoadingAudio(false);
+          return current === id ? null : current;
+        });
       });
     } catch (error) {
       console.error("Audio failed", error);
-      setSpeakingVerse(current => current === id ? null : current);
-    } finally {
       setSpeakingVerse(current => {
         if (current === id) setIsLoadingAudio(false);
-        return current;
+        return current === id ? null : current;
       });
     }
   };
 
   const removeBookmark = async (verse: Verse) => {
-    const newBookmarks = bookmarks.filter((b) => 
+    const newBookmarks = bookmarks.filter((b) =>
       !(b.book_id === verse.book_id && b.chapter === verse.chapter && b.verse === verse.verse)
     );
     setBookmarks(newBookmarks);
@@ -73,7 +73,7 @@ export default function BookmarksScreen() {
       <div className={`p-4 border-b flex justify-between items-center ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
         <h1 className="text-lg font-semibold">Saved Verses</h1>
         {speakingVerse && (
-          <button 
+          <button
             onClick={() => {
               stopAudio();
               setSpeakingVerse(null);
@@ -102,14 +102,14 @@ export default function BookmarksScreen() {
                   <p className="leading-relaxed font-serif text-lg">{verse.text}</p>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <button 
+                  <button
                     onClick={() => removeBookmark(verse)}
                     className="p-2 text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
                     title="Remove bookmark"
                   >
                     <Trash2 size={18} />
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleSpeak(verse.text, `${verse.book_id}-${verse.chapter}-${verse.verse}`)}
                     className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 ${speakingVerse === `${verse.book_id}-${verse.chapter}-${verse.verse}` ? 'text-blue-500' : 'text-gray-400'}`}
                     disabled={isLoadingAudio && speakingVerse !== `${verse.book_id}-${verse.chapter}-${verse.verse}` && speakingVerse !== null}

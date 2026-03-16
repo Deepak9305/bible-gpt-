@@ -98,23 +98,26 @@ export default function PrayerJournalScreen() {
     <div className={`h-full flex flex-col ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
       <div className={`p-4 border-b flex justify-between items-center ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
         <h1 className="text-lg font-semibold">Prayer Journal</h1>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setIsAdding(!isAdding)}
-            className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-          >
-            <Plus size={20} />
-          </button>
-        </div>
       </div>
+
+      {/* Floating Action Button */}
+      <button
+        onClick={() => setIsAdding(!isAdding)}
+        className={`fixed bottom-24 right-6 z-40 p-4 rounded-full shadow-2xl transition-all active:scale-90 flex items-center justify-center ${isAdding
+            ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+            : 'bg-blue-600 text-white hover:bg-blue-700'
+          }`}
+      >
+        <Plus size={24} className={`transition-transform duration-300 ${isAdding ? 'rotate-45' : ''}`} />
+      </button>
 
       {/* Category Filter */}
       <div className="px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar border-b dark:border-gray-700">
         <button
           onClick={() => setFilterCategory('All')}
           className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${filterCategory === 'All'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+            ? 'bg-blue-600 text-white'
+            : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
             }`}
         >
           All
@@ -124,8 +127,8 @@ export default function PrayerJournalScreen() {
             key={cat}
             onClick={() => setFilterCategory(cat)}
             className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${filterCategory === cat
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
               }`}
           >
             {cat}
@@ -161,8 +164,8 @@ export default function PrayerJournalScreen() {
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
                       className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${selectedCategory === cat
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                         }`}
                     >
                       {cat}
@@ -205,8 +208,8 @@ export default function PrayerJournalScreen() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   className={`p-5 rounded-2xl border transition-all ${prayer.isAnswered
-                      ? (theme === 'dark' ? 'bg-emerald-900/10 border-emerald-500/20 opacity-80' : 'bg-emerald-50 border-emerald-100 opacity-80')
-                      : (theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100 shadow-sm')
+                    ? (theme === 'dark' ? 'bg-emerald-900/10 border-emerald-500/20 opacity-80' : 'bg-emerald-50 border-emerald-100 opacity-80')
+                    : (theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100 shadow-sm')
                     }`}
                 >
                   <div className="flex justify-between items-start gap-4">

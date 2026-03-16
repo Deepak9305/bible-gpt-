@@ -146,19 +146,16 @@ export default function ChatScreen() {
     try {
       await playTextToSpeech(text, () => {
         // Only reset if this is still the active message
-        setSpeakingMessageId(current => current === id ? null : current);
-        setIsLoadingAudio(current => speakingMessageId === id ? false : current);
+        setSpeakingMessageId(current => {
+          if (current === id) setIsLoadingAudio(false);
+          return current === id ? null : current;
+        });
       });
     } catch (error) {
       console.error("Audio failed", error);
-      setSpeakingMessageId(current => current === id ? null : current);
-    } finally {
-      // Only reset loading if this is still the active message
       setSpeakingMessageId(current => {
-        if (current === id) {
-          setIsLoadingAudio(false);
-        }
-        return current;
+        if (current === id) setIsLoadingAudio(false);
+        return current === id ? null : current;
       });
     }
   }, [speakingMessageId]);

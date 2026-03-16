@@ -208,19 +208,19 @@ export default function LibraryScreen() {
         if (isPlaylist) {
           setCurrentPlaylistIndex(prev => prev + 1);
         } else {
-          setSpeakingVerse(current => (current === id ? null : current));
-          setIsLoadingAudio(current => (speakingVerse === id ? false : current));
+          setSpeakingVerse(current => {
+            if (current === id) setIsLoadingAudio(false);
+            return current === id ? null : current;
+          });
         }
       });
     } catch (error) {
       console.error(error);
-      setSpeakingVerse(current => (current === id ? null : current));
-      if (isPlaylist) setIsPlayingPlaylist(false);
-    } finally {
       setSpeakingVerse(current => {
         if (current === id) setIsLoadingAudio(false);
-        return current;
+        return current === id ? null : current;
       });
+      if (isPlaylist) setIsPlayingPlaylist(false);
     }
   }, [speakingVerse]);
 

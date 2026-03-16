@@ -3,7 +3,7 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
-import { getStats } from './services/statsService';
+
 import SplashScreen from './components/SplashScreen';
 import { AnimatePresence, motion } from 'motion/react';
 import { initializeNativeServices } from './services/nativeService';
@@ -32,7 +32,6 @@ function LoadingFallback() {
 
 function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
-  const [isNativeReady, setIsNativeReady] = useState(false);
   const { user, isLoading } = useAuth();
   const [isInitializing, setIsInitializing] = useState(true);
 
@@ -43,7 +42,6 @@ function AppContent() {
       const timeout = new Promise(resolve => setTimeout(resolve, 5000));
 
       await Promise.race([nativeBoot, timeout]);
-      setIsNativeReady(true);
       setIsInitializing(false);
     };
 

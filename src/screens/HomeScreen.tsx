@@ -243,15 +243,6 @@ export default function HomeScreen() {
           } text-white group transition-all`}>
         <div className="absolute top-0 right-0 p-4 opacity-10">
           <BookOpen size={160} />
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-black text-gray-900 dark:text-white leading-tight truncate">
-              Welcome, {user?.name || 'Beloved'}
-            </h1>
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-              Your sanctuary is ready.
-            </p>
-          </div>
         </div>
 
         <div className="flex justify-between items-center relative z-10 mb-6">

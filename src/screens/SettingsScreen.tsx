@@ -106,7 +106,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <div className="h-full overflow-y-auto safe-area-top">
+    <div className="h-full overflow-y-auto pb-20 safe-area-top">
       <div className={`flex flex-col ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
         <div className={`p-4 border-b ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
           <h1 className="text-lg font-semibold">Settings</h1>

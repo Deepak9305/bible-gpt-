@@ -322,7 +322,7 @@ export default function LibraryScreen() {
   };
 
   return (
-    <div className="h-full overflow-y-auto safe-area-top">
+    <div className="h-full overflow-y-auto pb-20 safe-area-top">
       <div className={`flex flex-col ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
         <div className={`p-4 border-b flex items-center justify-between ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
           <div className="flex items-center gap-4">

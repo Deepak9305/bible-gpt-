@@ -54,6 +54,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       name: 'Guest',
       isGuest: true,
       avatar: '🙏',
+      preferences: {
+        isPersonalizationEnabled: true,
+      }
     };
     setUser(guestUser);
     await StorageService.set('auth_user', JSON.stringify(guestUser));
@@ -67,6 +70,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email: email,
       isGuest: false,
       avatar: '👤',
+      preferences: {
+        isPersonalizationEnabled: true,
+      }
     };
     setUser(emailUser);
     await StorageService.set('auth_user', JSON.stringify(emailUser));

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { getStats } from '../services/statsService';
-import { Moon, Sun, Trash2, ChevronRight, LogOut, Edit2, X, Check, UserX } from 'lucide-react';
+import { Moon, Sun, Trash2, ChevronRight, LogOut, Edit2, X, Check, UserX, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { StorageService } from '../services/storageService';
@@ -181,6 +181,29 @@ export default function SettingsScreen() {
                 </div>
                 <div className={`w-12 h-6 rounded-full p-1 transition-colors ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-300'}`}>
                   <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-0'}`} />
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  const currentPrefs = user?.preferences || { isPersonalizationEnabled: true };
+                  const newVal = !(currentPrefs.isPersonalizationEnabled ?? true);
+                  updateProfile(user?.name || 'Beloved', user?.avatar, {
+                    ...currentPrefs,
+                    isPersonalizationEnabled: newVal
+                  });
+                }}
+                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors border-b border-gray-100 dark:border-gray-700"
+              >
+                <div className="flex items-center gap-3">
+                  <Sparkles size={20} className="text-blue-500" />
+                  <div>
+                    <p className="font-medium text-left">AI Personalization</p>
+                    <p className="text-[10px] opacity-50 text-left">Tailor Father AI's guidance to you</p>
+                  </div>
+                </div>
+                <div className={`w-12 h-6 rounded-full p-1 transition-colors ${(user?.preferences?.isPersonalizationEnabled ?? true) ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                  <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${(user?.preferences?.isPersonalizationEnabled ?? true) ? 'translate-x-6' : 'translate-x-0'}`} />
                 </div>
               </button>
 
@@ -427,7 +450,7 @@ export default function SettingsScreen() {
             </div>
           )}
         </AnimatePresence>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }

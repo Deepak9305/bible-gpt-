@@ -4,3 +4,9 @@
 @theme {
   --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 }
+
+@layer utilities {
+  .safe-area-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 1rem) !important;
+  }
+}

@@ -322,152 +322,106 @@ export default function LibraryScreen() {
   };
 
   return (
-    <div className={`h-full flex flex-col ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-      <div className={`p-4 border-b flex items-center justify-between ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
-        <div className="flex items-center gap-4">
-          {view !== 'books' && (
-            <button onClick={handleBack} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
-              <ArrowLeft size={20} />
-            </button>
-          )}
-          <h1 className="text-lg font-semibold">
-            {view === 'books' && 'Bible Library'}
-            {view === 'chapters' && selectedBook?.name}
-            {view === 'verses' && `${selectedBook?.name} ${selectedChapter}`}
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          {isBibleDownloading && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-xs font-medium animate-pulse">
-              <Loader2 size={14} className="animate-spin" />
-              <span className="hidden sm:inline">Loading Bible...</span>
-            </div>
-          )}
-          {view === 'verses' && (
-            <button
-              onClick={togglePlaylist}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${isPlayingPlaylist
-                ? 'bg-red-100 text-red-600 animate-pulse'
-                : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                }`}
-            >
-              {isPlayingPlaylist ? <PauseCircle size={16} /> : <PlayCircle size={16} />}
-              {isPlayingPlaylist ? 'Stop' : 'Listen All'}
-            </button>
-          )}
-          {/* Premium button hidden while buying is paused */}
-          {speakingVerse && (
-            <button
-              onClick={() => { stopAudio(); setSpeakingVerse(null); setIsLoadingAudio(false); }}
-              className="p-2 rounded-full bg-red-100 text-red-600 animate-pulse"
-            >
-              <VolumeX size={20} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4">
-        {view === 'books' && (
-          <div className="mb-6 space-y-3">
-            <div className="relative">
-              <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Search Bible or describe a topic..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full pl-12 pr-10 py-3 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${theme === 'dark'
-                  ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400'
-                  : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
-                  }`}
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-              )}
-            </div>
+    <div className="h-full overflow-y-auto safe-area-top">
+      <div className={`flex flex-col ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+        <div className={`p-4 border-b flex items-center justify-between ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+          <div className="flex items-center gap-4">
+            {view !== 'books' && (
+              <button onClick={handleBack} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                <ArrowLeft size={20} />
+              </button>
+            )}
+            <h1 className="text-lg font-semibold">
+              {view === 'books' && 'Bible Library'}
+              {view === 'chapters' && selectedBook?.name}
+              {view === 'verses' && `${selectedBook?.name} ${selectedChapter}`}
+            </h1>
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            {isBibleDownloading && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-xs font-medium animate-pulse">
+                <Loader2 size={14} className="animate-spin" />
+                <span className="hidden sm:inline">Loading Bible...</span>
+              </div>
+            )}
+            {view === 'verses' && (
+              <button
+                onClick={togglePlaylist}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${isPlayingPlaylist
+                  ? 'bg-red-100 text-red-600 animate-pulse'
+                  : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                  }`}
+              >
+                {isPlayingPlaylist ? <PauseCircle size={16} /> : <PlayCircle size={16} />}
+                {isPlayingPlaylist ? 'Stop' : 'Listen All'}
+              </button>
+            )}
+            {/* Premium button hidden while buying is paused */}
+            {speakingVerse && (
+              <button
+                onClick={() => { stopAudio(); setSpeakingVerse(null); setIsLoadingAudio(false); }}
+                className="p-2 rounded-full bg-red-100 text-red-600 animate-pulse"
+              >
+                <VolumeX size={20} />
+              </button>
+            )}
+          </div>
+        </div>
 
-        <AnimatePresence mode="wait">
-          {searchQuery.length > 0 && view === 'books' ? (
-            <motion.div key="search" variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
-              {(() => {
-                const matchingBooks = books.filter(b => b.name.toLowerCase().includes(searchQuery.toLowerCase().trim()));
-                return matchingBooks.length > 0 ? (
+        <div className="flex-1 overflow-y-auto p-4">
+          {view === 'books' && (
+            <div className="mb-6 space-y-3">
+              <div className="relative">
+                <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search Bible or describe a topic..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={`w-full pl-12 pr-10 py-3 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${theme === 'dark'
+                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400'
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                    }`}
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          <AnimatePresence mode="wait">
+            {searchQuery.length > 0 && view === 'books' ? (
+              <motion.div key="search" variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+                {(() => {
+                  const matchingBooks = books.filter(b => b.name.toLowerCase().includes(searchQuery.toLowerCase().trim()));
+                  return matchingBooks.length > 0 ? (
+                    <div>
+                      <h2 className="text-sm font-semibold uppercase tracking-wider opacity-60 mb-3">Matching Books</h2>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {matchingBooks.map((book) => (
+                          <BookItem key={book.id} book={book} theme={theme} onClick={(b) => { setSearchQuery(''); handleBookSelect(b); }} />
+                        ))}
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+
+                {searchQuery.length >= 3 ? (
                   <div>
-                    <h2 className="text-sm font-semibold uppercase tracking-wider opacity-60 mb-3">Matching Books</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {matchingBooks.map((book) => (
-                        <BookItem key={book.id} book={book} theme={theme} onClick={(b) => { setSearchQuery(''); handleBookSelect(b); }} />
-                      ))}
-                    </div>
-                  </div>
-                ) : null;
-              })()}
-
-              {searchQuery.length >= 3 ? (
-                <div>
-                  <h2 className="text-sm font-semibold uppercase tracking-wider opacity-60 mb-3">
-                    {isSearching ? 'Searching Verses...' : `Found ${searchResults.length} Verses`}
-                  </h2>
-                  <div className="space-y-4">
-                    {searchResults.map((verse, idx) => (
-                      <VerseItem
-                        key={`${verse.book_id}-${verse.chapter}-${verse.verse}-${idx}`}
-                        verse={verse}
-                        index={idx}
-                        theme={theme}
-                        isCurrentInPlaylist={false}
-                        isBookmarked={isBookmarked(verse)}
-                        speakingVerseId={speakingVerse}
-                        isLoadingAudio={isLoadingAudio}
-                        onToggleBookmark={toggleBookmark}
-                        onShare={handleShare}
-                        onSpeak={handleSpeak}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8 opacity-50 text-sm">Type at least 3 characters to search for verses...</div>
-              )}
-            </motion.div>
-          ) : (
-            <div key="library">
-              {view === 'books' && (
-                <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {books.map((book) => (
-                    <BookItem key={book.id} book={book} theme={theme} onClick={handleBookSelect} />
-                  ))}
-                </motion.div>
-              )}
-
-              {view === 'chapters' && (
-                <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-                  {Array.from({ length: selectedBook.chapters }, (_, i) => i + 1).map((chapter) => (
-                    <ChapterItem key={chapter} chapter={chapter} theme={theme} onClick={handleChapterSelect} />
-                  ))}
-                </motion.div>
-              )}
-
-              {view === 'verses' && (
-                <div className="space-y-4">
-                  {loading ? (
-                    <div className="flex justify-center p-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    </div>
-                  ) : (
-                    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
-                      {verses.map((verse, index) => (
+                    <h2 className="text-sm font-semibold uppercase tracking-wider opacity-60 mb-3">
+                      {isSearching ? 'Searching Verses...' : `Found ${searchResults.length} Verses`}
+                    </h2>
+                    <div className="space-y-4">
+                      {searchResults.map((verse, idx) => (
                         <VerseItem
-                          key={verse.verse}
+                          key={`${verse.book_id}-${verse.chapter}-${verse.verse}-${idx}`}
                           verse={verse}
-                          index={index}
+                          index={idx}
                           theme={theme}
-                          isCurrentInPlaylist={currentPlaylistIndex === index && isPlayingPlaylist}
+                          isCurrentInPlaylist={false}
                           isBookmarked={isBookmarked(verse)}
                           speakingVerseId={speakingVerse}
                           isLoadingAudio={isLoadingAudio}
@@ -476,15 +430,63 @@ export default function LibraryScreen() {
                           onSpeak={handleSpeak}
                         />
                       ))}
-                    </motion.div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </AnimatePresence>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 opacity-50 text-sm">Type at least 3 characters to search for verses...</div>
+                )}
+              </motion.div>
+            ) : (
+              <div key="library">
+                {view === 'books' && (
+                  <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {books.map((book) => (
+                      <BookItem key={book.id} book={book} theme={theme} onClick={handleBookSelect} />
+                    ))}
+                  </motion.div>
+                )}
+
+                {view === 'chapters' && (
+                  <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+                    {Array.from({ length: selectedBook.chapters }, (_, i) => i + 1).map((chapter) => (
+                      <ChapterItem key={chapter} chapter={chapter} theme={theme} onClick={handleChapterSelect} />
+                    ))}
+                  </motion.div>
+                )}
+
+                {view === 'verses' && (
+                  <div className="space-y-4">
+                    {loading ? (
+                      <div className="flex justify-center p-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      </div>
+                    ) : (
+                      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
+                        {verses.map((verse, index) => (
+                          <VerseItem
+                            key={verse.verse}
+                            verse={verse}
+                            index={index}
+                            theme={theme}
+                            isCurrentInPlaylist={currentPlaylistIndex === index && isPlayingPlaylist}
+                            isBookmarked={isBookmarked(verse)}
+                            speakingVerseId={speakingVerse}
+                            isLoadingAudio={isLoadingAudio}
+                            onToggleBookmark={toggleBookmark}
+                            onShare={handleShare}
+                            onSpeak={handleSpeak}
+                          />
+                        ))}
+                      </motion.div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </AnimatePresence>
+        </div>
+        <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} onUpgrade={() => { }} />
       </div>
-      <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} onUpgrade={() => { }} />
     </div>
   );
 }

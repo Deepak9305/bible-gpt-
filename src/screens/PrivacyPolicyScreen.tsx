@@ -7,7 +7,7 @@ export default function PrivacyPolicyScreen() {
   const { theme } = useTheme();
 
   return (
-    <div className={`h-full flex flex-col ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+    <div className={`h-full flex flex-col ${theme === 'dark' ? 'text-white' : 'text-gray-900'} safe-area-top`}>
       <div className={`p-4 border-b flex items-center gap-4 ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
         <Link to="/settings" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
           <ArrowLeft size={20} />

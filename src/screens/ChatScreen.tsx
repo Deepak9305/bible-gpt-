@@ -414,7 +414,6 @@ export default function ChatScreen() {
             <Send size={20} />
           </button>
         </div>
-
       </div>
     </div>
   );

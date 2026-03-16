@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { MessageSquare, BookOpen, Bookmark, Volume2, VolumeX, Loader2, Heart, Shield, Sun, Moon, CloudRain, PenLine, Share2, Sparkles, Flame, Trophy, Rocket, Lightbulb } from 'lucide-react';
+import { MessageSquare, BookOpen, Bookmark, Volume2, VolumeX, Loader2, Heart, Shield, Sun, Moon, PenLine, Share2, Sparkles, Flame, Trophy, Rocket, Lightbulb } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { POPULAR_VERSES } from '../data/popularVerses';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
@@ -374,20 +374,18 @@ export default function HomeScreen() {
           </p>
         </Link>
 
-        <button
-          onClick={() => navigate('/detox')}
-          className={`text-left p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${theme === 'dark'
-            ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
-            : 'bg-white border-gray-100 hover:bg-cyan-50/50'
-            }`}>
-          <div className="w-12 h-12 rounded-2xl bg-cyan-100 text-cyan-600 flex items-center justify-center shadow-sm mb-4">
-            <CloudRain size={24} />
+        <div className={`p-6 rounded-3xl border opacity-50 cursor-not-allowed ${theme === 'dark'
+          ? 'bg-gray-800/30 border-gray-800'
+          : 'bg-gray-50 border-gray-100'
+          }`}>
+          <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-700 text-gray-400 flex items-center justify-center shadow-sm mb-4">
+            <Sparkles size={24} />
           </div>
-          <h3 className="font-bold text-lg mb-1">Digital Detox</h3>
-          <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Unplug and pray
+          <h3 className="font-bold text-lg mb-1">Coming Soon</h3>
+          <p className="text-xs opacity-50">
+            More spiritual tools
           </p>
-        </button>
+        </div>
       </motion.div>
     </motion.div>
   );

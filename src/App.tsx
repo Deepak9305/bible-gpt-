@@ -16,7 +16,6 @@ const LibraryScreen = lazy(() => import('./screens/LibraryScreen'));
 const BookmarksScreen = lazy(() => import('./screens/BookmarksScreen'));
 const SettingsScreen = lazy(() => import('./screens/SettingsScreen'));
 const PrayerJournalScreen = lazy(() => import('./screens/PrayerJournalScreen'));
-const DigitalDetoxScreen = lazy(() => import('./screens/DigitalDetoxScreen'));
 const OnboardingScreen = lazy(() => import('./screens/OnboardingScreen'));
 const LoginScreen = lazy(() => import('./screens/LoginScreen'));
 const PrivacyPolicyScreen = lazy(() => import('./screens/PrivacyPolicyScreen'));
@@ -71,7 +70,6 @@ function AppContent() {
                 <Route path="bookmarks" element={<BookmarksScreen />} />
                 <Route path="journal" element={<PrayerJournalScreen />} />
                 <Route path="settings" element={<SettingsScreen />} />
-                <Route path="detox" element={<DigitalDetoxScreen />} />
                 <Route path="privacy" element={<PrivacyPolicyScreen />} />
                 <Route path="terms" element={<TermsOfServiceScreen />} />
                 <Route

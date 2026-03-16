@@ -414,9 +414,7 @@ export default function ChatScreen() {
             <Send size={20} />
           </button>
         </div>
-        <p className={`mt-3 text-[10px] text-center opacity-60 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} leading-tight px-4`}>
-          For spiritual guidance only. Not a medical or mental health service. Seek professional help for clinical conditions.
-        </p>
+
       </div>
     </div>
   );

@@ -48,7 +48,15 @@ export default function PrivacyPolicyScreen() {
             If you delete the app or clear your browser data, this information will be lost as we do not keep backups.
           </p>
 
-          <h3>5. Contact</h3>
+          <h3>5. Spiritual Guidance Disclaimer</h3>
+          <p>
+            Father AI is designed for <strong>spiritual guidance and reflective conversation only</strong>.
+            It is not a substitute for professional medical, psychological, or mental health services.
+            If you are experiencing a mental health crisis or medical emergency, please seek help from
+            a qualified professional or emergency services immediately.
+          </p>
+
+          <h3>6. Contact</h3>
           <p>
             If you have questions about this policy, please contact us through the app support channels.
           </p>

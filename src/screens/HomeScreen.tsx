@@ -201,7 +201,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <div className="h-full overflow-y-auto pb-20 safe-area-top">
+    <div className="h-full overflow-y-auto pb-8 safe-area-top">
       <motion.div
         variants={containerVariants}
         initial="hidden"

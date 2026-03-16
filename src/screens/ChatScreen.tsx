@@ -379,7 +379,7 @@ export default function ChatScreen() {
       )}
 
       {/* Input */}
-      <div className={`p-4 border-t ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'} safe-area-bottom`}>
+      <div className={`p-4 border-t ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
         <div className="flex gap-2">
           {/* Voice Input Button */}
           <button

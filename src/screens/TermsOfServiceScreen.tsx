@@ -15,7 +15,7 @@ export default function TermsOfServiceScreen() {
         <h1 className="text-lg font-semibold">Terms of Service</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 max-w-3xl mx-auto">
+      <div className="flex-1 overflow-y-auto p-6 pb-24 max-w-3xl mx-auto">
         <div className={`prose ${theme === 'dark' ? 'prose-invert' : ''}`}>
           <h2>Terms of Service</h2>
           <p><strong>Effective Date:</strong> {new Date().toLocaleDateString()}</p>

@@ -15,7 +15,7 @@ export default function PrivacyPolicyScreen() {
         <h1 className="text-lg font-semibold">Privacy Policy</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 max-w-3xl mx-auto">
+      <div className="flex-1 overflow-y-auto p-6 pb-24 max-w-3xl mx-auto">
         <div className={`prose ${theme === 'dark' ? 'prose-invert' : ''}`}>
           <h2>Privacy Policy</h2>
           <p className="text-sm opacity-70">Last updated: {new Date().toLocaleDateString()}</p>

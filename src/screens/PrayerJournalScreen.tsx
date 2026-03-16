@@ -104,7 +104,7 @@ export default function PrayerJournalScreen() {
         {/* Floating Action Button */}
         <button
           onClick={() => setIsAdding(!isAdding)}
-          className={`fixed bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] right-6 z-40 p-4 rounded-full shadow-2xl transition-all active:scale-90 flex items-center justify-center ${isAdding
+          className={`fixed bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] right-6 z-40 p-4 rounded-full shadow-2xl transition-colors transition-transform duration-300 active:scale-90 flex items-center justify-center ${isAdding
             ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
             : 'bg-blue-600 text-white hover:bg-blue-700'
             }`}
@@ -116,7 +116,7 @@ export default function PrayerJournalScreen() {
         <div className="px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar border-b dark:border-gray-700">
           <button
             onClick={() => setFilterCategory('All')}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${filterCategory === 'All'
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors duration-200 ${filterCategory === 'All'
               ? 'bg-blue-600 text-white'
               : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
               }`}
@@ -127,7 +127,7 @@ export default function PrayerJournalScreen() {
             <button
               key={cat}
               onClick={() => setFilterCategory(cat)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${filterCategory === cat
+              className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors duration-200 ${filterCategory === cat
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
                 }`}
@@ -164,7 +164,7 @@ export default function PrayerJournalScreen() {
                       <button
                         key={cat}
                         onClick={() => setSelectedCategory(cat)}
-                        className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${selectedCategory === cat
+                        className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors duration-200 ${selectedCategory === cat
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                           }`}
@@ -184,7 +184,7 @@ export default function PrayerJournalScreen() {
                   </button>
                   <button
                     onClick={addPrayer}
-                    className="px-6 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold shadow-md hover:bg-blue-700 transition-all"
+                    className="px-6 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold shadow-md hover:bg-blue-700 transition-colors"
                   >
                     Save Prayer
                   </button>
@@ -208,7 +208,7 @@ export default function PrayerJournalScreen() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className={`p-5 rounded-2xl border transition-all ${prayer.isAnswered
+                    className={`p-5 rounded-2xl border transition-colors transition-opacity duration-300 ${prayer.isAnswered
                       ? (theme === 'dark' ? 'bg-emerald-900/10 border-emerald-500/20 opacity-80' : 'bg-emerald-50 border-emerald-100 opacity-80')
                       : (theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100 shadow-sm')
                       }`}

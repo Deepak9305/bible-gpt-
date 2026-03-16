@@ -17,7 +17,7 @@ const BookItem = React.memo(({ book, theme, onClick }: { book: any; theme: strin
   <motion.button
     variants={{ hidden: { opacity: 0, scale: 0.95 }, visible: { opacity: 1, scale: 1 } }}
     onClick={() => onClick(book)}
-    className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-all active:scale-95 ${theme === 'dark'
+    className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-colors transition-transform duration-200 active:scale-95 ${theme === 'dark'
       ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
       : 'bg-white border-gray-100 hover:bg-blue-50/50'
       }`}
@@ -33,7 +33,7 @@ const ChapterItem = React.memo(({ chapter, theme, onClick }: { chapter: number; 
   <motion.button
     variants={{ hidden: { opacity: 0, scale: 0.95 }, visible: { opacity: 1, scale: 1 } }}
     onClick={() => onClick(chapter)}
-    className={`aspect-square flex items-center justify-center rounded-xl border text-lg font-medium transition-all hover:shadow-md ${theme === 'dark'
+    className={`aspect-square flex items-center justify-center rounded-xl border text-lg font-medium transition-colors transition-shadow duration-200 hover:shadow-md ${theme === 'dark'
       ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
       : 'bg-white border-gray-200 hover:bg-gray-50'
       }`}
@@ -72,10 +72,10 @@ const VerseItem = React.memo(({
     <motion.div
       variants={{ hidden: { opacity: 0, scale: 0.95 }, visible: { opacity: 1, scale: 1 } }}
       id={`verse-${verseId}`}
-      className={`p-4 rounded-xl transition-all duration-500 ${isCurrentInPlaylist
+      className={`p-4 rounded-xl transition-colors duration-500 will-change-[background-color,border-color,transform] ${isCurrentInPlaylist
         ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 border shadow-md scale-[1.02]'
-        : (theme === 'dark' ? 'bg-gray-800' : 'bg-white')
-        } shadow-sm`}
+        : (theme === 'dark' ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900 border-transparent border shadow-sm')
+        } `}
     >
       <div className="flex justify-between items-start gap-4">
         <span className={`text-xs font-bold mt-1 ${isCurrentInPlaylist ? 'text-blue-600' : 'text-blue-500'
@@ -339,7 +339,7 @@ export default function LibraryScreen() {
           </div>
           <div className="flex items-center gap-2">
             {isBibleDownloading && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-xs font-medium animate-pulse">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-xs font-medium">
                 <Loader2 size={14} className="animate-spin" />
                 <span className="hidden sm:inline">Loading Bible...</span>
               </div>
@@ -347,8 +347,8 @@ export default function LibraryScreen() {
             {view === 'verses' && (
               <button
                 onClick={togglePlaylist}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${isPlayingPlaylist
-                  ? 'bg-red-100 text-red-600 animate-pulse'
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-colors duration-300 ${isPlayingPlaylist
+                  ? 'bg-red-100 text-red-600'
                   : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
                   }`}
               >
@@ -360,7 +360,7 @@ export default function LibraryScreen() {
             {speakingVerse && (
               <button
                 onClick={() => { stopAudio(); setSpeakingVerse(null); setIsLoadingAudio(false); }}
-                className="p-2 rounded-full bg-red-100 text-red-600 animate-pulse"
+                className="p-2 rounded-full bg-red-100 text-red-600"
               >
                 <VolumeX size={20} />
               </button>
@@ -378,7 +378,7 @@ export default function LibraryScreen() {
                   placeholder="Search Bible or describe a topic..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`w-full pl-12 pr-10 py-3 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${theme === 'dark'
+                  className={`w-full pl-12 pr-10 py-3 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 ${theme === 'dark'
                     ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400'
                     : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
                     }`}

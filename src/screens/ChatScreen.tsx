@@ -327,7 +327,7 @@ export default function ChatScreen() {
               setSpeakingMessageId(null);
               setIsLoadingAudio(false);
             }}
-            className="p-2 rounded-full bg-red-100 text-red-600 animate-pulse"
+            className="p-2 rounded-full bg-red-100 text-red-600"
           >
             <VolumeX size={20} />
           </button>
@@ -384,8 +384,8 @@ export default function ChatScreen() {
           {/* Voice Input Button */}
           <button
             onClick={toggleListening}
-            className={`p-3 rounded-xl transition-all ${isListening
-              ? 'bg-red-500 text-white animate-pulse'
+            className={`p-3 rounded-xl transition-colors duration-200 ${isListening
+              ? 'bg-red-500 text-white'
               : (theme === 'dark' ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
               }`}
             title="Speak"

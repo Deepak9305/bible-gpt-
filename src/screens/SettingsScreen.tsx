@@ -325,7 +325,7 @@ export default function SettingsScreen() {
                         <button
                           key={avatar}
                           onClick={() => setEditAvatar(avatar)}
-                          className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all ${editAvatar === avatar
+                          className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-colors duration-200 ${editAvatar === avatar
                             ? 'bg-blue-100 ring-2 ring-blue-500 scale-110'
                             : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
@@ -394,7 +394,7 @@ export default function SettingsScreen() {
                             <button
                               key={t}
                               onClick={() => setEditTone(t)}
-                              className={`flex-1 py-2 rounded-lg text-sm capitalize transition-all ${editTone === t
+                              className={`flex-1 py-2 rounded-lg text-sm capitalize transition-colors duration-200 ${editTone === t
                                 ? 'bg-blue-600 text-white shadow-md'
                                 : (theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600')
                                 }`}

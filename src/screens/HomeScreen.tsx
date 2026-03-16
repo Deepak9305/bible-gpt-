@@ -241,27 +241,31 @@ export default function HomeScreen() {
           className={`relative overflow-hidden p-6 md:p-8 rounded-[2.5rem] shadow-2xl mb-10 ${theme === 'dark'
             ? 'bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900'
             : 'bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700'
-            } text-white group transition-all`}>
+            } text-white group transition-colors transition-shadow duration-300`}>
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <BookOpen size={160} />
           </div>
 
           <div className="flex justify-between items-center relative z-10 mb-6">
             <h2 className="text-xs font-bold uppercase tracking-[0.2em] opacity-70 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+              <motion.span
+                className="w-2 h-2 rounded-full bg-white will-change-[opacity]"
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+              />
               Daily Bread
             </h2>
             <div className="flex gap-2">
               <button
                 onClick={handleShare}
-                className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all backdrop-blur-md border border-white/10 text-white"
+                className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-md border border-white/10 text-white"
                 title="Share Verse"
               >
                 <Share2 size={20} />
               </button>
               <button
                 onClick={handleSpeak}
-                className={`p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all backdrop-blur-md border border-white/10 ${isSpeaking ? 'text-yellow-300' : 'text-white'}`}
+                className={`p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-md border border-white/10 ${isSpeaking ? 'text-yellow-300' : 'text-white'}`}
                 title="Listen"
               >
                 {isLoadingAudio ? <Loader2 size={20} className="animate-spin" /> : (isSpeaking ? <VolumeX size={20} /> : <Volume2 size={20} />)}
@@ -280,8 +284,8 @@ export default function HomeScreen() {
               </div>
 
               {/* AI Reflection */}
-              <div className={`p-5 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 transition-all ${isReflecting ? 'animate-pulse' : ''}`}>
-                <p className="text-sm md:text-base font-medium leading-relaxed opacity-95">
+              <div className={`p-5 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 transition-opacity duration-300`}>
+                <p className={`text-sm md:text-base font-medium leading-relaxed opacity-95 ${isReflecting ? 'animate-pulse' : ''}`}>
                   {dailyReflection || (isReflecting ? "Father is reflecting on this word..." : "")}
                 </p>
               </div>
@@ -305,7 +309,7 @@ export default function HomeScreen() {
               <button
                 key={mood.name}
                 onClick={() => handleMoodClick(mood.prompt)}
-                className={`flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all active:scale-95 hover:shadow-md ${theme === 'dark'
+                className={`flex flex-col items-center gap-3 p-4 rounded-2xl border transition-colors transition-shadow transition-transform duration-200 active:scale-95 hover:shadow-md ${theme === 'dark'
                   ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
                   : 'bg-white border-gray-100 hover:bg-gray-50'
                   }`}
@@ -321,7 +325,7 @@ export default function HomeScreen() {
 
         {/* Quick Actions */}
         <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <Link to="/chat" className={`col-span-2 md:col-span-1 p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${theme === 'dark'
+          <Link to="/chat" className={`col-span-2 md:col-span-1 p-6 rounded-3xl border transition-colors transition-shadow transition-transform duration-200 active:scale-95 hover:shadow-xl ${theme === 'dark'
             ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
             : 'bg-white border-gray-100 hover:bg-blue-50/50'
             }`}>
@@ -336,7 +340,7 @@ export default function HomeScreen() {
             </p>
           </Link>
 
-          <Link to="/library" className={`p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${theme === 'dark'
+          <Link to="/library" className={`p-6 rounded-3xl border transition-colors transition-shadow transition-transform duration-200 active:scale-95 hover:shadow-xl ${theme === 'dark'
             ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
             : 'bg-white border-gray-100 hover:bg-emerald-50/50'
             }`}>
@@ -349,7 +353,7 @@ export default function HomeScreen() {
             </p>
           </Link>
 
-          <Link to="/bookmarks" className={`p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${theme === 'dark'
+          <Link to="/bookmarks" className={`p-6 rounded-3xl border transition-colors transition-shadow transition-transform duration-200 active:scale-95 hover:shadow-xl ${theme === 'dark'
             ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
             : 'bg-white border-gray-100 hover:bg-purple-50/50'
             }`}>
@@ -362,7 +366,7 @@ export default function HomeScreen() {
             </p>
           </Link>
 
-          <Link to="/journal" className={`p-6 rounded-3xl border transition-all active:scale-95 hover:shadow-xl ${theme === 'dark'
+          <Link to="/journal" className={`p-6 rounded-3xl border transition-colors transition-shadow transition-transform duration-200 active:scale-95 hover:shadow-xl ${theme === 'dark'
             ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
             : 'bg-white border-gray-100 hover:bg-orange-50/50'
             }`}>

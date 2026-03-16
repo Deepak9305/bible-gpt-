@@ -80,7 +80,7 @@ export default function BookmarksScreen() {
                 setSpeakingVerse(null);
                 setIsLoadingAudio(false);
               }}
-              className="p-2 rounded-full bg-red-100 text-red-600 animate-pulse"
+              className="p-2 rounded-full bg-red-100 text-red-600"
             >
               <VolumeX size={20} />
             </button>

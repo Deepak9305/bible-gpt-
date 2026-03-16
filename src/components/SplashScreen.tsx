@@ -22,7 +22,12 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void; k
         transition={{ duration: 1.5, ease: "easeOut" }}
         className="relative"
       >
-        <div className="absolute inset-0 bg-blue-400 blur-3xl opacity-20 rounded-full animate-pulse"></div>
+        <motion.div
+          className="absolute inset-0 bg-blue-400 blur-3xl rounded-full will-change-[opacity]"
+          initial={{ opacity: 0.1 }}
+          animate={{ opacity: [0.1, 0.3, 0.1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        />
         <BookOpen size={80} className="text-blue-600 dark:text-blue-300 relative z-10" strokeWidth={1.5} />
       </motion.div>
 

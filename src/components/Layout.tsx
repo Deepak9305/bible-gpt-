@@ -36,7 +36,7 @@ export default function Layout() {
       <div className="fixed top-2 right-2 z-50 safe-area-top">
         <button
           onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
-          className={`p-1.5 rounded-full shadow-lg transition-all active:scale-95 ${theme === 'dark'
+          className={`p-1.5 rounded-full shadow-lg transition-transform transition-colors duration-200 active:scale-95 ${theme === 'dark'
             ? 'bg-gray-800 text-gray-200 border border-gray-700 hover:bg-gray-700'
             : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
@@ -125,7 +125,7 @@ export default function Layout() {
               key={to}
               to={to}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center w-full h-full space-y-1 rounded-xl transition-all duration-200 ${isActive
+                `flex flex-col items-center justify-center w-full h-full space-y-1 rounded-xl transition-colors duration-200 ${isActive
                   ? (theme === 'dark' ? 'text-blue-400' : 'text-blue-600 scale-105')
                   : (theme === 'dark' ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600')
                 }`

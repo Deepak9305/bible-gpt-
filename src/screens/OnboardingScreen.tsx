@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { completeOnboarding } from '../services/statsService';
 import { useAuth } from '../context/AuthContext';
+import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 
 export default function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
@@ -28,12 +29,16 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
           <ArrowLeft size={18} /> Skip
         </button>
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+          <motion.span
+            className="w-2 h-2 rounded-full bg-blue-500 will-change-[opacity]"
+            animate={{ opacity: [0.3, 1, 0.3] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          />
           <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Identity Setup</span>
         </div>
         <button
           onClick={handleFinish}
-          className="px-6 py-2 bg-blue-600 text-white rounded-full text-xs font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-500/20 flex items-center gap-2"
+          className="px-6 py-2 bg-blue-600 text-white rounded-full text-xs font-bold hover:bg-blue-700 transition-colors transition-transform duration-200 active:scale-95 shadow-lg shadow-blue-500/20 flex items-center gap-2"
         >
           Done <CheckCircle2 size={14} />
         </button>

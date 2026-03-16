@@ -89,7 +89,7 @@ export default function LoginScreen() {
             {/* Google Login */}
             <button
               onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium py-3.5 px-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-750 transition-all active:scale-[0.98] mb-8 text-sm"
+              className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium py-3.5 px-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors transition-transform duration-200 active:scale-[0.98] mb-8 text-sm"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -138,7 +138,7 @@ export default function LoginScreen() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="block w-full pl-11 pr-4 py-3.5 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-500 transition-all text-sm"
+                    className="block w-full pl-11 pr-4 py-3.5 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-500 transition-colors duration-200 text-sm"
                     placeholder="Email address"
                   />
                 </div>
@@ -151,7 +151,7 @@ export default function LoginScreen() {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full pl-11 pr-4 py-3.5 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-500 transition-all text-sm"
+                    className="block w-full pl-11 pr-4 py-3.5 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-500 transition-colors duration-200 text-sm"
                     placeholder="Password"
                   />
                 </div>
@@ -160,7 +160,7 @@ export default function LoginScreen() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-medium py-3.5 px-4 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 dark:shadow-none text-sm"
+                className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-medium py-3.5 px-4 rounded-xl transition-colors transition-transform duration-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 dark:shadow-none text-sm"
               >
                 {isLoading ? <Loader2 size={18} className="animate-spin" /> : 'Sign In'}
               </button>

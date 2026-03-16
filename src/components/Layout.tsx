@@ -66,7 +66,13 @@ export default function Layout() {
                   <p className="text-xs font-semibold uppercase tracking-wider opacity-50 mb-1">Current Account</p>
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${theme === 'dark' ? 'bg-blue-900/50 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
-                      <User size={16} />
+                      {user?.avatar === '✝️' ? (
+                        <img src="/cross-icon.png" className="w-5 h-5 object-contain" alt="Cross" />
+                      ) : user?.avatar ? (
+                        <span className="text-lg">{user.avatar}</span>
+                      ) : (
+                        <User size={16} />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{user?.name || 'Guest'}</p>
@@ -136,7 +142,8 @@ export default function Layout() {
       <nav className={`hidden md:flex fixed top-0 left-0 bottom-0 w-64 flex-col border-r ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="p-6">
           <h1 className="text-xl font-bold flex items-center gap-2">
-            ✝️ Bible Nova
+            <img src="/cross-icon.png" className="w-8 h-8 object-contain" alt="Cross" />
+            Bible Nova
           </h1>
         </div>
         <div className="flex-1 px-4 space-y-2">

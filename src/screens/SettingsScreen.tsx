@@ -120,7 +120,11 @@ export default function SettingsScreen() {
               <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                    {user?.avatar || '👤'}
+                    {(user?.avatar === '✝️') ? (
+                      <img src="/cross-icon.png" className="w-7 h-7 object-contain" alt="Cross" />
+                    ) : (
+                      user?.avatar || '👤'
+                    )}
                   </div>
                   <div>
                     <p className="font-medium">{user?.name || 'Guest'}</p>
@@ -326,7 +330,11 @@ export default function SettingsScreen() {
                             : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                         >
-                          {avatar}
+                          {avatar === '✝️' ? (
+                            <img src="/cross-icon.png" className="w-6 h-6 object-contain" alt="Cross" />
+                          ) : (
+                            avatar
+                          )}
                         </button>
                       ))}
                     </div>

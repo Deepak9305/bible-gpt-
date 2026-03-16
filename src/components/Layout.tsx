@@ -30,7 +30,7 @@ export default function Layout() {
   ];
 
   return (
-    <div className={`min-h-screen flex flex-col ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
+    <div className={`h-screen flex flex-col overflow-hidden ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
 
       {/* Sticky Switch IDs Button & Popup */}
       <div className="fixed top-2 right-2 z-50">
@@ -104,7 +104,7 @@ export default function Layout() {
         </AnimatePresence>
       </div>
 
-      <main className="flex-1 h-full overflow-hidden pb-16 md:pb-0 md:pl-64">
+      <main className="flex-1 overflow-y-auto pb-16 md:pb-0 md:pl-64">
         <Outlet />
       </main>
 

@@ -104,7 +104,7 @@ export default function PrayerJournalScreen() {
         {/* Floating Action Button */}
         <button
           onClick={() => setIsAdding(!isAdding)}
-          className={`fixed bottom-24 right-6 z-40 p-4 rounded-full shadow-2xl transition-all active:scale-90 flex items-center justify-center ${isAdding
+          className={`fixed bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] right-6 z-40 p-4 rounded-full shadow-2xl transition-all active:scale-90 flex items-center justify-center ${isAdding
             ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
             : 'bg-blue-600 text-white hover:bg-blue-700'
             }`}

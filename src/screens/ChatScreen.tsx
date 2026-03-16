@@ -316,7 +316,7 @@ export default function ChatScreen() {
       />
 
       {/* Header */}
-      <div className={`p-4 border-b flex justify-between items-center ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+      <div className={`p-4 border-b flex justify-between items-center ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'} safe-area-top`}>
         <h1 className="text-lg font-semibold flex items-center gap-2">
           <Bot className="text-blue-500" /> Father AI
         </h1>

@@ -9,4 +9,8 @@
   .safe-area-bottom {
     padding-bottom: calc(env(safe-area-inset-bottom) + 1rem) !important;
   }
+
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top) !important;
+  }
 }

@@ -49,13 +49,13 @@ export const getCuratedVoices = async () => {
       const targetPatterns = isMale ? malePatterns : femalePatterns;
       const oppositePatterns = isMale ? femalePatterns : malePatterns;
 
-      // 1. Preferred Selection: Target specific voices requested by user (Mark for Male, UK English for Female)
+      // 1. Preferred Selection: Target specific voices requested by user (James for Male, UK English for Female)
       const specificVoice = enVoices.find(v => {
         const name = v.name.toLowerCase();
         const lang = v.lang.toLowerCase();
         if (isMale) {
-          // Prioritize Mark as requested by user
-          return name.includes('mark');
+          // Prioritize George as requested by user
+          return name.includes('george');
         } else {
           // Prioritize UK English Female as requested by user
           return name.includes('google') && lang.includes('en-gb') && name.includes('female');

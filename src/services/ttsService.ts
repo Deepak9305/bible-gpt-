@@ -49,13 +49,15 @@ export const getCuratedVoices = async () => {
       const targetPatterns = isMale ? malePatterns : femalePatterns;
       const oppositePatterns = isMale ? femalePatterns : malePatterns;
 
-      // 1. Preferred Selection: Target specific voices requested by user (US English for Male, UK English for Female)
+      // 1. Preferred Selection: Target specific voices requested by user (Mark for Male, UK English for Female)
       const specificVoice = enVoices.find(v => {
         const name = v.name.toLowerCase();
         const lang = v.lang.toLowerCase();
         if (isMale) {
-          return name.includes('google') && lang.includes('en-us') && !name.includes('female');
+          // Prioritize Mark as requested by user
+          return name.includes('mark');
         } else {
+          // Prioritize UK English Female as requested by user
           return name.includes('google') && lang.includes('en-gb') && name.includes('female');
         }
       });
@@ -106,7 +108,7 @@ export const getCuratedVoices = async () => {
         label: 'Father (Deep & Fatherly)',
         index: voices.indexOf(bestMale),
         voice: bestMale,
-        pitch: 0.75, // User requested
+        pitch: 0.7, // User requested (slightly deeper)
         rate: 0.85   // User requested
       });
     }

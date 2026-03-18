@@ -2,7 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { updateRemoteTtsConfig } from "./ttsService";
 
 const getApiUrl = () => {
-  const baseUrl = process.env.APP_URL || 'https://bible-gpt-ebon.vercel.app';
+  const baseUrl = import.meta.env.VITE_APP_URL || 'https://bible-gpt-ebon.vercel.app';
   // If native, we must use absolute URL because relative paths resolve to localhost (app)
   if (Capacitor.isNativePlatform()) {
     return `${baseUrl}/api/chat`;

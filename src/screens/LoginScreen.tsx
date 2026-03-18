@@ -15,7 +15,7 @@ export default function LoginScreen() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) {
       GoogleAuth.initialize({
-        clientId: process.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+        clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
         scopes: ['profile', 'email'],
         grantOfflineAccess: true,
       });

@@ -12,7 +12,7 @@ import { Volume2, Play, Square } from 'lucide-react';
 const AVATARS = ['✝️', '👤', '🕊️', '📖', '🕯️', '⛪', '🌟', '😇', '🦁', '🐑', '🍞', '🍷', '🔥', '💧'];
 
 export default function SettingsScreen() {
-  const { theme, setTheme, highContrastNav, toggleHighContrastNav } = useTheme();
+  const { theme, toggleTheme, highContrastNav, toggleHighContrastNav, setTheme } = useTheme();
   const { logout, user, updateProfile, deleteAccount } = useAuth();
   const stats = getStats();
 
@@ -188,29 +188,23 @@ export default function SettingsScreen() {
                 </div>
               </button>
 
-              <div className={`p-4 rounded-2xl border transition-all duration-200 ${theme === 'dark' ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
-                      <Sparkles size={20} />
-                    </div>
-                    <div>
-                      <p className="font-semibold">High Contrast Navigation</p>
-                      <p className="text-xs opacity-60">Solid indicators for better accessibility</p>
-                    </div>
+              <button
+                onClick={toggleHighContrastNav}
+                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors border-b border-gray-100 dark:border-gray-700"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                    <Sparkles size={20} />
                   </div>
-                  <button
-                    onClick={toggleHighContrastNav}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${highContrastNav ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-600'
-                      }`}
-                  >
-                    <span
-                      className={`${highContrastNav ? 'translate-x-6' : 'translate-x-1'
-                        } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                    />
-                  </button>
+                  <div className="text-left">
+                    <p className="font-medium">High Contrast Navigation</p>
+                    <p className="text-[10px] opacity-50">Solid indicators for better accessibility</p>
+                  </div>
                 </div>
-              </div>
+                <div className={`w-12 h-6 rounded-full p-1 transition-colors ${highContrastNav ? 'bg-amber-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                  <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${highContrastNav ? 'translate-x-6' : 'translate-x-0'}`} />
+                </div>
+              </button>
               <button
                 onClick={() => {
                   const currentPrefs = user?.preferences || { isPersonalizationEnabled: true };

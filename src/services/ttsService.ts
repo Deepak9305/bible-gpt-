@@ -49,10 +49,22 @@ export const getCuratedVoices = async () => {
       const targetPatterns = isMale ? malePatterns : femalePatterns;
       const oppositePatterns = isMale ? femalePatterns : malePatterns;
 
-      // 1. Target "Google" voices first as they are consistent across Android
+      // 1. Preferred Selection: Target specific voices requested by user (US English for Male, UK English for Female)
+      const specificVoice = enVoices.find(v => {
+        const name = v.name.toLowerCase();
+        const lang = v.lang.toLowerCase();
+        if (isMale) {
+          return name.includes('google') && lang.includes('en-us') && !name.includes('female');
+        } else {
+          return name.includes('google') && lang.includes('en-gb') && name.includes('female');
+        }
+      });
+      if (specificVoice) return specificVoice;
+
+      // 2. Target "Google" voices generally
       const googleVoice = enVoices.find(v => {
         const name = v.name.toLowerCase();
-        return name.includes('google') && name.includes('us english') && (isMale ? !name.includes('female') : name.includes('female'));
+        return name.includes('google') && (isMale ? !name.includes('female') : name.includes('female'));
       });
       if (googleVoice) return googleVoice;
 
@@ -94,8 +106,8 @@ export const getCuratedVoices = async () => {
         label: 'Father (Deep & Fatherly)',
         index: voices.indexOf(bestMale),
         voice: bestMale,
-        pitch: 0.65, // Deeper
-        rate: 0.85   // Slower, more deliberate
+        pitch: 0.75, // User requested
+        rate: 0.85   // User requested
       });
     }
     if (bestFemale && bestFemale !== bestMale) {
@@ -103,8 +115,8 @@ export const getCuratedVoices = async () => {
         label: 'Mother (Adorable & Warm)',
         index: voices.indexOf(bestFemale),
         voice: bestFemale,
-        pitch: 1.15, // Slightly higher/brighter
-        rate: 1.0    // Standard speed
+        pitch: 1.4, // User requested
+        rate: 1.0   // User requested
       });
     }
 

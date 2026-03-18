@@ -116,7 +116,7 @@ export const getCuratedVoices = async () => {
         index: voices.indexOf(bestFemale),
         voice: bestFemale,
         pitch: 1.4, // User requested
-        rate: 1.0   // User requested
+        rate: 0.85  // User requested
       });
     }
 

@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import PremiumModal from '../components/PremiumModal';
 import { Share } from '@capacitor/share';
 import { StorageService } from '../services/storageService';
+import ReactMarkdown from 'react-markdown';
 
 type ViewState = 'books' | 'chapters' | 'verses';
 
@@ -80,7 +81,11 @@ const VerseItem = React.memo(({
       <div className="flex justify-between items-start gap-4">
         <span className={`text-xs font-bold mt-1 ${isCurrentInPlaylist ? 'text-blue-600' : 'text-blue-500'
           }`}>{verse.verse}</span>
-        <p className="flex-1 leading-relaxed font-serif text-lg">{verse.text}</p>
+        <div className="flex-1 leading-relaxed font-serif text-lg">
+          <ReactMarkdown components={{ p: 'span' }}>
+            {verse.text}
+          </ReactMarkdown>
+        </div>
         <div className="flex flex-col gap-2">
           <button
             onClick={() => onToggleBookmark(verse)}

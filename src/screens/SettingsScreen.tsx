@@ -12,7 +12,7 @@ import { Volume2, Play, Square } from 'lucide-react';
 const AVATARS = ['✝️', '👤', '🕊️', '📖', '🕯️', '⛪', '🌟', '😇', '🦁', '🐑', '🍞', '🍷', '🔥', '💧'];
 
 export default function SettingsScreen() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, colorBlindMode, toggleColorBlindMode } = useTheme();
   const { logout, user, updateProfile, deleteAccount } = useAuth();
   const stats = getStats();
 
@@ -185,6 +185,22 @@ export default function SettingsScreen() {
                 </div>
                 <div className={`w-12 h-6 rounded-full p-1 transition-colors ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-300'}`}>
                   <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-0'}`} />
+                </div>
+              </button>
+
+              <button
+                onClick={toggleColorBlindMode}
+                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors border-b border-gray-100 dark:border-gray-700"
+              >
+                <div className="flex items-center gap-3">
+                  <Sparkles size={20} className="text-amber-500" />
+                  <div>
+                    <p className="font-medium text-left">Color Blind Mode</p>
+                    <p className="text-[10px] opacity-50 text-left">High-contrast indicators for navigation</p>
+                  </div>
+                </div>
+                <div className={`w-12 h-6 rounded-full p-1 transition-colors ${colorBlindMode ? 'bg-amber-600' : 'bg-gray-300'}`}>
+                  <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${colorBlindMode ? 'translate-x-6' : 'translate-x-0'}`} />
                 </div>
               </button>
 

@@ -9,6 +9,7 @@ import { sendMessageStream } from '../services/aiService';
 import { getStats, updateStreak, UserStats } from '../services/statsService';
 import { motion } from 'motion/react';
 import { StorageService } from '../services/storageService';
+import ReactMarkdown from 'react-markdown';
 
 const MOODS = [
   { name: 'Anxious', icon: Shield, color: 'bg-blue-100 text-blue-600', prompt: 'I am feeling anxious and need peace.' },
@@ -35,8 +36,9 @@ export default function HomeScreen() {
 
     const fetchDailyVerse = async () => {
       const now = new Date();
-      const istDateString = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
-      const istDate = new Date(istDateString);
+      // Robust IST calculation
+      const istOffset = 5.5 * 60 * 60 * 1000;
+      const istDate = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + istOffset);
 
       const hours = istDate.getHours();
       const minutes = istDate.getMinutes();
@@ -46,20 +48,25 @@ export default function HomeScreen() {
         cycleDate.setDate(cycleDate.getDate() - 1);
       }
 
-      const dateKey = cycleDate.toLocaleDateString("en-CA");
+      const dateKey = cycleDate.toISOString().split('T')[0];
+      console.info(`[HomeScreen] Fetching daily verse for ${dateKey}`);
 
       const storedData = await StorageService.get('daily_verse_data');
       if (storedData) {
         try {
           const parsed = JSON.parse(storedData);
           if (parsed.date === dateKey) {
+            console.info("[HomeScreen] Daily verse cache hit");
             setDailyVerse(parsed.verse);
             if (parsed.reflection) setDailyReflection(parsed.reflection);
             return;
           }
+          console.info("[HomeScreen] Daily verse cache expired", { stored: parsed.date, current: dateKey });
         } catch (e) {
           console.error("Failed to parse daily verse data", e);
         }
+      } else {
+        console.info("[HomeScreen] No daily verse cache found");
       }
 
       let hash = 0;
@@ -83,6 +90,13 @@ export default function HomeScreen() {
 
         setDailyVerse(newVerse);
 
+        // Save verse immediately (even without reflection yet)
+        await StorageService.set('daily_verse_data', JSON.stringify({
+          date: dateKey,
+          verse: newVerse,
+          reflection: ""
+        }));
+
         // Generate reflection
         setIsReflecting(true);
         let reflection = "";
@@ -93,17 +107,24 @@ export default function HomeScreen() {
             reflection += chunk;
             setDailyReflection(reflection);
           });
+
+          // Update cache with reflection
+          await StorageService.set('daily_verse_data', JSON.stringify({
+            date: dateKey,
+            verse: newVerse,
+            reflection: reflection
+          }));
         } catch (aiErr) {
           console.warn("AI reflection failed, using default", aiErr);
           reflection = "May this word guide your path today and bring peace to your heart.";
           setDailyReflection(reflection);
-        }
 
-        await StorageService.set('daily_verse_data', JSON.stringify({
-          date: dateKey,
-          verse: newVerse,
-          reflection: reflection
-        }));
+          await StorageService.set('daily_verse_data', JSON.stringify({
+            date: dateKey,
+            verse: newVerse,
+            reflection: reflection
+          }));
+        }
       } catch (err) {
         console.error("Failed to fetch daily verse, falling back to local:", err);
         const { getRandomVerseLocally } = await import('../services/bibleService');
@@ -275,9 +296,11 @@ export default function HomeScreen() {
 
           {dailyVerse ? (
             <div className="relative z-10">
-              <p className="text-2xl md:text-4xl font-serif leading-tight mb-6 drop-shadow-md italic">
-                "{dailyVerse.text}"
-              </p>
+              <div className="text-2xl md:text-4xl font-serif font-bold leading-tight mb-6 drop-shadow-xl italic text-white/95">
+                <ReactMarkdown components={{ p: 'span' }}>
+                  {`"${dailyVerse.text}"`}
+                </ReactMarkdown>
+              </div>
               <div className="flex items-center gap-3 mb-8">
                 <div className="h-px w-10 bg-white/40"></div>
                 <p className="font-bold text-xl tracking-wide opacity-90">{dailyVerse.reference}</p>
@@ -285,9 +308,11 @@ export default function HomeScreen() {
 
               {/* AI Reflection */}
               <div className={`p-5 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 transition-opacity duration-300`}>
-                <p className={`text-sm md:text-base font-medium leading-relaxed opacity-95 ${isReflecting ? 'animate-pulse' : ''}`}>
-                  {dailyReflection || (isReflecting ? "Father is reflecting on this word..." : "")}
-                </p>
+                <div className={`text-sm md:text-base font-medium leading-relaxed opacity-95 ${isReflecting ? 'animate-pulse' : ''}`}>
+                  <ReactMarkdown>
+                    {dailyReflection || (isReflecting ? "Father is reflecting on this word..." : "")}
+                  </ReactMarkdown>
+                </div>
               </div>
             </div>
           ) : (

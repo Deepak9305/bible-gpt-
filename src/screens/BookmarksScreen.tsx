@@ -4,6 +4,7 @@ import { Verse } from '../services/bibleService';
 import { Trash2, Volume2, VolumeX, Loader2 } from 'lucide-react';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
 import { StorageService } from '../services/storageService';
+import ReactMarkdown from 'react-markdown';
 
 export default function BookmarksScreen() {
   const { theme } = useTheme();
@@ -100,7 +101,11 @@ export default function BookmarksScreen() {
                     <h3 className="text-sm font-semibold text-blue-500 mb-2">
                       {verse.book_name} {verse.chapter}:{verse.verse}
                     </h3>
-                    <p className="leading-relaxed font-serif text-lg">{verse.text}</p>
+                    <div className="leading-relaxed font-serif text-lg">
+                      <ReactMarkdown components={{ p: 'span' }}>
+                        {verse.text}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                   <div className="flex flex-col gap-2">
                     <button

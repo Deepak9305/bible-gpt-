@@ -2,15 +2,28 @@
 @import "tailwindcss";
 
 @layer base {
-  * {
-    -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
-    user-select: none;
+
+  *,
+  *::before,
+  *::after {
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+  }
+
+  html,
+  body {
+    touch-action: manipulation;
+    -webkit-overflow-scrolling: touch;
   }
 
   input,
-  textarea {
-    user-select: auto;
+  textarea,
+  [contenteditable="true"],
+  .selectable {
+    -webkit-user-select: text !important;
+    user-select: text !important;
   }
 }
 

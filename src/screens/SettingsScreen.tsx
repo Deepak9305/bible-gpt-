@@ -6,7 +6,7 @@ import { Moon, Sun, Trash2, ChevronRight, LogOut, Edit2, X, Check, UserX, Sparkl
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { StorageService } from '../services/storageService';
-import { getVoices, getPreferredVoiceIndex, setPreferredVoice, playTextToSpeech, stopAudio } from '../services/ttsService';
+import { getCuratedVoices, getPreferredVoiceIndex, setPreferredVoice, playTextToSpeech, stopAudio } from '../services/ttsService';
 import { Volume2, Play, Square } from 'lucide-react';
 
 const AVATARS = ['✝️', '👤', '🕊️', '📖', '🕯️', '⛪', '🌟', '😇', '🦁', '🐑', '🍞', '🍷', '🔥', '💧'];
@@ -31,7 +31,7 @@ export default function SettingsScreen() {
 
   React.useEffect(() => {
     async function loadVoices() {
-      const voices = await getVoices();
+      const voices = await getCuratedVoices();
       setAvailableVoices(voices);
       const pref = await getPreferredVoiceIndex();
       setSelectedVoiceIdx(pref);
@@ -239,10 +239,10 @@ export default function SettingsScreen() {
                     onChange={(e) => handleVoiceChange(e.target.value === '' ? undefined : parseInt(e.target.value))}
                     className={`flex-1 p-2 rounded-lg text-sm border ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}
                   >
-                    <option value="">Auto-select (Male)</option>
-                    {availableVoices.filter(v => v.lang.startsWith('en')).map((voice, idx) => (
-                      <option key={idx} value={availableVoices.indexOf(voice)}>
-                        {voice.name}
+                    <option value="">Auto-select (Best Male)</option>
+                    {availableVoices.map((v, idx) => (
+                      <option key={idx} value={v.index}>
+                        {v.label} - {v.voice?.name || ''}
                       </option>
                     ))}
                   </select>

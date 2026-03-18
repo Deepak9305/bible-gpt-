@@ -36,59 +36,83 @@ export const getPreferredVoiceIndex = async (): Promise<number | undefined> => {
   return stored ? parseInt(stored, 10) : undefined;
 };
 
-const getMaleVoice = async () => {
+export const getCuratedVoices = async () => {
   try {
-    // Check if user has a preference first
-    const preferredIdx = await getPreferredVoiceIndex();
-    if (preferredIdx !== undefined) return preferredIdx;
-
     const { voices } = await TextToSpeech.getSupportedVoices();
-
-    // 1. Filter English voices
     const enVoices = voices.filter(v => v.lang.startsWith('en'));
+    if (enVoices.length === 0) return [];
 
-    // 2. Harmonized Primary Selection: Target "Google US English"
-    // This voice is high-quality and exists on both Chrome (Web) and Android (Native).
-    const googleVoice = enVoices.find(v => {
-      const name = v.name.toLowerCase();
-      return name.includes('google') && name.includes('us english') && !name.includes('female');
-    });
-    if (googleVoice) return voices.indexOf(googleVoice);
-
-    // 3. Platform fallback prioritizing "attractive" male voices
     const malePatterns = ['male', 'guy', 'father', 'man', 'david', 'mark', 'james', 'richard', 'george', 'stefan', 'peter', 'arthur', 'daniel'];
     const femalePatterns = ['female', 'girl', 'mother', 'woman', 'zira', 'susan', 'catherine'];
 
-    const attractiveMaleVoices = enVoices.filter(v => {
-      const name = v.name.toLowerCase();
-      const isMale = malePatterns.some(p => name.includes(p)) && !femalePatterns.some(p => name.includes(p));
-      const isPremium = name.includes('studio') || name.includes('neural') || name.includes('pro') || name.includes('premium') || name.includes('enhanced') || name.includes('natural') || name.includes('wavenet');
-      return isMale && isPremium;
-    });
+    const getBest = (isMale: boolean) => {
+      const targetPatterns = isMale ? malePatterns : femalePatterns;
+      const oppositePatterns = isMale ? femalePatterns : malePatterns;
 
-    if (attractiveMaleVoices.length > 0) {
-      const bestVoice = attractiveMaleVoices.sort((a, b) => {
-        const nameA = a.name.toLowerCase();
-        const nameB = b.name.toLowerCase();
-        if (nameA.includes('studio') && !nameB.includes('studio')) return -1;
-        if (nameA.includes('neural') && !nameB.includes('neural')) return -1;
-        return 0;
-      })[0];
-      return voices.indexOf(bestVoice);
+      // 1. Target "Google" voices first as they are consistent across Android
+      const googleVoice = enVoices.find(v => {
+        const name = v.name.toLowerCase();
+        return name.includes('google') && name.includes('us english') && (isMale ? !name.includes('female') : name.includes('female'));
+      });
+      if (googleVoice) return googleVoice;
+
+      // 2. High quality premium voices fallback
+      const premiumVoices = enVoices.filter(v => {
+        const name = v.name.toLowerCase();
+        const matchesTarget = targetPatterns.some(p => name.includes(p)) && !oppositePatterns.some(p => name.includes(p));
+        const isPremium = name.includes('studio') || name.includes('neural') || name.includes('pro') || name.includes('premium') || name.includes('enhanced') || name.includes('natural') || name.includes('wavenet');
+        return matchesTarget && isPremium;
+      });
+
+      if (premiumVoices.length > 0) {
+        return premiumVoices.sort((a, b) => {
+          const nameA = a.name.toLowerCase();
+          const nameB = b.name.toLowerCase();
+          if (nameA.includes('studio') && !nameB.includes('studio')) return -1;
+          if (nameA.includes('neural') && !nameB.includes('neural')) return -1;
+          return 0;
+        })[0];
+      }
+
+      // 3. Basic fallback
+      const basicVoices = enVoices.filter(v => {
+        const name = v.name.toLowerCase();
+        return targetPatterns.some(p => name.includes(p)) && !oppositePatterns.some(p => name.includes(p));
+      });
+
+      if (basicVoices.length > 0) return basicVoices[0];
+
+      return null;
+    };
+
+    const bestMale = getBest(true);
+    const bestFemale = getBest(false);
+
+    const curated = [];
+    if (bestMale) curated.push({ label: 'Father (Male)', index: voices.indexOf(bestMale), voice: bestMale });
+    if (bestFemale && bestFemale !== bestMale) curated.push({ label: 'Mother (Female)', index: voices.indexOf(bestFemale), voice: bestFemale });
+
+    // Extreme fallback if filtering fails completely
+    if (curated.length === 0) {
+      if (enVoices[0]) curated.push({ label: 'Default Voice 1', index: voices.indexOf(enVoices[0]), voice: enVoices[0] });
+      if (enVoices[1]) curated.push({ label: 'Default Voice 2', index: voices.indexOf(enVoices[1]), voice: enVoices[1] });
     }
 
-    const maleVoices = enVoices.filter(v => {
-      const name = v.name.toLowerCase();
-      return malePatterns.some(p => name.includes(p)) && !femalePatterns.some(p => name.includes(p));
-    });
-
-    if (maleVoices.length > 0) return voices.indexOf(maleVoices[0]);
-
-    const enVoiceIdx = voices.findIndex(v => v.lang.startsWith('en'));
-    return enVoiceIdx !== -1 ? enVoiceIdx : undefined;
+    return curated;
   } catch (e) {
-    return undefined;
+    console.error("Failed to get curated voices", e);
+    return [];
   }
+};
+
+const getVoiceToUse = async () => {
+  const preferredIdx = await getPreferredVoiceIndex();
+  if (preferredIdx !== undefined) return preferredIdx;
+
+  const curated = await getCuratedVoices();
+  if (curated.length > 0) return curated[0].index;
+
+  return undefined;
 };
 
 // Remote/Dynamic Config (Hybrid-Hybrid Model)
@@ -124,12 +148,12 @@ export const playTextToSpeech = async (text: string, onEnded?: () => void): Prom
       return;
     }
 
-    const voice = await getMaleVoice();
+    const voiceIdx = await getVoiceToUse();
 
     isSpeaking = true;
     await TextToSpeech.speak({
       text: cleanText,
-      voice: voice,
+      voice: voiceIdx,
       rate: remoteRate,   // Use remote/dynamic rate
       pitch: remotePitch, // Use remote/dynamic pitch
       volume: 1.0,

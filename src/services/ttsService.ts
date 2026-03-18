@@ -89,8 +89,24 @@ export const getCuratedVoices = async () => {
     const bestFemale = getBest(false);
 
     const curated = [];
-    if (bestMale) curated.push({ label: 'Father (Male)', index: voices.indexOf(bestMale), voice: bestMale });
-    if (bestFemale && bestFemale !== bestMale) curated.push({ label: 'Mother (Female)', index: voices.indexOf(bestFemale), voice: bestFemale });
+    if (bestMale) {
+      curated.push({
+        label: 'Father (Deep & Fatherly)',
+        index: voices.indexOf(bestMale),
+        voice: bestMale,
+        pitch: 0.65, // Deeper
+        rate: 0.85   // Slower, more deliberate
+      });
+    }
+    if (bestFemale && bestFemale !== bestMale) {
+      curated.push({
+        label: 'Mother (Adorable & Warm)',
+        index: voices.indexOf(bestFemale),
+        voice: bestFemale,
+        pitch: 1.15, // Slightly higher/brighter
+        rate: 1.0    // Standard speed
+      });
+    }
 
     // Extreme fallback if filtering fails completely
     if (curated.length === 0) {
@@ -105,14 +121,19 @@ export const getCuratedVoices = async () => {
   }
 };
 
-const getVoiceToUse = async () => {
+const getVoiceConfig = async () => {
   const preferredIdx = await getPreferredVoiceIndex();
-  if (preferredIdx !== undefined) return preferredIdx;
-
   const curated = await getCuratedVoices();
-  if (curated.length > 0) return curated[0].index;
 
-  return undefined;
+  if (preferredIdx !== undefined) {
+    const matched = curated.find(v => v.index === preferredIdx);
+    if (matched) return matched;
+    return { index: preferredIdx, pitch: remotePitch, rate: remoteRate };
+  }
+
+  if (curated.length > 0) return curated[0];
+
+  return { index: undefined, pitch: remotePitch, rate: remoteRate };
 };
 
 // Remote/Dynamic Config (Hybrid-Hybrid Model)
@@ -148,14 +169,14 @@ export const playTextToSpeech = async (text: string, onEnded?: () => void): Prom
       return;
     }
 
-    const voiceIdx = await getVoiceToUse();
+    const config = await getVoiceConfig();
 
     isSpeaking = true;
     await TextToSpeech.speak({
       text: cleanText,
-      voice: voiceIdx,
-      rate: remoteRate,   // Use remote/dynamic rate
-      pitch: remotePitch, // Use remote/dynamic pitch
+      voice: config.index,
+      rate: config.rate ?? remoteRate,
+      pitch: config.pitch ?? remotePitch,
       volume: 1.0,
       category: 'ambient',
     });

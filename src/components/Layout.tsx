@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function Layout() {
-  const { theme, colorBlindMode } = useTheme();
+  const { theme, highContrastNav } = useTheme();
   const { user, logout } = useAuth();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
@@ -24,8 +24,6 @@ export default function Layout() {
     { to: "/", icon: Home, label: "Home" },
     { to: "/chat", icon: MessageSquare, label: "Chat" },
     { to: "/library", icon: BookOpen, label: "Library" },
-    { to: "/bookmarks", icon: Bookmark, label: "Saved" },
-    { to: "/journal", icon: PenLine, label: "Journal" },
     { to: "/settings", icon: Settings, label: "Settings" },
   ];
 
@@ -126,7 +124,7 @@ export default function Layout() {
               to={to}
               className={({ isActive }) =>
                 `flex flex-col items-center justify-center w-full h-full space-y-1 rounded-xl transition-all duration-200 ${isActive
-                  ? (colorBlindMode
+                  ? (highContrastNav
                     ? 'bg-blue-600 text-white shadow-lg scale-105'
                     : (theme === 'dark' ? 'text-blue-400' : 'text-blue-600 scale-105'))
                   : (theme === 'dark' ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600')
@@ -155,7 +153,7 @@ export default function Layout() {
               to={to}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
-                  ? (colorBlindMode
+                  ? (highContrastNav
                     ? 'bg-blue-600 text-white shadow-lg translate-x-1'
                     : (theme === 'dark' ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600'))
                   : (theme === 'dark' ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100')

@@ -12,7 +12,7 @@ import { Volume2, Play, Square } from 'lucide-react';
 const AVATARS = ['✝️', '👤', '🕊️', '📖', '🕯️', '⛪', '🌟', '😇', '🦁', '🐑', '🍞', '🍷', '🔥', '💧'];
 
 export default function SettingsScreen() {
-  const { theme, toggleTheme, colorBlindMode, toggleColorBlindMode } = useTheme();
+  const { theme, setTheme, highContrastNav, toggleHighContrastNav } = useTheme();
   const { logout, user, updateProfile, deleteAccount } = useAuth();
   const stats = getStats();
 
@@ -188,22 +188,29 @@ export default function SettingsScreen() {
                 </div>
               </button>
 
-              <button
-                onClick={toggleColorBlindMode}
-                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors border-b border-gray-100 dark:border-gray-700"
-              >
-                <div className="flex items-center gap-3">
-                  <Sparkles size={20} className="text-amber-500" />
-                  <div>
-                    <p className="font-medium text-left">Color Blind Mode</p>
-                    <p className="text-[10px] opacity-50 text-left">High-contrast indicators for navigation</p>
+              <div className={`p-4 rounded-2xl border transition-all duration-200 ${theme === 'dark' ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
+                      <Sparkles size={20} />
+                    </div>
+                    <div>
+                      <p className="font-semibold">High Contrast Navigation</p>
+                      <p className="text-xs opacity-60">Solid indicators for better accessibility</p>
+                    </div>
                   </div>
+                  <button
+                    onClick={toggleHighContrastNav}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${highContrastNav ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-600'
+                      }`}
+                  >
+                    <span
+                      className={`${highContrastNav ? 'translate-x-6' : 'translate-x-1'
+                        } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                    />
+                  </button>
                 </div>
-                <div className={`w-12 h-6 rounded-full p-1 transition-colors ${colorBlindMode ? 'bg-amber-600' : 'bg-gray-300'}`}>
-                  <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${colorBlindMode ? 'translate-x-6' : 'translate-x-0'}`} />
-                </div>
-              </button>
-
+              </div>
               <button
                 onClick={() => {
                   const currentPrefs = user?.preferences || { isPersonalizationEnabled: true };

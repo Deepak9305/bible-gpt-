@@ -5,38 +5,38 @@ type Theme = 'light' | 'dark';
 
 interface ThemeContextType {
   theme: Theme;
+  setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
-  colorBlindMode: boolean;
-  toggleColorBlindMode: () => void;
+  highContrastNav: boolean;
+  toggleHighContrastNav: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>('light');
-  const [colorBlindMode, setColorBlindMode] = useState<boolean>(false);
+  const [theme, setThemeState] = useState<Theme>('light');
+  const [highContrastNav, setHighContrastNav] = useState(false);
 
   useEffect(() => {
-    const loadSettings = async () => {
+    const loadTheme = async () => {
       // Load Theme
-      const savedTheme = await StorageService.get('theme') as Theme;
+      const savedTheme = await StorageService.get('theme');
       if (savedTheme) {
-        setTheme(savedTheme);
+        setThemeState(savedTheme as Theme);
       } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        setTheme('dark');
+        setThemeState('dark');
       }
 
-      // Load Color Blind Mode
-      const savedColorBlind = await StorageService.get('colorBlindMode');
-      if (savedColorBlind !== null) {
-        setColorBlindMode(String(savedColorBlind) === 'true');
+      // Load High Contrast Nav (checking old key for backward compatibility)
+      const savedHighContrast = await StorageService.get('highContrastNav') || await StorageService.get('colorBlindMode');
+      if (savedHighContrast !== null) {
+        setHighContrastNav(String(savedHighContrast) === 'true');
       }
     };
-    loadSettings();
+    loadTheme();
   }, []);
 
   useEffect(() => {
-    StorageService.set('theme', theme);
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -44,20 +44,25 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [theme]);
 
-  useEffect(() => {
-    StorageService.set('colorBlindMode', colorBlindMode);
-  }, [colorBlindMode]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  const setTheme = (newTheme: Theme) => {
+    setThemeState(newTheme);
+    StorageService.set('theme', newTheme);
   };
 
-  const toggleColorBlindMode = () => {
-    setColorBlindMode(prev => !prev);
+  const toggleHighContrastNav = () => {
+    setHighContrastNav(prev => {
+      const newVal = !prev;
+      StorageService.set('highContrastNav', String(newVal));
+      return newVal;
+    });
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, colorBlindMode, toggleColorBlindMode }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, highContrastNav, toggleHighContrastNav }}>
       {children}
     </ThemeContext.Provider>
   );

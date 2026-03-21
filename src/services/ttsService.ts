@@ -54,11 +54,13 @@ export const getCuratedVoices = async () => {
         const name = v.name.toLowerCase();
         const lang = v.lang.toLowerCase();
         if (isMale) {
-          // Prioritize George as requested by user
-          return name.includes('george');
+          // Prioritize Mark (fatherly) or Pete as requested
+          return name.includes('mark') || name.includes('pete');
         } else {
-          // Prioritize UK English Female as requested by user
-          return name.includes('google') && lang.includes('en-gb') && name.includes('female');
+          // Strictly prioritize UK English Female (Google or System)
+          const isUK = lang.includes('en-gb');
+          const isFemale = name.includes('female') || name.includes('woman') || name.includes('girl') || name.includes('google');
+          return isUK && isFemale;
         }
       });
       if (specificVoice) return specificVoice;
@@ -108,8 +110,8 @@ export const getCuratedVoices = async () => {
         label: 'Father (Deep & Fatherly)',
         index: voices.indexOf(bestMale),
         voice: bestMale,
-        pitch: 0.7, // User requested (slightly deeper)
-        rate: 0.85   // User requested
+        pitch: 0.75, // User requested
+        rate: 0.9   // User requested
       });
     }
     if (bestFemale && bestFemale !== bestMale) {
@@ -118,7 +120,7 @@ export const getCuratedVoices = async () => {
         index: voices.indexOf(bestFemale),
         voice: bestFemale,
         pitch: 1.4, // User requested
-        rate: 0.85  // User requested
+        rate: 0.9   // User requested
       });
     }
 
@@ -151,7 +153,7 @@ const getVoiceConfig = async () => {
 };
 
 // Remote/Dynamic Config (Hybrid-Hybrid Model)
-let remotePitch = 0.7;
+let remotePitch = 0.75;
 let remoteRate = 0.9;
 
 export const updateRemoteTtsConfig = (pitch?: number, rate?: number) => {

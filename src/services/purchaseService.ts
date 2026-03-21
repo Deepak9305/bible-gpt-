@@ -10,15 +10,15 @@ export const initPurchases = () => {
   }
 
   const store = CdvPurchase.store;
-  
+
   // Register products
   store.register([{
     type: CdvPurchase.ProductType.PAID_SUBSCRIPTION,
-    id: 'test_subscription_yearly',
+    id: 'biblenova:yearly',
     platform: CdvPurchase.Platform.TEST, // Use TEST platform for now
   }, {
     type: CdvPurchase.ProductType.PAID_SUBSCRIPTION,
-    id: 'test_subscription_monthly',
+    id: 'biblenova:monthly',
     platform: CdvPurchase.Platform.TEST,
   }]);
 
@@ -39,7 +39,7 @@ export const purchaseProduct = (productId: string) => {
     console.warn("CdvPurchase not available. Simulating purchase.");
     return Promise.resolve(true);
   }
-  
+
   return new Promise((resolve, reject) => {
     const store = CdvPurchase.store;
     const product = store.get(productId);
@@ -47,7 +47,7 @@ export const purchaseProduct = (productId: string) => {
       reject(new Error("Product not found"));
       return;
     }
-    
+
     store.order(product).then(() => {
       resolve(true);
     }).catch((e: any) => {

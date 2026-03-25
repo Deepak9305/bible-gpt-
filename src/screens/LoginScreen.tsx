@@ -6,7 +6,7 @@ import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { Capacitor } from '@capacitor/core';
 
 export default function LoginScreen() {
-  const { loginGuest, loginEmail, signInWithGoogle } = useAuth();
+  const { loginGuest, loginEmail, signInWithGoogle, isConfigured } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -52,6 +52,11 @@ export default function LoginScreen() {
         }
       } else {
         // Use Supabase for Web Auth
+        if (!isConfigured) {
+          setError('Supabase is not configured locally. Please fill in your .env file or use guest login.');
+          setIsLoading(false);
+          return;
+        }
         await signInWithGoogle();
       }
     } catch (e: any) {

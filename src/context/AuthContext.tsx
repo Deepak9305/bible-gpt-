@@ -21,6 +21,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
+  isConfigured: boolean;
   loginGuest: () => void;
   loginEmail: (email: string) => void;
   signInWithGoogle: () => Promise<void>;
@@ -195,7 +196,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, loginGuest, loginEmail, signInWithGoogle, logout, deleteAccount, updateProfile }}>
+    <AuthContext.Provider value={{
+      user,
+      session,
+      isLoading,
+      isConfigured: isSupabaseConfigured,
+      loginGuest,
+      loginEmail,
+      signInWithGoogle,
+      logout,
+      deleteAccount,
+      updateProfile
+    }}>
       {children}
     </AuthContext.Provider>
   );

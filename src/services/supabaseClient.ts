@@ -15,6 +15,6 @@ if (!isSupabaseConfigured) {
 }
 
 export const supabase = createClient(
-    isSupabaseConfigured ? supabaseUrl : 'https://placeholder-only.supabase.co',
+    isSupabaseConfigured ? supabaseUrl : 'http://localhost:54321',
     isSupabaseConfigured ? supabaseAnonKey : 'placeholder'
 );

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { StorageService } from '../services/storageService';
-import { supabase } from '../services/supabaseClient';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { Session } from '@supabase/supabase-js';
 
 interface User {
@@ -37,6 +37,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      loadLocalUser();
+      return;
+    }
+
     // 1. Check for Supabase session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);

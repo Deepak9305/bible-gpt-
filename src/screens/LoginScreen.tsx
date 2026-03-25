@@ -6,7 +6,7 @@ import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { Capacitor } from '@capacitor/core';
 
 export default function LoginScreen() {
-  const { loginGuest, loginEmail } = useAuth();
+  const { loginGuest, loginEmail, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -43,11 +43,16 @@ export default function LoginScreen() {
     setIsLoading(true);
     setError('');
     try {
-      const googleUser = await GoogleAuth.signIn();
-      if (googleUser && googleUser.email) {
-        loginEmail(googleUser.email);
+      if (Capacitor.isNativePlatform()) {
+        const googleUser = await GoogleAuth.signIn();
+        if (googleUser && googleUser.email) {
+          loginEmail(googleUser.email);
+        } else {
+          setError('Google login failed: No email returned.');
+        }
       } else {
-        setError('Google login failed: No email returned.');
+        // Use Supabase for Web Auth
+        await signInWithGoogle();
       }
     } catch (e: any) {
       console.error("Google Auth Error", e);

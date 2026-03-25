@@ -46,19 +46,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Fallback to guest session if no Supabase session
         loadLocalUser();
       }
+    }).catch(err => {
+      console.error("Supabase session error:", err);
+      loadLocalUser(); // Fallback to local user
     });
 
     // 2. Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user) {
-        syncUserFromSupabase(session);
-      } else if (!user?.isGuest) {
-        setUser(null);
-      }
-    });
+    let subscription: { unsubscribe: () => void } | null = null;
+    try {
+      const res = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session);
+        if (session?.user) {
+          syncUserFromSupabase(session);
+        } else if (!user?.isGuest) {
+          setUser(null);
+        }
+      });
+      subscription = res.data.subscription;
+    } catch (err) {
+      console.error("Supabase auth change listener error:", err);
+    }
 
-    return () => subscription.unsubscribe();
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
   }, []);
 
   const syncUserFromSupabase = async (session: Session) => {

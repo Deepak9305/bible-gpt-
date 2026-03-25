@@ -3,8 +3,17 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'YOUR_SUPABASE_PROJECT_URL') {
-    console.warn('Supabase credentials are not configured in .env. Auth will not work correctly.');
+const isConfigured = supabaseUrl &&
+    supabaseAnonKey &&
+    supabaseUrl !== 'YOUR_SUPABASE_PROJECT_URL' &&
+    supabaseUrl.startsWith('https://');
+
+if (!isConfigured) {
+    console.warn('Supabase is not correctly configured. Auth features will be disabled.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Provide dummy values if not configured to prevent createClient from throwing
+export const supabase = createClient(
+    isConfigured ? supabaseUrl : 'https://placeholder.supabase.co',
+    isConfigured ? supabaseAnonKey : 'placeholder'
+);

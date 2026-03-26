@@ -228,13 +228,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     const isNative = Capacitor.isNativePlatform();
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-    // For native apps, use custom scheme. For web, force production URL to ignore preview URL issues.
-    // Localhost still uses origin to allow local testing.
+    // For native apps, use custom scheme. For web, always use the current origin
+    // This dynamically handles local, preview, and production web environments
     const redirectTo = isNative
       ? 'com.biblenova.app://google-auth'
-      : (isLocal ? `${window.location.origin}/auth/callback` : 'https://bible-gpt-ebon.vercel.app/auth/callback');
+      : `${window.location.origin}/auth/callback`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',

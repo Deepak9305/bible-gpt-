@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { StorageService } from '../services/storageService';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { Session } from '@supabase/supabase-js';
+import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
 
 interface User {
   id: string;
@@ -76,6 +78,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       if (subscription) subscription.unsubscribe();
     };
+  }, []);
+
+  // 3. Handle deep links for Capacitor
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      const handleDeepLink = async (urlStr: string) => {
+        try {
+          // Parse the URL - Supabase tokens are usually in the fragment (#)
+          const url = new URL(urlStr.replace('#', '?'));
+          const params = new URLSearchParams(url.search);
+
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+
+          if (accessToken && refreshToken) {
+            const { error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            if (error) console.error("Error setting session from deep link:", error);
+          }
+        } catch (err) {
+          console.error("Failed to parse deep link URL:", err);
+        }
+      };
+
+      // Listen for app opening from URL
+      const listenerPromise = App.addListener('appUrlOpen', (event) => {
+        handleDeepLink(event.url);
+      });
+
+      // Check if app was launched with a URL
+      App.getLaunchUrl().then(res => {
+        if (res?.url) handleDeepLink(res.url);
+      });
+
+      return () => {
+        listenerPromise.then(l => l.remove());
+      };
+    }
   }, []);
 
   const syncUserFromSupabase = async (session: Session) => {
@@ -153,14 +195,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     // Determine the best redirect URL
+    const isNative = Capacitor.isNativePlatform();
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const productionUrl = 'https://bible-gpt-ebon.vercel.app/';
-    const redirectTo = isLocal ? window.location.origin : productionUrl;
+    const productionUrl = import.meta.env.VITE_SITE_URL || 'https://bible-gpt-ebon.vercel.app/';
+
+    // For native apps, use the custom scheme. For web, use the site URL.
+    const redirectTo = isNative
+      ? 'com.biblenova.app://google-auth'
+      : (isLocal ? window.location.origin : productionUrl);
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo
+        redirectTo,
+        skipBrowserRedirect: false // Always redirect to let Supabase handle the OAuth flow
       }
     });
     if (error) throw error;

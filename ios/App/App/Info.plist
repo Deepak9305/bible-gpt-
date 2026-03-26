@@ -55,5 +55,16 @@
 	<string>We need access to speech recognition for voice interaction.</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>This identifier will be used to deliver personalized ads to you.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.biblenova.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.biblenova.app</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

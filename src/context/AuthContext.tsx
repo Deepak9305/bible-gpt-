@@ -48,21 +48,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // 1. Check for existing Supabase session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        syncUserFromSupabase(session);
-      } else {
-        // No Supabase session — fall back to local (guest) user
-        loadLocalUser();
+    const initializeAuth = async () => {
+      try {
+        // 1. Manually handle PKCE code exchange for Web (prevent React Router race condition)
+        if (!Capacitor.isNativePlatform()) {
+          const params = new URLSearchParams(window.location.search);
+          const code = params.get('code');
+          if (code) {
+            console.log('Exchanging OAuth code for session...');
+            const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+            if (exchangeError) console.error('OAuth code exchange failed:', exchangeError);
+
+            // Clean up the URL to prevent re-exchanging
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        }
+
+        // 2. Check for existing Supabase session
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) throw error;
+
+        setSession(session);
+        if (session?.user) {
+          await syncUserFromSupabase(session);
+        } else {
+          await loadLocalUser();
+        }
+      } catch (err) {
+        console.error('Auth initialization error:', err);
+        await loadLocalUser();
+      } finally {
+        initialCheckDone.current = true;
       }
-      initialCheckDone.current = true;
-    }).catch(err => {
-      console.error('Supabase getSession error:', err);
-      loadLocalUser();
-      initialCheckDone.current = true;
-    });
+    };
+
+    initializeAuth();
 
     // 2. Listen for auth changes (handles OAuth callback redirect)
     let subscription: { unsubscribe: () => void } | null = null;

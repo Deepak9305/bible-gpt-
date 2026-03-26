@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { StorageService } from '../services/storageService';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
-import { Session } from '@supabase/supabase-js';
+import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 
@@ -38,6 +38,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Track whether the initial session check has completed to prevent
+  // onAuthStateChange from overriding the initial load result.
+  const initialCheckDone = useRef(false);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -45,34 +48,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // 1. Check for Supabase session
+    // 1. Check for existing Supabase session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
         syncUserFromSupabase(session);
       } else {
-        // Fallback to guest session if no Supabase session
+        // No Supabase session — fall back to local (guest) user
         loadLocalUser();
       }
+      initialCheckDone.current = true;
     }).catch(err => {
-      console.error("Supabase session error:", err);
-      loadLocalUser(); // Fallback to local user
+      console.error('Supabase getSession error:', err);
+      loadLocalUser();
+      initialCheckDone.current = true;
     });
 
-    // 2. Listen for auth changes
+    // 2. Listen for auth changes (handles OAuth callback redirect)
     let subscription: { unsubscribe: () => void } | null = null;
     try {
-      const res = supabase.auth.onAuthStateChange((_event, session) => {
-        setSession(session);
-        if (session?.user) {
-          syncUserFromSupabase(session);
-        } else if (!user?.isGuest) {
+      const res = supabase.auth.onAuthStateChange((event: AuthChangeEvent, newSession: Session | null) => {
+        setSession(newSession);
+
+        if (event === 'SIGNED_IN' && newSession?.user) {
+          // User just signed in (e.g. OAuth redirect landed)
+          syncUserFromSupabase(newSession);
+        } else if (event === 'TOKEN_REFRESHED' && newSession?.user) {
+          // Silently update session
+          syncUserFromSupabase(newSession);
+        } else if (event === 'SIGNED_OUT') {
           setUser(null);
+          setIsLoading(false);
+        } else if (event === 'INITIAL_SESSION') {
+          // Fired before getSession resolves; wait for getSession instead
+          // so we don't duplicate the logic.
         }
+        // Do NOT call setUser(null) for every null session — it would clear guests
       });
       subscription = res.data.subscription;
     } catch (err) {
-      console.error("Supabase auth change listener error:", err);
+      console.error('Supabase auth change listener error:', err);
     }
 
     return () => {
@@ -80,12 +95,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // 3. Handle deep links for Capacitor
+  // 3. Handle deep links for Capacitor (native only)
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
       const handleDeepLink = async (urlStr: string) => {
         try {
-          // Parse the URL - Supabase tokens are usually in the fragment (#)
           const url = new URL(urlStr.replace('#', '?'));
           const params = new URLSearchParams(url.search);
 
@@ -97,19 +111,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               access_token: accessToken,
               refresh_token: refreshToken,
             });
-            if (error) console.error("Error setting session from deep link:", error);
+            if (error) console.error('Error setting session from deep link:', error);
           }
         } catch (err) {
-          console.error("Failed to parse deep link URL:", err);
+          console.error('Failed to parse deep link URL:', err);
         }
       };
 
-      // Listen for app opening from URL
       const listenerPromise = App.addListener('appUrlOpen', (event) => {
         handleDeepLink(event.url);
       });
 
-      // Check if app was launched with a URL
       App.getLaunchUrl().then(res => {
         if (res?.url) handleDeepLink(res.url);
       });
@@ -129,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         localUser = JSON.parse(storedUserStr);
       } catch (e) {
-        console.error("Failed to parse local user", e);
+        console.error('Failed to parse local user', e);
       }
     }
 
@@ -152,11 +164,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (storedUser) {
       try {
         const parsed = JSON.parse(storedUser);
-        if (parsed.isGuest) {
-          setUser(parsed);
+        // Load any persisted user (guest or otherwise) that was stored locally
+        if (parsed && parsed.id) {
+          setUser(parsed.isGuest ? parsed : null);
         }
       } catch (e) {
-        console.error("Failed to parse user session", e);
+        console.error('Failed to parse user session', e);
         await StorageService.remove('auth_user');
       }
     }
@@ -178,7 +191,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loginEmail = async (email: string) => {
-    // This is still a mock for now, but we prepare the user object
     const emailUser: User = {
       id: 'user-' + Date.now(),
       name: email.split('@')[0],
@@ -194,21 +206,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    // Determine the best redirect URL
     const isNative = Capacitor.isNativePlatform();
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const productionUrl = import.meta.env.VITE_SITE_URL || 'https://bible-gpt-ebon.vercel.app/';
 
-    // For native apps, use the custom scheme. For web, use the site URL.
+    // Build a clean, consistent redirect URL.
+    // Web uses /auth/callback so the URL is precise and easy to register
+    // in both Supabase and Google Cloud Console.
+    const productionBase = (import.meta.env.VITE_SITE_URL || 'https://bible-gpt-ebon.vercel.app').replace(/\/$/, '');
+    const localBase = window.location.origin;
+
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
     const redirectTo = isNative
       ? 'com.biblenova.app://google-auth'
-      : (isLocal ? window.location.origin : productionUrl);
+      : `${isLocal ? localBase : productionBase}/auth/callback`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
-        skipBrowserRedirect: false // Always redirect to let Supabase handle the OAuth flow
+        skipBrowserRedirect: false,
       }
     });
     if (error) throw error;
@@ -222,7 +238,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteAccount = async () => {
-    // Note: Supabase user deletion usually requires service_role or a custom function
     await StorageService.clear();
     await supabase.auth.signOut();
     setUser(null);

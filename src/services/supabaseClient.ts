@@ -39,6 +39,9 @@ export const supabase = createClient(
             autoRefreshToken: true,
             persistSession: true,
             detectSessionInUrl: true,
+            // Use PKCE flow on web for more reliable OAuth — avoids hash-based
+            // implicit flow issues and works better with SPA redirects.
+            flowType: Capacitor.isNativePlatform() ? 'implicit' : 'pkce',
         }
     }
 );

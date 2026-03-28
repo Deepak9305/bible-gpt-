@@ -1,5 +1,6 @@
 import { AdMob, BannerAdPosition, BannerAdSize, BannerAdPluginEvents, AdMobBannerSize } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
+import { Keyboard } from '@capacitor/keyboard';
 
 // Official Ad Unit IDs
 const AD_UNITS = {
@@ -11,7 +12,23 @@ class AdService {
     private static instance: AdService;
     private isBannerVisible = false;
 
-    private constructor() { }
+    private constructor() {
+        this.initKeyboardListeners();
+    }
+
+    private initKeyboardListeners() {
+        if (Capacitor.isNativePlatform()) {
+            Keyboard.addListener('keyboardWillShow', () => {
+                this.hideBanner();
+            });
+            Keyboard.addListener('keyboardWillHide', () => {
+                // We show it again if it was supposed to be visible
+                // But only if we are still on a screen that wants it
+                // For now, let's just show it again
+                this.showBanner();
+            });
+        }
+    }
 
     public static getInstance(): AdService {
         if (!AdService.instance) {

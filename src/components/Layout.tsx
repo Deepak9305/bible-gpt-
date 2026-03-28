@@ -5,11 +5,29 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
 import BannerAd from './BannerAd';
+import { Keyboard } from '@capacitor/keyboard';
+import { Capacitor } from '@capacitor/core';
 
 export default function Layout() {
   const { theme, highContrastNav } = useTheme();
   const { user, logout } = useAuth();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  React.useEffect(() => {
+    let showListener: any;
+    let hideListener: any;
+
+    if (Capacitor.isNativePlatform()) {
+      Keyboard.addListener('keyboardWillShow', () => setIsKeyboardVisible(true)).then(h => showListener = h);
+      Keyboard.addListener('keyboardWillHide', () => setIsKeyboardVisible(false)).then(h => hideListener = h);
+
+      return () => {
+        showListener?.remove();
+        hideListener?.remove();
+      };
+    }
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -107,7 +125,7 @@ export default function Layout() {
         </AnimatePresence>
       </div>
 
-      <main className="flex-1 min-h-0 overflow-hidden pb-[10rem] md:pb-0 md:pl-64">
+      <main className={`flex-1 min-h-0 overflow-hidden ${isKeyboardVisible ? 'pb-0' : 'pb-[10rem]'} md:pb-0 md:pl-64 transition-all duration-300`}>
         <Outlet />
       </main>
 
@@ -115,30 +133,32 @@ export default function Layout() {
       <BannerAd />
 
       {/* Mobile Bottom Nav */}
-      <nav className={`fixed bottom-0 left-0 right-0 border-t md:hidden backdrop-blur-lg ${theme === 'dark'
-        ? 'bg-gray-900/90 border-gray-800'
-        : 'bg-white/90 border-gray-200'
-        } z-50 pb-[env(safe-area-inset-bottom)]`}>
-        <div className="flex justify-around items-center h-16 px-2">
-          {navItems.map(({ to, icon: Icon, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                `flex flex-col items-center justify-center w-full h-full space-y-1 rounded-xl transition-all duration-200 ${isActive
-                  ? (highContrastNav
-                    ? 'bg-blue-600 text-white shadow-lg scale-105'
-                    : (theme === 'dark' ? 'text-blue-400' : 'text-blue-600 scale-105'))
-                  : (theme === 'dark' ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600')
-                }`
-              }
-            >
-              <Icon size={22} strokeWidth={2} />
-              <span className="text-[10px] font-medium tracking-wide">{label}</span>
-            </NavLink>
-          ))}
-        </div>
-      </nav>
+      {!isKeyboardVisible && (
+        <nav className={`fixed bottom-0 left-0 right-0 border-t md:hidden backdrop-blur-lg ${theme === 'dark'
+          ? 'bg-gray-900/90 border-gray-800'
+          : 'bg-white/90 border-gray-200'
+          } z-50 pb-[env(safe-area-inset-bottom)]`}>
+          <div className="flex justify-around items-center h-16 px-2">
+            {navItems.map(({ to, icon: Icon, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) =>
+                  `flex flex-col items-center justify-center w-full h-full space-y-1 rounded-xl transition-all duration-200 ${isActive
+                    ? (highContrastNav
+                      ? 'bg-blue-600 text-white shadow-lg scale-105'
+                      : (theme === 'dark' ? 'text-blue-400' : 'text-blue-600 scale-105'))
+                    : (theme === 'dark' ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600')
+                  }`
+                }
+              >
+                <Icon size={22} strokeWidth={2} />
+                <span className="text-[10px] font-medium tracking-wide">{label}</span>
+              </NavLink>
+            ))}
+          </div>
+        </nav>
+      )}
 
       {/* Desktop Sidebar */}
       <nav className={`hidden md:flex fixed top-0 left-0 bottom-0 w-64 flex-col border-r ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>

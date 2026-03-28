@@ -12,6 +12,8 @@ class AdService {
     private static instance: AdService;
     private isBannerVisible = false;
 
+    private intendedBannerState = false;
+
     private constructor() {
         this.initKeyboardListeners();
         // Ensure no leftover banners on startup
@@ -23,13 +25,12 @@ class AdService {
     private initKeyboardListeners() {
         if (Capacitor.isNativePlatform()) {
             Keyboard.addListener('keyboardWillShow', () => {
-                this.hideBanner();
+                this.hideBannerInternal();
             });
             Keyboard.addListener('keyboardWillHide', () => {
-                // We show it again if it was supposed to be visible
-                // But only if we are still on a screen that wants it
-                // For now, let's just show it again
-                this.showBanner();
+                if (this.intendedBannerState) {
+                    this.showBannerInternal();
+                }
             });
         }
     }
@@ -42,6 +43,16 @@ class AdService {
     }
 
     public async showBanner() {
+        this.intendedBannerState = true;
+        await this.showBannerInternal();
+    }
+
+    public async hideBanner() {
+        this.intendedBannerState = false;
+        await this.hideBannerInternal();
+    }
+
+    private async showBannerInternal() {
         if (!Capacitor.isNativePlatform()) {
             console.log('AdMob: Banners are only supported on native platforms.');
             return;
@@ -67,7 +78,7 @@ class AdService {
         }
     }
 
-    public async hideBanner() {
+    private async hideBannerInternal() {
         if (!Capacitor.isNativePlatform() || !this.isBannerVisible) return;
 
         try {

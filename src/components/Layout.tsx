@@ -132,7 +132,7 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
         </AnimatePresence>
       </div>
 
-      <main className={`flex-1 min-h-0 overflow-hidden ${paddingClass} md:pb-0 md:pl-64`}>
+      <main className={`flex-1 min-h-0 overflow-hidden flex flex-col ${paddingClass} md:pb-0 md:pl-64`}>
         <Outlet />
       </main>
 

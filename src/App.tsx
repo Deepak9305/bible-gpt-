@@ -55,7 +55,7 @@ function AppContent() {
       {showSplash ? (
         <SplashScreen key="splash" onComplete={() => setShowSplash(false)} />
       ) : (
-        <Suspense fallback={<LoadingFallback />}>
+        <Suspense key="main-app" fallback={<LoadingFallback />}>
           <Routes>
             {/* Auth Guarded Routes */}
             {!user ? (

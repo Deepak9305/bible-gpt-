@@ -50,9 +50,15 @@ const MessageItem = React.memo(({
         }`}>
         {message.role === 'user' ? (
           <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
-        ) : (
+        ) : message.content ? (
           <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed">
             <ReactMarkdown>{message.content}</ReactMarkdown>
+          </div>
+        ) : (
+          <div className="flex space-x-2 items-center h-5 px-1 py-1">
+            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
           </div>
         )}
       </div>
@@ -331,22 +337,24 @@ export default function ChatScreen() {
       />
 
       {/* Header */}
-      <div className={`p-4 border-b flex justify-between items-center ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'} safe-area-top`}>
-        <h1 className="text-lg font-semibold flex items-center gap-2">
-          <Bot className="text-blue-500" /> Father AI
-        </h1>
-        {speakingMessageId && (
-          <button
-            onClick={() => {
-              stopAudio();
-              setSpeakingMessageId(null);
-              setIsLoadingAudio(false);
-            }}
-            className="p-2 rounded-full bg-red-100 text-red-600"
-          >
-            <VolumeX size={20} />
-          </button>
-        )}
+      <div className="safe-area-top bg-white dark:bg-gray-800 border-b dark:border-gray-700">
+        <div className={`p-4 flex justify-between items-center ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}>
+          <h1 className="text-lg font-semibold flex items-center gap-2">
+            <Bot className="text-blue-500" /> Father AI
+          </h1>
+          {speakingMessageId && (
+            <button
+              onClick={() => {
+                stopAudio();
+                setSpeakingMessageId(null);
+                setIsLoadingAudio(false);
+              }}
+              className="p-2 rounded-full bg-red-100 text-red-600"
+            >
+              <VolumeX size={20} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Messages */}
@@ -361,17 +369,6 @@ export default function ChatScreen() {
             onSpeak={handleSpeak}
           />
         ))}
-        {isLoading && messages[messages.length - 1].role === 'user' && (
-          <div className="flex justify-start">
-            <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'}`}>
-              <div className="flex space-x-2">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-              </div>
-            </div>
-          </div>
-        )}
         <div ref={messagesEndRef} />
       </div>
 

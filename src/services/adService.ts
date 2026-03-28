@@ -14,6 +14,10 @@ class AdService {
 
     private constructor() {
         this.initKeyboardListeners();
+        // Ensure no leftover banners on startup
+        if (Capacitor.isNativePlatform()) {
+            AdMob.removeBanner().catch(() => { });
+        }
     }
 
     private initKeyboardListeners() {

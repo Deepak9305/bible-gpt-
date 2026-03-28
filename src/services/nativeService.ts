@@ -10,8 +10,11 @@ export const initializeNativeServices = async () => {
     // 1. Initialize Storage (Stats) - CRITICAL
     await initStats();
 
-    // 1.1 Initialize AdMob
+    // 1.1 Initialize AdMob and ensure a clean slate (no persistent banners)
     await AdMob.initialize();
+    if (Capacitor.isNativePlatform()) {
+      await AdMob.removeBanner().catch(() => { });
+    }
 
     if (Capacitor.isNativePlatform()) {
       // 0. Hide Status Bar (Immersive Mode)

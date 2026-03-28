@@ -107,7 +107,7 @@ export const getCuratedVoices = async () => {
     const curated = [];
     if (bestMale) {
       curated.push({
-        label: 'Father (Deep & Fatherly)',
+        label: "Father's Voice",
         index: voices.indexOf(bestMale),
         voice: bestMale,
         pitch: 0.75, // User requested
@@ -116,7 +116,7 @@ export const getCuratedVoices = async () => {
     }
     if (bestFemale && bestFemale !== bestMale) {
       curated.push({
-        label: 'Mother (Adorable & Warm)',
+        label: "Mother's Voice",
         index: voices.indexOf(bestFemale),
         voice: bestFemale,
         pitch: 1.4, // User requested
@@ -126,8 +126,8 @@ export const getCuratedVoices = async () => {
 
     // Extreme fallback if filtering fails completely
     if (curated.length === 0) {
-      if (enVoices[0]) curated.push({ label: 'Default Voice 1', index: voices.indexOf(enVoices[0]), voice: enVoices[0] });
-      if (enVoices[1]) curated.push({ label: 'Default Voice 2', index: voices.indexOf(enVoices[1]), voice: enVoices[1] });
+      if (enVoices[0]) curated.push({ label: "Father's Voice", index: voices.indexOf(enVoices[0]), voice: enVoices[0] });
+      if (enVoices[1]) curated.push({ label: "Mother's Voice", index: voices.indexOf(enVoices[1]), voice: enVoices[1] });
     }
 
     return curated;

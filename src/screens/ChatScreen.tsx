@@ -11,6 +11,7 @@ import ReactMarkdown from 'react-markdown';
 import { useLocation } from 'react-router-dom';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 import { Capacitor } from '@capacitor/core';
+import { Keyboard } from '@capacitor/keyboard';
 
 interface Message {
   id: string;
@@ -124,8 +125,22 @@ export default function ChatScreen() {
     scrollToBottom();
   }, [messages]);
 
-  // Cleanup speech on unmount
+  // Cleanup speech and keyboard on unmount
   useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      const showListener = Keyboard.addListener('keyboardWillShow', () => {
+        // Delay slightly for layout to settle
+        setTimeout(scrollToBottom, 100);
+      });
+      const hideListener = Keyboard.addListener('keyboardWillHide', () => {
+        setTimeout(scrollToBottom, 100);
+      });
+      return () => {
+        stopAudio();
+        showListener.then(h => h.remove());
+        hideListener.then(h => h.remove());
+      };
+    }
     return () => {
       stopAudio();
     };

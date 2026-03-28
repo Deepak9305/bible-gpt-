@@ -4,6 +4,7 @@ import { Home, MessageSquare, BookOpen, Bookmark, Settings, PenLine, Users, LogO
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
+import BannerAd from './BannerAd';
 
 export default function Layout() {
   const { theme, highContrastNav } = useTheme();
@@ -106,9 +107,12 @@ export default function Layout() {
         </AnimatePresence>
       </div>
 
-      <main className="flex-1 min-h-0 overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0 md:pl-64">
+      <main className="flex-1 min-h-0 overflow-hidden pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-0 md:pl-64">
         <Outlet />
       </main>
+
+      {/* Banner Ad Component (triggers native ad) */}
+      <BannerAd />
 
       {/* Mobile Bottom Nav */}
       <nav className={`fixed bottom-0 left-0 right-0 border-t md:hidden backdrop-blur-lg ${theme === 'dark'

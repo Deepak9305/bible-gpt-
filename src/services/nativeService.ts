@@ -3,11 +3,15 @@ import { StatusBar } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
 import { initStats } from './statsService';
 import { AppTrackingTransparency } from 'capacitor-plugin-app-tracking-transparency';
+import { AdMob } from '@capacitor-community/admob';
 
 export const initializeNativeServices = async () => {
   try {
     // 1. Initialize Storage (Stats) - CRITICAL
     await initStats();
+
+    // 1.1 Initialize AdMob
+    await AdMob.initialize();
 
     if (Capacitor.isNativePlatform()) {
       // 0. Hide Status Bar (Immersive Mode)

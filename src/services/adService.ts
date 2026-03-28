@@ -35,7 +35,7 @@ class AdService {
                 adId: adId,
                 adSize: BannerAdSize.ADAPTIVE_BANNER,
                 position: BannerAdPosition.BOTTOM_CENTER,
-                margin: 85, // Optimized padding to be just above the bottom nav + safe area
+                margin: 100, // Balanced padding to clear navigation bar + safe area on most devices
                 isTesting: true,
             });
 

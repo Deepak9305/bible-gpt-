@@ -1,10 +1,10 @@
 import { AdMob, BannerAdPosition, BannerAdSize, BannerAdPluginEvents, AdMobBannerSize } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
 
-// Test IDs from Google
+// Official Ad Unit IDs
 const AD_UNITS = {
-    ios: 'ca-app-pub-3940256099942544/2934735716',
-    android: 'ca-app-pub-3940256099942544/6300978111',
+    ios: 'ca-app-pub-7381421031784616/6798345893',
+    android: 'ca-app-pub-7381421031784616/6798345893',
 };
 
 class AdService {
@@ -36,7 +36,7 @@ class AdService {
                 adSize: BannerAdSize.ADAPTIVE_BANNER,
                 position: BannerAdPosition.BOTTOM_CENTER,
                 margin: 100, // Balanced padding to clear navigation bar + safe area on most devices
-                isTesting: true,
+                isTesting: false,
             });
 
             this.isBannerVisible = true;

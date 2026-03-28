@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Home, MessageSquare, BookOpen, Bookmark, Settings, PenLine, Users, LogOut, Plus, User } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -11,8 +11,12 @@ import { Capacitor } from '@capacitor/core';
 export default function Layout() {
   const { theme, highContrastNav } = useTheme();
   const { user, logout } = useAuth();
+  const { pathname } = useLocation();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  const showAd = pathname !== '/chat' && !isKeyboardVisible;
+  const showPadding = pathname !== '/chat' && !isKeyboardVisible;
 
   React.useEffect(() => {
     let showListener: any;
@@ -125,12 +129,12 @@ export default function Layout() {
         </AnimatePresence>
       </div>
 
-      <main className={`flex-1 min-h-0 overflow-hidden ${isKeyboardVisible ? 'pb-0' : 'pb-[10rem]'} md:pb-0 md:pl-64 transition-all duration-300`}>
+      <main className={`flex-1 min-h-0 overflow-hidden ${showPadding ? 'pb-[10rem]' : 'pb-0'} md:pb-0 md:pl-64 transition-all duration-300`}>
         <Outlet />
       </main>
 
       {/* Banner Ad Component (triggers native ad) */}
-      <BannerAd />
+      <BannerAd shouldShow={showAd} />
 
       {/* Mobile Bottom Nav */}
       {!isKeyboardVisible && (

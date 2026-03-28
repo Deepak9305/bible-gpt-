@@ -8,15 +8,15 @@ import BannerAd from './BannerAd';
 import { Keyboard } from '@capacitor/keyboard';
 import { Capacitor } from '@capacitor/core';
 
-export default function Layout() {
+export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
   const { theme, highContrastNav } = useTheme();
   const { user, logout } = useAuth();
   const { pathname } = useLocation();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
-  const showAd = pathname !== '/chat' && !isKeyboardVisible;
-  const showBannerPadding = pathname !== '/chat' && !isKeyboardVisible;
+  const showAd = pathname !== '/chat' && !isKeyboardVisible && isAppReady;
+  const showBannerPadding = pathname !== '/chat' && !isKeyboardVisible && isAppReady;
   const showNavPadding = !isKeyboardVisible;
 
   React.useEffect(() => {

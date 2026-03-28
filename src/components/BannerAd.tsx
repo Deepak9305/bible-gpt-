@@ -3,21 +3,10 @@ import { adService } from '../services/adService';
 import { Capacitor } from '@capacitor/core';
 
 export const BannerAd: React.FC<{ shouldShow?: boolean }> = ({ shouldShow = true }) => {
-    const isFirstMount = React.useRef(true);
-
     useEffect(() => {
         if (Capacitor.isNativePlatform()) {
             if (shouldShow) {
-                if (isFirstMount.current) {
-                    // Delay the first ever show to ensure splash screen and transitions are fully done
-                    const timer = setTimeout(() => {
-                        adService.showBanner();
-                        isFirstMount.current = false;
-                    }, 1500);
-                    return () => clearTimeout(timer);
-                } else {
-                    adService.showBanner();
-                }
+                adService.showBanner();
             } else {
                 adService.hideBanner();
             }

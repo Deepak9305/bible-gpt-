@@ -33,6 +33,7 @@ function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
   const { user, isLoading } = useAuth();
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isAppReady, setIsAppReady] = useState(false);
 
   useEffect(() => {
     const bootApp = async () => {
@@ -50,7 +51,7 @@ function AppContent() {
   if (isLoading || isInitializing) return null;
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" onExitComplete={() => setIsAppReady(true)}>
       {showSplash ? (
         <SplashScreen key="splash" onComplete={() => setShowSplash(false)} />
       ) : (
@@ -63,7 +64,7 @@ function AppContent() {
                 <Route path="*" element={<Navigate to="/login" replace />} />
               </>
             ) : (
-              <Route element={<Layout />}>
+              <Route element={<Layout isAppReady={isAppReady} />}>
                 <Route index element={<HomeScreen />} />
                 <Route path="chat" element={<ChatScreen />} />
                 <Route path="library" element={<LibraryScreen />} />

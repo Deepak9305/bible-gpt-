@@ -118,7 +118,7 @@ export default function ChatScreen() {
   }, [location]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
   };
 
   useEffect(() => {
@@ -323,7 +323,7 @@ export default function ChatScreen() {
   };
 
   return (
-    <div className={`flex flex-col h-full ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+    <div className={`flex flex-col flex-1 min-h-0 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
       <PremiumModal
         isOpen={isPremiumModalOpen}
         onClose={() => setIsPremiumModalOpen(false)}

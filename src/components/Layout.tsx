@@ -19,6 +19,8 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
   const showBannerPadding = pathname !== '/chat' && !isKeyboardVisible && isAppReady;
   const showNavPadding = !isKeyboardVisible;
 
+  const paddingClass = showBannerPadding ? 'pb-[9.5rem]' : (showNavPadding ? 'pb-[calc(4rem+env(safe-area-inset-bottom))]' : 'pb-0');
+
   React.useEffect(() => {
     let showListener: any;
     let hideListener: any;
@@ -130,7 +132,7 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
         </AnimatePresence>
       </div>
 
-      <main className={`flex-1 min-h-0 overflow-hidden ${showBannerPadding ? 'pb-[10rem]' : (showNavPadding ? 'pb-[calc(4rem+env(safe-area-inset-bottom))]' : 'pb-0')} md:pb-0 md:pl-64 transition-all duration-300`}>
+      <main className={`flex-1 min-h-0 overflow-hidden ${paddingClass} md:pb-0 md:pl-64`}>
         <Outlet />
       </main>
 

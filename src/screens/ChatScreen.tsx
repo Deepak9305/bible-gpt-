@@ -154,19 +154,20 @@ export default function ChatScreen() {
 
   const handleSpeak = React.useCallback(async (text: string, id: string) => {
     if (speakingMessageId === id) {
-      stopAudio();
+      // BUG FIX: Await stopAudio so the engine fully stops before state reset
+      await stopAudio();
       setSpeakingMessageId(null);
       setIsLoadingAudio(false);
       return;
     }
 
-    stopAudio();
+    // BUG FIX: Await stopAudio before starting new playback
+    await stopAudio();
     setSpeakingMessageId(id);
     setIsLoadingAudio(true);
 
     try {
       await playTextToSpeech(text, () => {
-        // Only reset if this is still the active message
         setSpeakingMessageId(current => {
           if (current === id) setIsLoadingAudio(false);
           return current === id ? null : current;

@@ -162,7 +162,8 @@ export default function HomeScreen() {
     if (!dailyVerse) return;
 
     if (isSpeaking || isLoadingAudio) {
-      stopAudio();
+      // BUG FIX: Await stopAudio to fully halt before resetting state
+      await stopAudio();
       setIsSpeaking(false);
       setIsLoadingAudio(false);
       return;
@@ -175,13 +176,14 @@ export default function HomeScreen() {
 
     try {
       await playTextToSpeech(textToSpeak, () => {
+        // onEnded: playback finished naturally
         setIsSpeaking(false);
         setIsLoadingAudio(false);
       });
     } catch (error) {
       console.error("Audio failed", error);
+      // BUG FIX: setIsSpeaking(false) was missing here — UI was stuck in speaking state on error
       setIsSpeaking(false);
-    } finally {
       setIsLoadingAudio(false);
     }
   };

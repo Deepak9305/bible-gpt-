@@ -37,6 +37,12 @@ export default function LoginScreen() {
     setError('');
     try {
       if (Capacitor.isNativePlatform()) {
+        // Must initialize before calling signIn on native platforms
+        await GoogleAuth.initialize({
+          clientId: '1083543499729-erfr5o5fis936tqh1p136uvtojgkl205.apps.googleusercontent.com',
+          scopes: ['profile', 'email'],
+          grantOfflineAccess: true,
+        });
         const googleUser = await GoogleAuth.signIn();
         if (googleUser && googleUser.email) {
           loginEmail(googleUser.email);

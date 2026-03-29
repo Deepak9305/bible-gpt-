@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { Capacitor } from '@capacitor/core';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 
 export default function LoginScreen() {
   const { loginGuest, loginEmail, signInWithGoogle, isConfigured } = useAuth();
@@ -11,25 +12,32 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
 
   // GoogleAuth.initialize is only needed for native platforms.
   // On web, Supabase handles the full OAuth redirect flow.
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('Please fill in all fields');
+    if (!email) {
+      setError('Please enter your email address');
       return;
     }
 
     setIsLoading(true);
     setError('');
-
-    // Simulate API call
-    setTimeout(() => {
-      loginEmail(email);
+    try {
+      await loginEmail(email);
+      if (isSupabaseConfigured) {
+        // Real auth: OTP magic link was sent
+        setOtpSent(true);
+      }
+      // If not configured, loginEmail() sets user state directly (dev mode)
+    } catch (e: any) {
+      setError(e?.message || 'Failed to send sign-in link. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleGoogleLogin = async () => {
@@ -37,21 +45,33 @@ export default function LoginScreen() {
     setError('');
     try {
       if (Capacitor.isNativePlatform()) {
-        // Must initialize before calling signIn on native platforms
+        // BUG FIX: Must initialize before calling signIn on native platforms.
+        // Then use the idToken to create a REAL Supabase session — previously
+        // we were calling loginEmail() which only created a fake local user.
         await GoogleAuth.initialize({
           clientId: '1083543499729-erfr5o5fis936tqh1p136uvtojgkl205.apps.googleusercontent.com',
           scopes: ['profile', 'email'],
           grantOfflineAccess: true,
         });
         const googleUser = await GoogleAuth.signIn();
-        if (googleUser && googleUser.email) {
-          loginEmail(googleUser.email);
+        const idToken = googleUser?.authentication?.idToken;
+        if (idToken && isSupabaseConfigured) {
+          // Proper session via Supabase Google OAuth with idToken
+          const { error } = await supabase.auth.signInWithIdToken({
+            provider: 'google',
+            token: idToken,
+          });
+          if (error) throw error;
+          // onAuthStateChange will handle SIGNED_IN and sync the user
+        } else if (googleUser?.email) {
+          // Fallback if Supabase not configured: create local user from Google profile
+          await loginEmail(googleUser.email);
         } else {
-          setError('Google login failed: No email returned.');
+          setError('Google login failed: No credentials returned.');
         }
       } else {
-        // Use Supabase for Web Auth
-        if (!isConfigured) {
+        // Web: Use Supabase OAuth redirect flow
+        if (!isSupabaseConfigured) {
           setError('Supabase is not configured locally. Please fill in your .env file or use guest login.');
           setIsLoading(false);
           return;
@@ -131,14 +151,21 @@ export default function LoginScreen() {
             </div>
 
             {/* Email Login Form */}
-            <form onSubmit={handleEmailLogin} className="space-y-4 mb-8">
-              {error && (
-                <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 text-sm rounded-xl text-center">
-                  {error}
-                </div>
-              )}
+            {otpSent ? (
+              <div className="mb-8 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl flex flex-col items-center gap-2 text-center">
+                <CheckCircle size={32} className="text-green-500" />
+                <p className="font-medium text-green-700 dark:text-green-300">Check your email!</p>
+                <p className="text-sm text-green-600 dark:text-green-400">A sign-in link has been sent to <strong>{email}</strong>. Click it to log in.</p>
+                <button onClick={() => setOtpSent(false)} className="text-xs text-slate-400 mt-1 underline">Use a different email</button>
+              </div>
+            ) : (
+              <form onSubmit={handleEmailLogin} className="space-y-4 mb-8">
+                {error && (
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 text-sm rounded-xl text-center">
+                    {error}
+                  </div>
+                )}
 
-              <div className="space-y-4">
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Mail size={18} className="text-slate-400 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-500 transition-colors" />
@@ -152,28 +179,15 @@ export default function LoginScreen() {
                   />
                 </div>
 
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Lock size={18} className="text-slate-400 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-500 transition-colors" />
-                  </div>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full pl-11 pr-4 py-3.5 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-500 transition-colors duration-200 text-sm"
-                    placeholder="Password"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-medium py-3.5 px-4 rounded-xl transition-colors transition-transform duration-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 dark:shadow-none text-sm"
-              >
-                {isLoading ? <Loader2 size={18} className="animate-spin" /> : 'Sign In'}
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-medium py-3.5 px-4 rounded-xl transition-colors transition-transform duration-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 dark:shadow-none text-sm"
+                >
+                  {isLoading ? <Loader2 size={18} className="animate-spin" /> : 'Send Sign-In Link'}
+                </button>
+              </form>
+            )}
 
             {/* Guest Login */}
             <button

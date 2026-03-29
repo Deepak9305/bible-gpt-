@@ -185,9 +185,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (storedUser) {
       try {
         const parsed = JSON.parse(storedUser);
-        // Load any persisted user (guest or otherwise) that was stored locally
+        // BUG FIX: Restore ALL valid persisted users (guests AND email users),
+        // not just guests. Previously, non-guest users stored locally were
+        // cleared on startup when Supabase had no active session.
         if (parsed && parsed.id) {
-          setUser(parsed.isGuest ? parsed : null);
+          setUser(parsed);
         }
       } catch (e) {
         console.error('Failed to parse user session', e);
@@ -212,6 +214,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loginEmail = async (email: string) => {
+    // BUG FIX: Use Supabase magic link when configured, instead of a fake local user.
+    // Fall back to a local user only when Supabase isn't set up (e.g. dev mode).
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.auth.signInWithOtp({ email });
+      if (error) throw error;
+      // Session will be resolved via onAuthStateChange after the user clicks the link.
+      return;
+    }
+    // Fallback: offline/dev mode — create a local email user
     const emailUser: User = {
       id: 'user-' + Date.now(),
       name: email.split('@')[0],
@@ -246,7 +257,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    // BUG FIX: Only call supabase.auth.signOut() when Supabase is configured.
+    // Calling it against the placeholder URL causes a silent network error.
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut().catch(e => console.warn('Supabase signOut error:', e));
+    }
     setUser(null);
     setSession(null);
     await StorageService.remove('auth_user');
@@ -254,10 +269,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const deleteAccount = async () => {
     await StorageService.clear();
-    await supabase.auth.signOut();
+    // BUG FIX: Only sign out from Supabase if it's configured.
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut().catch(e => console.warn('Supabase signOut error on delete:', e));
+    }
     setUser(null);
     setSession(null);
-    window.location.reload();
+    // BUG FIX: window.location.reload() is broken inside Capacitor native.
+    // Setting state to null is sufficient — the router will redirect to /login.
   };
 
   const updateProfile = async (name: string, avatar?: string, preferences?: User['preferences']) => {

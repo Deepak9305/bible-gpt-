@@ -35,13 +35,13 @@ export default function BookmarksScreen() {
 
   const handleSpeak = async (text: string, id: string) => {
     if (speakingVerse === id) {
-      stopAudio();
+      await stopAudio();
       setSpeakingVerse(null);
       setIsLoadingAudio(false);
       return;
     }
 
-    stopAudio();
+    await stopAudio();
     setSpeakingVerse(id);
     setIsLoadingAudio(true);
 

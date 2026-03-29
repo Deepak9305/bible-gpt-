@@ -194,7 +194,7 @@ export default function LibraryScreen() {
   const handleSpeak = React.useCallback(async (text: string, id: string, isPlaylist = false) => {
     if (speakingVerse === id && !isPlaylist) {
       setIsPlayingPlaylist(false);
-      stopAudio();
+      await stopAudio();
       setSpeakingVerse(null);
       setIsLoadingAudio(false);
       return;
@@ -202,7 +202,7 @@ export default function LibraryScreen() {
 
     if (!isPlaylist) {
       setIsPlayingPlaylist(false);
-      stopAudio();
+      await stopAudio();
     }
 
     setSpeakingVerse(id);

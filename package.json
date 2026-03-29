@@ -1,7 +1,7 @@
 {
   "name": "bible-nova",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.0.0",
-    "@capacitor-community/speech-recognition": "^7.0.1",
     "@capacitor-community/text-to-speech": "^8.0.0",
     "@capacitor/android": "^8.2.0",
     "@capacitor/app": "^8.0.1",
@@ -31,11 +30,13 @@
     "@capacitor/share": "^8.0.1",
     "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.1",
+    "@capgo/capacitor-app-tracking-transparency": "^8.1.5",
+    "@capgo/capacitor-speech-recognition": "^8.1.0",
     "@codetrix-studio/capacitor-google-auth": "^3.4.0-rc.4",
+    "@supabase/supabase-js": "^2.45.6",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "better-sqlite3": "^12.4.1",
-    "capacitor-plugin-app-tracking-transparency": "^3.0.0",
     "cordova-plugin-purchase": "^13.13.1",
     "dotenv": "^17.2.3",
     "downloadjs": "^1.4.7",
@@ -49,7 +50,6 @@
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.13.1",
-    "@supabase/supabase-js": "^2.45.6",
     "vite": "^6.2.0"
   },
   "devDependencies": {

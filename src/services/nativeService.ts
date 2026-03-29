@@ -2,7 +2,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { StatusBar } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
 import { initStats } from './statsService';
-import { AppTrackingTransparency } from 'capacitor-plugin-app-tracking-transparency';
+import { AppTrackingTransparency } from '@capgo/capacitor-app-tracking-transparency';
 import { AdMob } from '@capacitor-community/admob';
 
 export const initializeNativeServices = async () => {

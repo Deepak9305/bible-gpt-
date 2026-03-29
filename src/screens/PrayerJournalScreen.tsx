@@ -4,6 +4,8 @@ import { Plus, Trash2, CheckCircle2, Circle, Calendar, Tag, Filter, Share2 } fro
 import { motion, AnimatePresence } from 'motion/react';
 import { incrementPrayers } from '../services/statsService';
 import { StorageService } from '../services/storageService';
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
 
 interface Prayer {
   id: string;
@@ -72,23 +74,22 @@ export default function PrayerJournalScreen() {
     savePrayers(updated);
   };
 
-  const handleShare = async (prayer: Prayer) => {
+  const handleShare = React.useCallback(async (prayer: Prayer) => {
     const shareText = `Prayer: "${prayer.text}"\nCategory: ${prayer.category}\nDate: ${prayer.date}\n\nShared from Bible Nova ✝️`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'My Prayer',
-          text: shareText,
-        });
-      } catch (err) {
-        console.error("Share failed", err);
+    try {
+      await Share.share({
+        title: 'My Prayer',
+        text: shareText,
+        dialogTitle: 'Share Prayer',
+      });
+    } catch (err) {
+      console.error("Share failed", err);
+      if (!Capacitor.isNativePlatform()) {
+        navigator.clipboard.writeText(shareText);
+        alert("Prayer copied to clipboard!");
       }
-    } else {
-      navigator.clipboard.writeText(shareText);
-      alert("Prayer copied to clipboard!");
     }
-  };
+  }, []);
 
   const filteredPrayers = filterCategory === 'All'
     ? prayers

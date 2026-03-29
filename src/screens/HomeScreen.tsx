@@ -9,6 +9,8 @@ import { sendMessageStream } from '../services/aiService';
 import { getStats, updateStreak, UserStats } from '../services/statsService';
 import { motion } from 'motion/react';
 import { StorageService } from '../services/storageService';
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
 import ReactMarkdown from 'react-markdown';
 
 const MOODS = [
@@ -192,19 +194,19 @@ export default function HomeScreen() {
     if (!dailyVerse) return;
     const shareText = `"${dailyVerse.text}" - ${dailyVerse.reference}\n\nShared from Father AI ✝️`;
 
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Daily Bread',
-          text: shareText,
-        });
-      } catch (err) {
-        console.error("Share failed", err);
+    try {
+      await Share.share({
+        title: 'Daily Bread',
+        text: shareText,
+        dialogTitle: 'Share Verse',
+      });
+    } catch (err) {
+      console.error("Share failed", err);
+      // Fallback for web if plugin fails
+      if (!Capacitor.isNativePlatform()) {
+        navigator.clipboard.writeText(shareText);
+        alert("Verse copied to clipboard!");
       }
-    } else {
-      // Fallback to clipboard
-      navigator.clipboard.writeText(shareText);
-      alert("Verse copied to clipboard!");
     }
   };
 

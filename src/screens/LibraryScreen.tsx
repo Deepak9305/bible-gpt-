@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import PremiumModal from '../components/PremiumModal';
 import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
 import { StorageService } from '../services/storageService';
 import ReactMarkdown from 'react-markdown';
 
@@ -230,13 +231,28 @@ export default function LibraryScreen() {
   }, [speakingVerse]);
 
   const handleShare = React.useCallback(async (verse: Verse) => {
+    const shareText = `"${verse.text}" - ${verse.book_name} ${verse.chapter}:${verse.verse}`;
     try {
-      await Share.share({
-        title: `${verse.book_name} ${verse.chapter}:${verse.verse}`,
-        text: `"${verse.text}" - ${verse.book_name} ${verse.chapter}:${verse.verse}`,
-        dialogTitle: 'Share Bible Verse',
-      });
-    } catch (error) { console.error(error); }
+      if (Capacitor.getPlatform() === 'web') {
+        if (navigator.share) {
+          await navigator.share({
+            title: `${verse.book_name} ${verse.chapter}:${verse.verse}`,
+            text: shareText,
+          });
+        } else {
+          navigator.clipboard.writeText(shareText);
+          alert("Verse copied to clipboard!");
+        }
+      } else {
+        await Share.share({
+          title: `${verse.book_name} ${verse.chapter}:${verse.verse}`,
+          text: shareText,
+          dialogTitle: 'Share Bible Verse',
+        });
+      }
+    } catch (error) {
+      console.error("Share failed", error);
+    }
   }, []);
 
   useEffect(() => {

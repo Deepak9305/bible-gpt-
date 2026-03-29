@@ -49,18 +49,15 @@ export const getCuratedVoices = async () => {
       const targetPatterns = isMale ? malePatterns : femalePatterns;
       const oppositePatterns = isMale ? femalePatterns : malePatterns;
 
-      // 1. Preferred Selection: Target specific voices requested by user (James for Male, UK English for Female)
+      // 1. Preferred Selection: Target specific voices requested by user (Neural2-J for Male, Neural2-F for Female)
       const specificVoice = enVoices.find(v => {
         const name = v.name.toLowerCase();
-        const lang = v.lang.toLowerCase();
         if (isMale) {
-          // Prioritize Mark (fatherly) or Pete as requested
-          return name.includes('mark') || name.includes('pete');
+          // Prioritize en-US-Neural2-J or Mark (fatherly)
+          return name.includes('neural2-j') || name.includes('mark') || name.includes('pete');
         } else {
-          // Strictly prioritize UK English Female (Google or System)
-          const isUK = lang.includes('en-gb');
-          const isFemale = name.includes('female') || name.includes('woman') || name.includes('girl') || name.includes('google');
-          return isUK && isFemale;
+          // Prioritize en-US-Neural2-F or UK English Female
+          return name.includes('neural2-f') || (v.lang.toLowerCase().includes('en-gb') && (name.includes('female') || name.includes('woman') || name.includes('google')));
         }
       });
       if (specificVoice) return specificVoice;
@@ -119,7 +116,7 @@ export const getCuratedVoices = async () => {
         label: "Mother's Voice",
         index: voices.indexOf(bestFemale),
         voice: bestFemale,
-        pitch: 1.4, // User requested
+        pitch: 1.3, // User requested (was 1.4)
         rate: 0.9   // User requested
       });
     }

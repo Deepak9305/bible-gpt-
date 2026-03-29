@@ -3,15 +3,10 @@ import { StatusBar } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
 import { initStats } from './statsService';
 import { AppTrackingTransparency } from 'capacitor-plugin-app-tracking-transparency';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { AdMob } from '@capacitor-community/admob';
 
 export const initializeNativeServices = async () => {
   try {
-    // 0. Initialize Google Auth (Native Only)
-    if (Capacitor.isNativePlatform()) {
-      await GoogleAuth.initialize().catch(e => console.warn("GoogleAuth init failed", e));
-    }
     await initStats();
 
     // 1.1 Initialize AdMob and ensure a clean slate (no persistent banners)

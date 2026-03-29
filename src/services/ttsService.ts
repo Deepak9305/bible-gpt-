@@ -137,6 +137,10 @@ export const getCuratedVoices = async () => {
   }
 };
 
+// Remote/Dynamic Config (Hybrid-Hybrid Model)
+let remotePitch = 0.75;
+let remoteRate = 0.9;
+
 const getVoiceConfig = async () => {
   const preferredIdx = await getPreferredVoiceIndex();
   const curated = await getCuratedVoices();
@@ -151,10 +155,6 @@ const getVoiceConfig = async () => {
 
   return { index: undefined, pitch: remotePitch, rate: remoteRate };
 };
-
-// Remote/Dynamic Config (Hybrid-Hybrid Model)
-let remotePitch = 0.75;
-let remoteRate = 0.9;
 
 export const updateRemoteTtsConfig = (pitch?: number, rate?: number) => {
   if (pitch !== undefined) remotePitch = pitch;

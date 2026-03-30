@@ -16,11 +16,7 @@ export const initPurchases = () => {
   // Register products
   store.register([{
     type: CdvPurchase.ProductType.PAID_SUBSCRIPTION,
-    id: 'biblenova:yearly',
-    platform: platform,
-  }, {
-    type: CdvPurchase.ProductType.PAID_SUBSCRIPTION,
-    id: 'biblenova:monthly',
+    id: 'biblenova',
     platform: platform,
   }]);
 
@@ -48,7 +44,7 @@ export const initPurchases = () => {
   ]);
 };
 
-export const purchaseProduct = (productId: string) => {
+export const purchaseProduct = (productId: string, basePlanId?: string) => {
   if (typeof CdvPurchase === 'undefined') {
     console.warn("CdvPurchase not available. Simulating purchase.");
     return Promise.resolve(true);
@@ -62,7 +58,16 @@ export const purchaseProduct = (productId: string) => {
       return;
     }
 
-    store.order(product).then(() => {
+    let offerToOrder = product;
+    if (basePlanId && product.offers && product.offers.length > 0) {
+      // Find the specific base plan offer
+      const offer = product.offers.find((o: any) => o.id === basePlanId);
+      if (offer) {
+        offerToOrder = offer;
+      }
+    }
+
+    store.order(offerToOrder).then(() => {
       resolve(true);
     }).catch((e: any) => {
       reject(e);

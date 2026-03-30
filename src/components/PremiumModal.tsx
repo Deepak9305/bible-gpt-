@@ -14,17 +14,17 @@ interface PremiumModalProps {
 export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModalProps) {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubscribe = async (productId: string) => {
+  const handleSubscribe = async (productId: string, basePlanId?: string) => {
     setIsLoading(true);
     try {
-      await purchaseProduct(productId);
+      await purchaseProduct(productId, basePlanId);
       upgradeToPremium();
       onUpgrade();
       onClose();
       alert("Blessings! You now have unlimited access.");
-    } catch (e) {
+    } catch (e: any) {
       console.error("Purchase failed", e);
-      alert("Purchase failed or was cancelled.");
+      alert(`Purchase failed or was cancelled. Details: ${e?.message || JSON.stringify(e)}`);
     } finally {
       setIsLoading(false);
     }
@@ -97,7 +97,7 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
                     </p>
                     <div className="space-y-3 mb-4">
                       <button
-                        onClick={() => handleSubscribe('biblenova:yearly')}
+                        onClick={() => handleSubscribe('biblenova', 'yearly')}
                         disabled={isLoading}
                         className="w-full relative py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-semibold transition-transform active:scale-95 disabled:opacity-70 flex flex-col items-center shadow-lg shadow-amber-500/30"
                       >
@@ -109,7 +109,7 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
                         )}
                       </button>
                       <button
-                        onClick={() => handleSubscribe('biblenova:monthly')}
+                        onClick={() => handleSubscribe('biblenova', 'monthly')}
                         disabled={isLoading}
                         className="w-full py-2.5 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-xl text-sm font-medium transition-transform active:scale-95 border border-stone-200 dark:border-stone-700 disabled:opacity-70 flex justify-center"
                       >

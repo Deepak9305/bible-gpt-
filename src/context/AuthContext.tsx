@@ -276,8 +276,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     // BUG FIX: Explicitly clear the native Google credential cache so that on the next
     // login attempt, it triggers the account selection prompt again.
+    // MUST initialize first or it natively crashes the app on Android.
     if (Capacitor.isNativePlatform()) {
       try {
+        await GoogleAuth.initialize({
+          clientId: '1083543499729-smnbok05h0g6gl25e3tetfokigs4edqv.apps.googleusercontent.com',
+          scopes: ['profile', 'email'],
+          grantOfflineAccess: true,
+        });
         await GoogleAuth.signOut();
       } catch (e) {
         console.warn('GoogleAuth native signOut error:', e);

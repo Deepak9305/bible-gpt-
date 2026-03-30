@@ -413,7 +413,7 @@ export default function HomeScreen() {
             : 'bg-gray-50 border-gray-100'
             }`}>
             <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-700 text-gray-400 flex items-center justify-center shadow-sm mb-4">
-              <Sparkles size={24} />
+              <Rocket size={24} />
             </div>
             <h3 className="font-bold text-lg mb-1">Coming Soon</h3>
             <p className="text-xs opacity-50">

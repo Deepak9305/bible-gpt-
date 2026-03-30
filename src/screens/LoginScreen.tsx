@@ -46,10 +46,10 @@ export default function LoginScreen() {
     try {
       if (Capacitor.isNativePlatform()) {
         // BUG FIX: Must initialize before calling signIn on native platforms.
-        // Then use the idToken to create a REAL Supabase session — previously
-        // we were calling loginEmail() which only created a fake local user.
+        // We MUST use the Web Client ID here, even on Android, because it represents
+        // the server (Supabase) that will receive and verify the `idToken`.
         await GoogleAuth.initialize({
-          clientId: '1083543499729-erfr5o5fis936tqh1p136uvtojgkl205.apps.googleusercontent.com',
+          clientId: '1083543499729-smnbok05h0g6gl25e3tetfokigs4edqv.apps.googleusercontent.com',
           scopes: ['profile', 'email'],
           grantOfflineAccess: true,
         });

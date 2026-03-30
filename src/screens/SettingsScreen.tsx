@@ -119,8 +119,12 @@ export default function SettingsScreen() {
             <div className={`rounded-xl overflow-hidden ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
               <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                    {user?.avatar || '👤'}
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl overflow-hidden ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                    {user?.avatar?.startsWith('http') ? (
+                      <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      user?.avatar || '👤'
+                    )}
                   </div>
                   <div>
                     <p className="font-medium">{user?.name || 'Guest'}</p>

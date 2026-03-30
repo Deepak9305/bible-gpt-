@@ -89,8 +89,10 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
                 <div className={`p-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-100'}`}>
                   <p className="text-xs font-semibold uppercase tracking-wider opacity-50 mb-1">Current Account</p>
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${theme === 'dark' ? 'bg-blue-900/50 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
-                      {user?.avatar ? (
+                    <div className={`w-8 h-8 rounded-full overflow-hidden flex items-center justify-center ${theme === 'dark' ? 'bg-blue-900/50 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+                      {user?.avatar?.startsWith('http') ? (
+                        <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : user?.avatar ? (
                         <span className="text-lg">{user.avatar}</span>
                       ) : (
                         <User size={16} />

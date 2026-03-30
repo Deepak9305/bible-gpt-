@@ -4,6 +4,7 @@ import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 interface User {
   id: string;
@@ -264,12 +265,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       options: {
         redirectTo,
         skipBrowserRedirect: false,
+        queryParams: {
+          prompt: 'select_account'
+        }
       }
     });
     if (error) throw error;
   };
 
   const logout = async () => {
+    // BUG FIX: Explicitly clear the native Google credential cache so that on the next
+    // login attempt, it triggers the account selection prompt again.
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await GoogleAuth.signOut();
+      } catch (e) {
+        console.warn('GoogleAuth native signOut error:', e);
+      }
+    }
+
     // BUG FIX: Only call supabase.auth.signOut() when Supabase is configured.
     // Calling it against the placeholder URL causes a silent network error.
     if (isSupabaseConfigured) {

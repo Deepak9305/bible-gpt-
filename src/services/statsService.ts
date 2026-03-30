@@ -1,4 +1,5 @@
 import { StorageService } from './storageService';
+import { Capacitor } from '@capacitor/core';
 
 export interface UserStats {
   streak: number;
@@ -47,6 +48,9 @@ export const saveStats = (stats: UserStats) => {
 };
 
 export const checkDailyLimit = (): boolean => {
+  // Bypass premium limits completely on Web
+  if (!Capacitor.isNativePlatform()) return false;
+
   const stats = getStats();
   const today = new Date().toLocaleDateString('en-CA');
 

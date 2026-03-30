@@ -42,6 +42,9 @@ export const initPurchases = () => {
       platform: CdvPurchase.Platform.APPLE_APPSTORE
     }
   ]);
+
+  // BUG FIX: Actually connect to the stores and fetch the product data
+  store.update();
 };
 
 export const purchaseProduct = (productId: string, basePlanId?: string) => {

@@ -88,17 +88,55 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
                   Daily Limit Reached
                 </div>
                 <h3 className="font-serif text-lg text-stone-800 dark:text-stone-200 mb-2">1 Message Daily Limit</h3>
-                <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mb-4">
-                  To keep our sanctuary sustainable, we limit Father AI to 1 generation per day for free seekers.
-                  Subscriptions are temporarily paused while we upgrade our experience.
-                  Please return tomorrow for more guidance.
-                </p>
-                <button
-                  onClick={onClose}
-                  className="w-full py-2.5 bg-stone-800 dark:bg-stone-100 text-white dark:text-stone-900 rounded-xl text-sm font-medium transition-transform active:scale-95"
-                >
-                  Peace be with you
-                </button>
+
+                {Capacitor.isNativePlatform() ? (
+                  <>
+                    <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mb-4">
+                      To keep our sanctuary sustainable, we limit Father AI to 1 generation per day for free seekers.
+                      Upgrade now to unlock unlimited access.
+                    </p>
+                    <div className="space-y-3 mb-4">
+                      <button
+                        onClick={() => handleSubscribe('biblenova:yearly')}
+                        disabled={isLoading}
+                        className="w-full relative py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-semibold transition-transform active:scale-95 disabled:opacity-70 flex flex-col items-center shadow-lg shadow-amber-500/30"
+                      >
+                        {isLoading ? <Loader2 size={18} className="animate-spin" /> : (
+                          <>
+                            <span>Annual Blessing</span>
+                            <span className="text-[10px] font-normal opacity-90">Best value</span>
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleSubscribe('biblenova:monthly')}
+                        disabled={isLoading}
+                        className="w-full py-2.5 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-xl text-sm font-medium transition-transform active:scale-95 border border-stone-200 dark:border-stone-700 disabled:opacity-70 flex justify-center"
+                      >
+                        {isLoading ? <Loader2 size={18} className="animate-spin" /> : 'Monthly Support'}
+                      </button>
+                    </div>
+                    <button
+                      onClick={onClose}
+                      className="w-full text-[11px] text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 font-medium transition-colors"
+                    >
+                      Maybe later
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mb-4">
+                      To keep our sanctuary sustainable, we limit Father AI to 1 generation per day for free seekers.
+                      Subscriptions are disabled on the Web version. Please return tomorrow for more guidance.
+                    </p>
+                    <button
+                      onClick={onClose}
+                      className="w-full py-2.5 bg-stone-800 dark:bg-stone-100 text-white dark:text-stone-900 rounded-xl text-sm font-medium transition-transform active:scale-95"
+                    >
+                      Peace be with you
+                    </button>
+                  </>
+                )}
               </div>
 
               <p className="text-center text-[10px] text-stone-400 dark:text-stone-600">

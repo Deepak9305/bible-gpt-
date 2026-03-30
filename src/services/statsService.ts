@@ -82,8 +82,10 @@ export const incrementDailyUsage = () => {
 };
 
 export const upgradeToPremium = () => {
-  // Paused: Purchases are currently disabled
-  return getStats();
+  const stats = getStats();
+  const updated = { ...stats, isPremium: true };
+  saveStats(updated);
+  return updated;
 };
 
 export const updateStreak = () => {

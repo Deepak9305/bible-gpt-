@@ -25,7 +25,8 @@ interface AuthContextType {
   isLoading: boolean;
   isConfigured: boolean;
   loginGuest: () => void;
-  loginEmail: (email: string) => void;
+  loginEmail: (email: string, password?: string) => Promise<void>;
+  signUpEmail: (email: string, password?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   logout: () => void;
   deleteAccount: () => void;
@@ -213,13 +214,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await StorageService.set('auth_user', JSON.stringify(guestUser));
   };
 
-  const loginEmail = async (email: string) => {
-    // BUG FIX: Use Supabase magic link when configured, instead of a fake local user.
-    // Fall back to a local user only when Supabase isn't set up (e.g. dev mode).
+  const loginEmail = async (email: string, password?: string) => {
+    // Standard Supabase Email + Password Login
     if (isSupabaseConfigured) {
-      const { error } = await supabase.auth.signInWithOtp({ email });
+      if (!password) throw new Error('Password is required');
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      // Session will be resolved via onAuthStateChange after the user clicks the link.
       return;
     }
     // Fallback: offline/dev mode — create a local email user
@@ -235,6 +235,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     setUser(emailUser);
     await StorageService.set('auth_user', JSON.stringify(emailUser));
+  };
+
+  const signUpEmail = async (email: string, password?: string) => {
+    if (isSupabaseConfigured) {
+      if (!password) throw new Error('Password is required');
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      // Note: Depending on Supabase settings, the user may still need to verify their email
+      // before they can log in.
+      return;
+    }
+    // Fallback: just login in dev mode
+    return loginEmail(email, password);
   };
 
   const signInWithGoogle = async () => {
@@ -300,6 +313,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isConfigured: isSupabaseConfigured,
       loginGuest,
       loginEmail,
+      signUpEmail,
       signInWithGoogle,
       logout,
       deleteAccount,

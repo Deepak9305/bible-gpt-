@@ -7,12 +7,12 @@ import { Capacitor } from '@capacitor/core';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 
 export default function LoginScreen() {
-  const { loginGuest, loginEmail, signInWithGoogle, isConfigured } = useAuth();
+  const { loginGuest, loginEmail, signUpEmail, signInWithGoogle, isConfigured } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
   // GoogleAuth.initialize is only needed for native platforms.
   // On web, Supabase handles the full OAuth redirect flow.
@@ -23,18 +23,23 @@ export default function LoginScreen() {
       setError('Please enter your email address');
       return;
     }
+    if (!password) {
+      setError('Please enter your password');
+      return;
+    }
 
     setIsLoading(true);
     setError('');
     try {
-      await loginEmail(email);
-      if (isSupabaseConfigured) {
-        // Real auth: OTP magic link was sent
-        setOtpSent(true);
+      if (isSignUp) {
+        await signUpEmail(email, password);
+        // If sign-up requires verification, you'd show a message here instead.
+        // Assuming auto-login if email confirmations are disabled for now:
+      } else {
+        await loginEmail(email, password);
       }
-      // If not configured, loginEmail() sets user state directly (dev mode)
     } catch (e: any) {
-      setError(e?.message || 'Failed to send sign-in link. Please try again.');
+      setError(e?.message || (isSignUp ? 'Failed to create account.' : 'Failed to log in. Please check your credentials.'));
     } finally {
       setIsLoading(false);
     }
@@ -151,43 +156,57 @@ export default function LoginScreen() {
             </div>
 
             {/* Email Login Form */}
-            {otpSent ? (
-              <div className="mb-8 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl flex flex-col items-center gap-2 text-center">
-                <CheckCircle size={32} className="text-green-500" />
-                <p className="font-medium text-green-700 dark:text-green-300">Check your email!</p>
-                <p className="text-sm text-green-600 dark:text-green-400">A sign-in link has been sent to <strong>{email}</strong>. Click it to log in.</p>
-                <button onClick={() => setOtpSent(false)} className="text-xs text-slate-400 mt-1 underline">Use a different email</button>
-              </div>
-            ) : (
-              <form onSubmit={handleEmailLogin} className="space-y-4 mb-8">
-                {error && (
-                  <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 text-sm rounded-xl text-center">
-                    {error}
-                  </div>
-                )}
-
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Mail size={18} className="text-slate-400 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-500 transition-colors" />
-                  </div>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="block w-full pl-11 pr-4 py-3.5 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-500 transition-colors duration-200 text-sm"
-                    placeholder="Email address"
-                  />
+            <form onSubmit={handleEmailLogin} className="space-y-4 mb-8">
+              {error && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 text-sm rounded-xl text-center">
+                  {error}
                 </div>
+              )}
 
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Mail size={18} className="text-slate-400 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-500 transition-colors" />
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="block w-full pl-11 pr-4 py-3.5 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-500 transition-colors duration-200 text-sm"
+                  placeholder="Email address"
+                />
+              </div>
+
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock size={18} className="text-slate-400 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-500 transition-colors" />
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full pl-11 pr-4 py-3.5 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-500 transition-colors duration-200 text-sm"
+                  placeholder="Password"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-medium py-3.5 px-4 rounded-xl transition-colors transition-transform duration-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 dark:shadow-none text-sm"
+              >
+                {isLoading ? <Loader2 size={18} className="animate-spin" /> : (isSignUp ? 'Create Account' : 'Log In')}
+              </button>
+
+              <div className="text-center mt-4">
                 <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-medium py-3.5 px-4 rounded-xl transition-colors transition-transform duration-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 dark:shadow-none text-sm"
+                  type="button"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline transition-all"
                 >
-                  {isLoading ? <Loader2 size={18} className="animate-spin" /> : 'Send Sign-In Link'}
+                  {isSignUp ? 'Already have an account? Log In' : "Don't have an account? Sign Up"}
                 </button>
-              </form>
-            )}
+              </div>
+            </form>
 
             {/* Guest Login */}
             <button

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Check, Sparkles, Heart, Infinity, Loader2 } from 'lucide-react';
+import { X, Sparkles, Infinity, Loader2, Zap } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
-import { purchaseProduct } from '../services/purchaseService';
+import { purchaseProduct, getProductPricing } from '../services/purchaseService';
 
 interface PremiumModalProps {
   isOpen: boolean;
@@ -12,20 +12,31 @@ interface PremiumModalProps {
 
 export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [pricing, setPricing] = useState<{ yearly: string | null; monthly: string | null }>({
+    yearly: null,
+    monthly: null,
+  });
+
+  useEffect(() => {
+    if (isOpen && Capacitor.isNativePlatform()) {
+      // Prices are available after store.update() runs; try after a short delay
+      const timer = setTimeout(() => {
+        setPricing(getProductPricing('biblenova'));
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   const handleSubscribe = async (productId: string, basePlanId?: string) => {
     setIsLoading(true);
     try {
       await purchaseProduct(productId, basePlanId);
-      // Global verification listener in purchaseService already triggers upgradeToPremium()
       onUpgrade();
       onClose();
-      // Alert after closing so it doesn't render on a blank screen
-      setTimeout(() => alert("Blessings! You now have unlimited access."), 300);
+      setTimeout(() => alert('Blessings! You now have unlimited access.'), 300);
     } catch (e: any) {
-      console.error("Purchase failed", e);
-      const msg = e?.message || JSON.stringify(e);
-      alert(`Purchase failed or was cancelled.\n\n${msg}`);
+      console.error('Purchase failed', e);
+      alert(`Purchase failed or was cancelled.\n\n${e?.message || JSON.stringify(e)}`);
     } finally {
       setIsLoading(false);
     }
@@ -34,118 +45,122 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
   return (
     <AnimatePresence>
       {isOpen && (
-        <div key="modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div key="modal" className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm"
-            // Don't allow dismissal while a payment is in progress
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={isLoading ? undefined : onClose}
           />
 
           <motion.div
-            initial={{ scale: 0.95, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            initial={{ y: 60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 60, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 28 }}
             className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-3xl shadow-2xl overflow-hidden border border-stone-100 dark:border-stone-800"
           >
-            <button
-              onClick={onClose}
-              disabled={isLoading}
-              className="absolute top-3 right-3 p-2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors z-10 disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <X size={18} />
-            </button>
-
-            <div className="p-6">
-              <div className="text-center mb-6">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-500 mb-3 shadow-sm">
-                  <Sparkles size={24} strokeWidth={1.5} />
-                </div>
-                <h2 className="text-2xl font-serif font-medium text-stone-800 dark:text-stone-100 mb-1">
-                  Abide in Wisdom
-                </h2>
-                <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed px-4">
-                  Unlock unlimited conversations and support our ministry.
-                </p>
+            {/* Header Strip */}
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-white">
+                <Sparkles size={18} strokeWidth={2} />
+                <span className="font-semibold text-sm tracking-wide">Abide in Wisdom</span>
               </div>
+              <button
+                onClick={onClose}
+                disabled={isLoading}
+                className="text-white/70 hover:text-white transition-colors disabled:opacity-30"
+              >
+                <X size={18} />
+              </button>
+            </div>
 
-              <div className="space-y-2 mb-6">
+            <div className="px-5 py-4 space-y-4">
+              {/* Benefit pills */}
+              <div className="flex flex-wrap gap-2">
                 {[
-                  { icon: Infinity, text: 'Unlimited conversations' },
-                  { icon: Heart, text: 'Support the ministry' },
-                  { icon: Check, text: 'Future deep-study tools' },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-100 dark:border-stone-800">
-                    <div className="text-amber-500 dark:text-amber-400">
-                      <item.icon size={16} />
-                    </div>
-                    <span className="text-xs font-medium text-stone-700 dark:text-stone-300">{item.text}</span>
+                  { icon: Infinity, label: 'Unlimited AI' },
+                  { icon: Zap, label: 'Deep Study' },
+                  { icon: Sparkles, label: 'Ministry Support' },
+                ].map((b) => (
+                  <div
+                    key={b.label}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/40 text-xs font-medium"
+                  >
+                    <b.icon size={12} />
+                    {b.label}
                   </div>
                 ))}
               </div>
 
-              <div className="bg-stone-50 dark:bg-stone-800/50 rounded-2xl p-6 border border-amber-200/50 dark:border-amber-900/30 text-center">
-                <div className="bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-widest py-1 px-3 rounded-full inline-block mb-3">
-                  Daily Limit Reached
-                </div>
-                <h3 className="font-serif text-lg text-stone-800 dark:text-stone-200 mb-2">1 Message Daily Limit</h3>
-
-                {Capacitor.isNativePlatform() ? (
-                  <>
-                    <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mb-4">
-                      To keep our sanctuary sustainable, we limit Father AI to 1 generation per day for free seekers.
-                      Upgrade now to unlock unlimited access.
-                    </p>
-                    <div className="space-y-3 mb-4">
-                      <button
-                        onClick={() => handleSubscribe('biblenova', 'yearly')}
-                        disabled={isLoading}
-                        className="w-full relative py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-semibold transition-transform active:scale-95 disabled:opacity-70 flex flex-col items-center shadow-lg shadow-amber-500/30"
-                      >
-                        {isLoading ? <Loader2 size={18} className="animate-spin" /> : (
-                          <>
-                            <span>Annual Blessing</span>
-                            <span className="text-[10px] font-normal opacity-90">Best value</span>
-                          </>
+              {Capacitor.isNativePlatform() ? (
+                <>
+                  {/* Subscription options */}
+                  <div className="space-y-2">
+                    {/* Yearly */}
+                    <button
+                      onClick={() => handleSubscribe('biblenova', 'yearly')}
+                      disabled={isLoading}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-white rounded-2xl font-semibold text-sm transition-all disabled:opacity-60 shadow-md shadow-amber-400/30"
+                    >
+                      <div className="flex flex-col items-start">
+                        <span>Annual Blessing</span>
+                        <span className="text-[10px] font-normal opacity-80">Best value · Save ~60%</span>
+                      </div>
+                      <span className="text-sm font-bold">
+                        {isLoading ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          pricing.yearly ?? '—'
                         )}
-                      </button>
-                      <button
-                        onClick={() => handleSubscribe('biblenova', 'monthly')}
-                        disabled={isLoading}
-                        className="w-full py-2.5 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-xl text-sm font-medium transition-transform active:scale-95 border border-stone-200 dark:border-stone-700 disabled:opacity-70 flex justify-center"
-                      >
-                        {isLoading ? <Loader2 size={18} className="animate-spin" /> : 'Monthly Support'}
-                      </button>
-                    </div>
+                      </span>
+                    </button>
+
+                    {/* Monthly */}
+                    <button
+                      onClick={() => handleSubscribe('biblenova', 'monthly')}
+                      disabled={isLoading}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 active:scale-[0.98] text-stone-700 dark:text-stone-200 rounded-2xl font-medium text-sm transition-all disabled:opacity-60 border border-stone-200 dark:border-stone-700"
+                    >
+                      <span>Monthly Support</span>
+                      <span className="text-sm font-semibold">
+                        {isLoading ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          pricing.monthly ?? '—'
+                        )}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between pt-1">
+                    <p className="text-[10px] text-stone-400 dark:text-stone-600">
+                      Secure · Cancel anytime
+                    </p>
                     <button
                       onClick={onClose}
                       disabled={isLoading}
-                      className="w-full text-[11px] text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="text-[11px] text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 font-medium transition-colors disabled:opacity-30"
                     >
                       Maybe later
                     </button>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mb-4">
-                      To keep our sanctuary sustainable, we limit Father AI to 1 generation per day for free seekers.
-                      Subscriptions are disabled on the Web version. Please return tomorrow for more guidance.
-                    </p>
-                    <button
-                      onClick={onClose}
-                      className="w-full py-2.5 bg-stone-800 dark:bg-stone-100 text-white dark:text-stone-900 rounded-xl text-sm font-medium transition-transform active:scale-95"
-                    >
-                      Peace be with you
-                    </button>
-                  </>
-                )}
-              </div>
-
-              <p className="text-center text-[10px] text-stone-400 dark:text-stone-600">
-                Secure payment. Cancel anytime.
-              </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-stone-500 dark:text-stone-400">
+                    Subscriptions are only available in the mobile app. Return tomorrow for another free conversation.
+                  </p>
+                  <button
+                    onClick={onClose}
+                    className="w-full py-2.5 bg-stone-800 dark:bg-stone-100 text-white dark:text-stone-900 rounded-2xl text-sm font-medium"
+                  >
+                    Peace be with you
+                  </button>
+                </>
+              )}
             </div>
           </motion.div>
         </div>

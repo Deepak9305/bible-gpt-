@@ -52,6 +52,32 @@ export const initPurchases = () => {
   store.update();
 };
 
+export interface ProductPricing {
+  yearly: string | null;
+  monthly: string | null;
+}
+
+export const getProductPricing = (productId: string): ProductPricing => {
+  const purchasePlugin = (window as any).CdvPurchase || (window as any).store;
+  if (!purchasePlugin) return { yearly: null, monthly: null };
+
+  const store = purchasePlugin.store || purchasePlugin;
+  const product = store.get(productId);
+  if (!product?.offers) return { yearly: null, monthly: null };
+
+  const findPrice = (basePlanId: string): string | null => {
+    const offer = product.offers.find((o: any) => o.id === basePlanId);
+    if (!offer?.pricingPhases?.length) return null;
+    const phase = offer.pricingPhases[0];
+    return phase?.price || null;
+  };
+
+  return {
+    yearly: findPrice('yearly'),
+    monthly: findPrice('monthly'),
+  };
+};
+
 export const purchaseProduct = (productId: string, basePlanId?: string) => {
   const purchasePlugin = (window as any).CdvPurchase || (window as any).store;
 

@@ -22,6 +22,17 @@ allprojects {
         google()
         mavenCentral()
     }
+    configurations.configureEach {
+        resolutionStrategy.eachDependency { details ->
+            def requested = details.requested
+            if (requested.group == 'androidx.core' && !requested.name.startsWith("multidex")) {
+                details.useVersion '1.15.0'
+            }
+            if (requested.group == 'androidx.activity') {
+                details.useVersion '1.9.3'
+            }
+        }
+    }
 }
 
 task clean(type: Delete) {

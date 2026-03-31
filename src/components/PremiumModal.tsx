@@ -21,11 +21,20 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
   useEffect(() => {
     if (isOpen && Capacitor.isNativePlatform()) {
       setIsPricingLoading(true);
-      const timer = setTimeout(() => {
-        setPricing(getProductPricing('biblenova'));
-        setIsPricingLoading(false);
-      }, 800);
-      return () => clearTimeout(timer);
+
+      let attempts = 0;
+      const fetchPricing = () => {
+        const p = getProductPricing('biblenova');
+        if (p.yearly || p.monthly || attempts > 3) {
+          setPricing(p);
+          setIsPricingLoading(false);
+        } else {
+          attempts++;
+          setTimeout(fetchPricing, 1000); // Retry every second
+        }
+      };
+
+      fetchPricing();
     }
   }, [isOpen]);
 

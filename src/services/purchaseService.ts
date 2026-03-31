@@ -17,7 +17,7 @@ export const initPurchases = () => {
   store.register([{
     type: purchasePlugin.ProductType.PAID_SUBSCRIPTION,
     id: 'biblenova',
-    platform: platform,
+    // Omit platform to let the plugin auto-detect the best match
   }]);
 
   store.when()
@@ -63,6 +63,13 @@ export const getProductPricing = (productId: string): ProductPricing => {
 
   const store = purchasePlugin.store || purchasePlugin;
   const product = store.get(productId);
+
+  // If product not found yet, try to trigger a store update to hydrate the list
+  if (!product && store.update) {
+    console.log("[PurchaseService] Product not found, triggering store.update()...");
+    store.update();
+  }
+
   if (!product?.offers) return { yearly: null, monthly: null };
 
   const findPrice = (basePlanId: string): string | null => {

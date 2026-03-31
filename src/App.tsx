@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
@@ -27,6 +27,12 @@ function LoadingFallback() {
       <Loader2 className="animate-spin text-amber-500" size={32} />
     </div>
   );
+}
+
+// Wrapper to give OnboardingScreen access to the navigate hook (Router context needed)
+function OnboardingRouteWrapper() {
+  const navigate = useNavigate();
+  return <OnboardingScreen onComplete={() => navigate('/')} />;
 }
 
 function AppContent() {
@@ -75,7 +81,7 @@ function AppContent() {
                 <Route path="terms" element={<TermsOfServiceScreen />} />
                 <Route
                   path="onboarding"
-                  element={<OnboardingScreen onComplete={() => window.location.hash = '#/'} />}
+                  element={<OnboardingRouteWrapper />}
                 />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>

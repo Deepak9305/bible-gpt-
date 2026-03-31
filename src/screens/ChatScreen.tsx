@@ -113,11 +113,11 @@ export default function ChatScreen() {
   // Handle initial prompt from navigation state
   useEffect(() => {
     if (initialPromptHandled.current) return;
-
     const state = location.state as { initialPrompt?: string };
     if (state?.initialPrompt) {
       initialPromptHandled.current = true;
-      handleSend(state.initialPrompt);
+      // Use the ref to avoid calling a potentially stale closure of handleSend
+      setTimeout(() => handleSendRef.current?.(state.initialPrompt), 0);
       // Clear state to prevent re-triggering
       window.history.replaceState({}, document.title);
     }

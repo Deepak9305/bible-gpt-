@@ -54,8 +54,9 @@ export const purchaseProduct = (productId: string, basePlanId?: string) => {
     if (Capacitor.isNativePlatform()) {
       return Promise.reject(new Error("Purchasing service is not available on this device. Please check your connection or restart the app."));
     } else {
-      console.warn("CdvPurchase not available. Simulating purchase on web.");
-      return Promise.resolve(true);
+      // On web there is no real payment flow — reject so the UI shows an error
+      // instead of silently granting free premium.
+      return Promise.reject(new Error("In-app purchases are not available on the web. Please use the mobile app."));
     }
   }
 
@@ -91,6 +92,9 @@ export const purchaseProduct = (productId: string, basePlanId?: string) => {
       if (!resolved) {
         resolved = true;
         receipt.finish();
+        // NOTE: upgradeToPremium() is intentionally NOT called here.
+        // The global store.when().verified() listener in initPurchases() handles it.
+        // Calling it here would trigger a duplicate Supabase upsert.
         cleanup();
         resolve(true);
       }

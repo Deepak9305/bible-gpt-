@@ -59,6 +59,10 @@ export const initStats = async () => {
         await StorageService.set(`user_stats_${currentUserId}`, JSON.stringify(cachedStats));
         return;
       }
+      if (error && error.code !== 'PGRST116') {
+        // PGRST116 = "no rows found" — expected for new users, not a real error
+        console.warn('Supabase stats fetch error:', error.message);
+      }
     }
 
     // Fallback to local storage map

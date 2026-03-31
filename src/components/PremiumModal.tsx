@@ -20,10 +20,12 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
       // Global verification listener in purchaseService already triggers upgradeToPremium()
       onUpgrade();
       onClose();
-      alert("Blessings! You now have unlimited access.");
+      // Alert after closing so it doesn't render on a blank screen
+      setTimeout(() => alert("Blessings! You now have unlimited access."), 300);
     } catch (e: any) {
       console.error("Purchase failed", e);
-      alert(`Purchase failed or was cancelled. Details: ${e?.message || JSON.stringify(e)}`);
+      const msg = e?.message || JSON.stringify(e);
+      alert(`Purchase failed or was cancelled.\n\n${msg}`);
     } finally {
       setIsLoading(false);
     }

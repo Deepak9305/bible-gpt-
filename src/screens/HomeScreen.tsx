@@ -206,8 +206,13 @@ export default function HomeScreen() {
       console.error("Share failed", err);
       // Fallback for web if plugin fails
       if (!Capacitor.isNativePlatform()) {
-        navigator.clipboard.writeText(shareText);
-        alert("Verse copied to clipboard!");
+        try {
+          await navigator.clipboard.writeText(shareText);
+          // Use a non-blocking approach on web instead of alert()
+          console.info("Verse copied to clipboard!");
+        } catch {
+          console.warn("Clipboard write failed — no user gesture or permission denied.");
+        }
       }
     }
   };

@@ -17,12 +17,15 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
     yearly: null,
     monthly: null,
   });
+  const [purchaseError, setPurchaseError] = useState<string | null>(null);
+  const retryTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (isOpen && Capacitor.isNativePlatform()) {
       setIsPricingLoading(true);
-
+      setPurchaseError(null);
       let attempts = 0;
+
       const fetchPricing = () => {
         const p = getProductPricing('biblenova');
         if (p.yearly || p.monthly || attempts > 3) {
@@ -30,24 +33,29 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
           setIsPricingLoading(false);
         } else {
           attempts++;
-          setTimeout(fetchPricing, 1000); // Retry every second
+          retryTimerRef.current = setTimeout(fetchPricing, 1000);
         }
       };
 
       fetchPricing();
+
+      // Cleanup: cancel any pending retry when modal closes
+      return () => {
+        if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      };
     }
   }, [isOpen]);
 
   const handleSubscribe = async (productId: string, basePlanId?: string) => {
     setIsLoading(true);
+    setPurchaseError(null);
     try {
       await purchaseProduct(productId, basePlanId);
       onUpgrade();
       onClose();
-      setTimeout(() => alert('Blessings! You now have unlimited access.'), 300);
     } catch (e: any) {
       console.error('Purchase failed', e);
-      alert(`Purchase failed or was cancelled.\n\n${e?.message || JSON.stringify(e)}`);
+      setPurchaseError(e?.message || 'Purchase failed or was cancelled.');
     } finally {
       setIsLoading(false);
     }
@@ -149,6 +157,9 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
                     </div>
                   </button>
 
+                  {purchaseError && (
+                    <p className="text-xs text-red-400 text-center pb-1">{purchaseError}</p>
+                  )}
                   {/* Footer row */}
                   <div className="flex items-center justify-between pt-1 pb-2">
                     <p className="text-[10px] text-stone-400 dark:text-stone-600">

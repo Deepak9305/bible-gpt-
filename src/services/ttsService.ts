@@ -2,7 +2,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { StorageService } from './storageService';
 import { Capacitor } from '@capacitor/core';
 
-let isSpeaking = false;
+let currentCallId = 0; // Incremented on every new playback — used to detect superseded calls
 const PREFERRED_VOICE_KEY = 'preferred_tts_voice';
 
 // Target voice name fragments (lowercase). Google Neural2 voices are Android-only.
@@ -10,9 +10,9 @@ const FATHER_VOICE_ID = 'neural2-j';  // Matches "en-US-Neural2-J" and "Google e
 const MOTHER_VOICE_ID = 'neural2-f';  // Matches "en-US-Neural2-F" — NOT a prefix of Neural2-J
 
 export const stopAudio = async () => {
+  currentCallId++; // Invalidate any in-flight call
   try {
     await TextToSpeech.stop();
-    isSpeaking = false;
   } catch (e) {
     console.warn("Failed to stop TTS", e);
   }
@@ -178,7 +178,8 @@ export const updateRemoteTtsConfig = (pitch?: number, rate?: number) => {
 };
 
 export const playTextToSpeech = async (text: string, onEnded?: () => void): Promise<void> => {
-  await stopAudio();
+  await stopAudio(); // Also increments currentCallId
+  const myCallId = currentCallId;
 
   // Guard against empty or whitespace-only text
   let cleanText = text
@@ -198,8 +199,14 @@ export const playTextToSpeech = async (text: string, onEnded?: () => void): Prom
     return;
   }
 
+  // If another call superseded us while we were awaiting stopAudio, bail out
+  if (myCallId !== currentCallId) return;
+
   try {
     const config = await getVoiceConfig();
+
+    // Check again after the async getVoiceConfig call
+    if (myCallId !== currentCallId) return;
 
     console.log('[TTS] Speaking with config:', JSON.stringify({
       voice: config.voice?.name,
@@ -207,8 +214,6 @@ export const playTextToSpeech = async (text: string, onEnded?: () => void): Prom
       pitch: config.pitch ?? remotePitch,
       rate: config.rate ?? remoteRate,
     }));
-
-    isSpeaking = true;
 
     // Capacitor TTS plugin crashes on Android if `voice` is null.
     const voiceIndex = typeof config.index === 'number' ? config.index : undefined;
@@ -222,11 +227,10 @@ export const playTextToSpeech = async (text: string, onEnded?: () => void): Prom
       category: 'ambient',
     });
 
-    isSpeaking = false;
-    if (onEnded) onEnded();
+    // Only fire onEnded if this call wasn't superseded
+    if (myCallId === currentCallId && onEnded) onEnded();
   } catch (error) {
     console.error("TTS Error:", error);
-    isSpeaking = false;
-    if (onEnded) onEnded();
+    if (myCallId === currentCallId && onEnded) onEnded();
   }
 };

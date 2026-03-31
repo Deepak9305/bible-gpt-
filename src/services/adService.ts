@@ -16,10 +16,9 @@ class AdService {
 
     private constructor() {
         this.initKeyboardListeners();
-        // Ensure no leftover banners on startup
-        if (Capacitor.isNativePlatform()) {
-            AdMob.removeBanner().catch(() => { });
-        }
+        // NOTE: AdMob.removeBanner() is NOT called here because AdMob.initialize()
+        // hasn't been called yet at singleton construction time.
+        // Cleanup is handled by nativeService.ts after initialize().
     }
 
     private initKeyboardListeners() {

@@ -15,6 +15,14 @@ const config: CapacitorConfig = {
       clientId: '1083543499729-smnbok05h0g6gl25e3tetfokigs4edqv.apps.googleusercontent.com',
       forceCodeForRefreshToken: true,
     },
+    SplashScreen: {
+      launchShowDuration: 0, // We handle our own animated splash in React
+      backgroundColor: '#1e3a5f',
+    },
+    LocalNotifications: {
+      smallIcon: 'ic_launcher_foreground',
+      iconColor: '#3B82F6',
+    },
   }
 };
 

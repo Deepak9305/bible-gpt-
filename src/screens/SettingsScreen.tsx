@@ -78,7 +78,9 @@ export default function SettingsScreen() {
       deleteAccount();
     } else if (confirmAction?.type === 'clear') {
       await StorageService.clear();
-      window.location.reload();
+      // BUG FIX: window.location.reload() breaks Capacitor WebView on native.
+      // Logging out and clearing state forces the router to redirect to /login.
+      logout();
     }
     setConfirmAction(null);
   };

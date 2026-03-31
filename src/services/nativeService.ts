@@ -11,9 +11,9 @@ export const initializeNativeServices = async () => {
     // AuthContext calls setUserIdForStats(userId) after auth resolves,
     // which internally calls initStats() with the correct scoped user ID.
 
-    // 1.1 Initialize AdMob and ensure a clean slate (no persistent banners)
-    await AdMob.initialize();
+    // 1.1 Initialize AdMob only on native to avoid web bridge errors
     if (Capacitor.isNativePlatform()) {
+      await AdMob.initialize();
       await AdMob.removeBanner().catch(() => { });
     }
 
@@ -72,7 +72,7 @@ const scheduleDailyDevotional = async () => {
       title: msg.title,
       body: msg.body,
       schedule: { on: { weekday: msg.weekday, hour: 8, minute: 0 }, repeats: true },
-      smallIcon: "ic_stat_icon_config_sample", // Ensure you have an icon or omit
+      smallIcon: "ic_launcher_foreground",
     }))
   });
 };

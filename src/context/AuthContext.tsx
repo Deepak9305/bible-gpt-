@@ -179,7 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     setUser(newUser);
-    setUserIdForStats(newUser.id);
+    await setUserIdForStats(newUser.id);
     await StorageService.set('auth_user', JSON.stringify(newUser));
     setIsLoading(false);
   };

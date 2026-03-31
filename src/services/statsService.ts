@@ -121,8 +121,8 @@ export const checkDailyLimit = (): boolean => {
   // If it's a new day, limit is not reached
   if (stats.lastUsageDate !== today) return false;
 
-  // Return true if usage count is 1 or more (meaning 2nd message is blocked)
-  return stats.dailyUsageCount >= 1;
+  // Return true if usage count is 2 or more (users get 2 free messages per day)
+  return stats.dailyUsageCount >= 2;
 };
 
 export const incrementDailyUsage = () => {

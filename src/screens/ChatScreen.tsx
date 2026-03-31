@@ -231,10 +231,8 @@ export default function ChatScreen() {
   }, []);
 
   const toggleListening = async () => {
-    if (!isSpeechSupported) {
-      alert("Voice input is not supported on your device.");
-      return;
-    }
+    // Silently do nothing if not supported — button should be hidden, but guard anyway
+    if (!isSpeechSupported) return;
 
     if (isListening) {
       if (Capacitor.isNativePlatform()) {
@@ -288,8 +286,8 @@ export default function ChatScreen() {
     }
 
     isSendingRef.current = true;
-    // Stop any current speech
-    stopAudio();
+    // BUG FIX: await stopAudio() to prevent concurrent TTS + stream race
+    await stopAudio();
 
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: cleanText };
     setMessages(prev => [...prev, userMsg]);

@@ -302,7 +302,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setUser(null);
     setSession(null);
-    setUserIdForStats('default');
+    setUserIdForStats(null);
     await StorageService.remove('auth_user');
   };
 
@@ -318,7 +318,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setUser(null);
     setSession(null);
-    setUserIdForStats('default');
+    setUserIdForStats(null);
     // BUG FIX: window.location.reload() is broken inside Capacitor native.
     // Setting state to null is sufficient — the router will redirect to /login.
   };

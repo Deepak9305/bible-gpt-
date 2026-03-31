@@ -1,21 +1,24 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { StatusBar } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
-import { initStats } from './statsService';
 import { initPurchases } from './purchaseService';
 import { AppTrackingTransparency } from '@capgo/capacitor-app-tracking-transparency';
 import { AdMob } from '@capacitor-community/admob';
 
 export const initializeNativeServices = async () => {
   try {
-    await initStats();
-    initPurchases();
+    // NOTE: initStats() is intentionally NOT called here.
+    // AuthContext calls setUserIdForStats(userId) after auth resolves,
+    // which internally calls initStats() with the correct scoped user ID.
 
     // 1.1 Initialize AdMob and ensure a clean slate (no persistent banners)
     await AdMob.initialize();
     if (Capacitor.isNativePlatform()) {
       await AdMob.removeBanner().catch(() => { });
     }
+
+    // Initialize in-app purchases AFTER AdMob
+    initPurchases();
 
     if (Capacitor.isNativePlatform()) {
       // 0. Hide Status Bar (Immersive Mode)

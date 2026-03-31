@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Check, Sparkles, Heart, Infinity, Loader2 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
-import { upgradeToPremium } from '../services/statsService';
 import { purchaseProduct } from '../services/purchaseService';
 
 interface PremiumModalProps {

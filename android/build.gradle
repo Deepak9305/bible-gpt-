@@ -25,7 +25,7 @@ allprojects {
     configurations.configureEach {
         resolutionStrategy.eachDependency { details ->
             def requested = details.requested
-            if (requested.group == 'androidx.core' && !requested.name.startsWith("multidex")) {
+            if (requested.group == 'androidx.core' && (requested.name == 'core' || requested.name == 'core-ktx')) {
                 details.useVersion '1.15.0'
             }
             if (requested.group == 'androidx.activity') {

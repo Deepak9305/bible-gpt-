@@ -96,10 +96,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (event === 'SIGNED_IN' && newSession?.user) {
           // User just signed in (e.g. OAuth redirect landed)
-          syncUserFromSupabase(newSession);
+          await syncUserFromSupabase(newSession);
         } else if (event === 'TOKEN_REFRESHED' && newSession?.user) {
           // Silently update session
-          syncUserFromSupabase(newSession);
+          await syncUserFromSupabase(newSession);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setIsLoading(false);
@@ -194,7 +194,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // cleared on startup when Supabase had no active session.
         if (parsed && parsed.id) {
           setUser(parsed);
-          setUserIdForStats(parsed.id);
+          // BUG FIX: await setUserIdForStats to prevent stats race condition on startup
+          await setUserIdForStats(parsed.id);
         }
       } catch (e) {
         console.error('Failed to parse user session', e);

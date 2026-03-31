@@ -56,13 +56,20 @@ function AppContent() {
   // The splash only exits once BOTH auth and native init are done
   const splashReady = !isLoading && !isInitializing;
 
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+    // BUG FIX: onExitComplete is never guaranteed to fire when Suspense is inside
+    // AnimatePresence. Set isAppReady here instead, immediately after splash exits.
+    setIsAppReady(true);
+  };
+
   return (
-    <AnimatePresence mode="wait" onExitComplete={() => setIsAppReady(true)}>
+    <AnimatePresence mode="wait">
       {showSplash ? (
         <SplashScreen
           key="splash"
           isReady={splashReady}
-          onComplete={() => setShowSplash(false)}
+          onComplete={handleSplashComplete}
         />
       ) : (
         <Suspense key="main-app" fallback={<LoadingFallback />}>

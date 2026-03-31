@@ -23,8 +23,8 @@ const TermsOfServiceScreen = lazy(() => import('./screens/TermsOfServiceScreen')
 
 function LoadingFallback() {
   return (
-    <div className="h-full w-full flex items-center justify-center bg-stone-50 dark:bg-stone-950">
-      <Loader2 className="animate-spin text-amber-500" size={32} />
+    <div className="h-full w-full flex items-center justify-center bg-blue-50 dark:bg-gray-900">
+      <Loader2 className="animate-spin text-blue-400 dark:text-blue-300" size={32} />
     </div>
   );
 }
@@ -46,20 +46,24 @@ function AppContent() {
       // Safety timeout for native services (5s)
       const nativeBoot = initializeNativeServices();
       const timeout = new Promise(resolve => setTimeout(resolve, 5000));
-
       await Promise.race([nativeBoot, timeout]);
       setIsInitializing(false);
     };
-
     bootApp();
   }, []);
 
-  if (isLoading || isInitializing) return null;
+  // Always render splash first — never return null which would show white
+  // The splash only exits once BOTH auth and native init are done
+  const splashReady = !isLoading && !isInitializing;
 
   return (
     <AnimatePresence mode="wait" onExitComplete={() => setIsAppReady(true)}>
       {showSplash ? (
-        <SplashScreen key="splash" onComplete={() => setShowSplash(false)} />
+        <SplashScreen
+          key="splash"
+          isReady={splashReady}
+          onComplete={() => setShowSplash(false)}
+        />
       ) : (
         <Suspense key="main-app" fallback={<LoadingFallback />}>
           <Routes>

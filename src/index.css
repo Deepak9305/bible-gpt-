@@ -13,9 +13,25 @@
   }
 
   html,
-  body {
+  body,
+  #root {
+    background-color: #eff6ff;
+    /* match splash: blue-50 */
     touch-action: manipulation;
     -webkit-overflow-scrolling: touch;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* Dark mode: match splash dark gradient start */
+  @media (prefers-color-scheme: dark) {
+
+    html,
+    body,
+    #root {
+      background-color: #111827;
+      /* gray-900 */
+    }
   }
 
   input,

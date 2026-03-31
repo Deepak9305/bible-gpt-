@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 2. Listen for auth changes (handles OAuth callback redirect)
     let subscription: { unsubscribe: () => void } | null = null;
     try {
-      const res = supabase.auth.onAuthStateChange((event: AuthChangeEvent, newSession: Session | null) => {
+      const res = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, newSession: Session | null) => {
         setSession(newSession);
 
         if (event === 'SIGNED_IN' && newSession?.user) {
@@ -216,7 +216,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
     setUser(guestUser);
-    setUserIdForStats(guestUser.id);
+    // BUG FIX: await setUserIdForStats to prevent stats race condition
+    await setUserIdForStats(guestUser.id);
     await StorageService.set('auth_user', JSON.stringify(guestUser));
   };
 
@@ -240,7 +241,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
     setUser(emailUser);
-    setUserIdForStats(emailUser.id);
+    // BUG FIX: await setUserIdForStats to prevent stats race condition
+    await setUserIdForStats(emailUser.id);
     await StorageService.set('auth_user', JSON.stringify(emailUser));
   };
 
@@ -303,7 +305,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setUser(null);
     setSession(null);
-    setUserIdForStats(null);
+    // BUG FIX: await setUserIdForStats(null) for reliable cleanup
+    await setUserIdForStats(null);
     await StorageService.remove('auth_user');
   };
 
@@ -319,7 +322,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setUser(null);
     setSession(null);
-    setUserIdForStats(null);
+    // BUG FIX: await setUserIdForStats(null) for reliable cleanup
+    await setUserIdForStats(null);
     // BUG FIX: window.location.reload() is broken inside Capacitor native.
     // Setting state to null is sufficient — the router will redirect to /login.
   };

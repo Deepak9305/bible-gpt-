@@ -93,9 +93,13 @@ export const purchaseProduct = (productId: string, basePlanId?: string) => {
 
   return new Promise((resolve, reject) => {
     const store = purchasePlugin.store || purchasePlugin;
+    const products = store.products || [];
+    console.log("[PurchaseService] Available products in store:", products.map((p: any) => p.id));
+
     const product = store.get(productId);
     if (!product) {
-      reject(new Error("Product not found"));
+      console.error(`[PurchaseService] Product '${productId}' not found in registered products.`);
+      reject(new Error(`Product '${productId}' not found. Please ensure it is approved in the Store console.`));
       return;
     }
 

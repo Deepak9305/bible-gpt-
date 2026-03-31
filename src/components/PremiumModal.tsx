@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Sparkles, Infinity, Loader2, Zap } from 'lucide-react';
+import { X, Sparkles, Infinity, Loader2, Zap, ShieldCheck } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { purchaseProduct, getProductPricing } from '../services/purchaseService';
 
@@ -21,7 +21,6 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
   useEffect(() => {
     if (isOpen && Capacitor.isNativePlatform()) {
       setIsPricingLoading(true);
-      // Prices are available after store.update() runs; try after a short delay
       const timer = setTimeout(() => {
         setPricing(getProductPricing('biblenova'));
         setIsPricingLoading(false);
@@ -45,10 +44,13 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
     }
   };
 
+  const priceSpinner = <Loader2 size={14} className="animate-spin inline-block" />;
+
   return (
     <AnimatePresence>
       {isOpen && (
-        <div key="modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div key="modal" className="fixed inset-0 z-50 flex items-center justify-center p-5">
+          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -57,112 +59,114 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
             onClick={isLoading ? undefined : onClose}
           />
 
+          {/* Card */}
           <motion.div
-            initial={{ y: 40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 40, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-3xl shadow-2xl border border-stone-100 dark:border-stone-800 overflow-hidden max-h-[85vh] flex flex-col"
+            initial={{ scale: 0.93, opacity: 0, y: 16 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.93, opacity: 0, y: 16 }}
+            transition={{ type: 'spring', stiffness: 340, damping: 30 }}
+            className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-3xl shadow-2xl border border-stone-100 dark:border-stone-800 overflow-hidden"
           >
-            {/* Header Strip */}
-            <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-white">
-                <Sparkles size={18} strokeWidth={2} />
-                <span className="font-semibold text-sm tracking-wide">Abide in Wisdom</span>
+            {/* Close */}
+            <button
+              onClick={onClose}
+              disabled={isLoading}
+              className="absolute top-3.5 right-3.5 z-10 p-1.5 rounded-full text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <X size={16} />
+            </button>
+
+            {/* Hero */}
+            <div className="bg-gradient-to-br from-amber-400 via-amber-500 to-orange-500 px-6 pt-7 pb-6 text-center">
+              <div className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-white/20 mb-3">
+                <Sparkles size={22} className="text-white" strokeWidth={1.8} />
               </div>
-              <button
-                onClick={onClose}
-                disabled={isLoading}
-                className="text-white/70 hover:text-white transition-colors disabled:opacity-30"
-              >
-                <X size={18} />
-              </button>
+              <h2 className="text-xl font-bold text-white mb-1 tracking-tight">Abide in Wisdom</h2>
+              <p className="text-amber-100 text-xs leading-relaxed max-w-[240px] mx-auto">
+                Unlock unlimited AI conversations and deepen your walk with God.
+              </p>
             </div>
 
-            <div className="px-5 py-4 space-y-4 overflow-y-auto">
-              {/* Benefit pills */}
-              <div className="flex flex-wrap gap-2">
+            {/* Features */}
+            <div className="px-6 pt-4 pb-3">
+              <div className="grid grid-cols-3 gap-2 mb-5">
                 {[
-                  { icon: Infinity, label: 'Unlimited AI' },
-                  { icon: Zap, label: 'Deep Study' },
-                  { icon: Sparkles, label: 'Ministry Support' },
-                ].map((b) => (
+                  { icon: Infinity, label: 'Unlimited\nConversations' },
+                  { icon: Zap, label: 'Deep Study\nTools' },
+                  { icon: ShieldCheck, label: 'Support the\nMinistry' },
+                ].map((f) => (
                   <div
-                    key={b.label}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/40 text-xs font-medium"
+                    key={f.label}
+                    className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl bg-stone-50 dark:bg-stone-800/60 border border-stone-100 dark:border-stone-800 text-center"
                   >
-                    <b.icon size={12} />
-                    {b.label}
+                    <f.icon size={18} className="text-amber-500" strokeWidth={1.8} />
+                    <span className="text-[10px] font-medium text-stone-600 dark:text-stone-400 leading-tight whitespace-pre-line">
+                      {f.label}
+                    </span>
                   </div>
                 ))}
               </div>
 
               {Capacitor.isNativePlatform() ? (
-                <>
-                  {/* Subscription options */}
-                  <div className="space-y-2">
-                    {/* Yearly */}
-                    <button
-                      onClick={() => handleSubscribe('biblenova', 'yearly')}
-                      disabled={isLoading}
-                      className="w-full flex items-center justify-between px-4 py-3 bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-white rounded-2xl font-semibold text-sm transition-all disabled:opacity-60 shadow-md shadow-amber-400/30"
-                    >
-                      <div className="flex flex-col items-start">
-                        <span>Annual Blessing</span>
-                        <span className="text-[10px] font-normal opacity-80">Best value · Save ~60%</span>
-                      </div>
-                      <span className="text-sm font-bold">
-                        {isLoading || isPricingLoading ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          pricing.yearly ?? '—'
-                        )}
-                      </span>
-                    </button>
+                <div className="space-y-2.5">
+                  {/* Yearly */}
+                  <button
+                    onClick={() => handleSubscribe('biblenova', 'yearly')}
+                    disabled={isLoading}
+                    className="w-full flex items-center justify-between px-4 py-3.5 bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-white rounded-2xl transition-all disabled:opacity-60 shadow-lg shadow-amber-400/30"
+                  >
+                    <div className="text-left">
+                      <div className="font-semibold text-sm">Annual Blessing</div>
+                      <div className="text-[10px] opacity-80 font-normal">Best value · Save ~60%</div>
+                    </div>
+                    <div className="font-bold text-sm min-w-[48px] text-right">
+                      {isLoading ? <Loader2 size={16} className="animate-spin ml-auto" /> :
+                        isPricingLoading ? priceSpinner :
+                          pricing.yearly ?? '—'}
+                    </div>
+                  </button>
 
-                    {/* Monthly */}
-                    <button
-                      onClick={() => handleSubscribe('biblenova', 'monthly')}
-                      disabled={isLoading}
-                      className="w-full flex items-center justify-between px-4 py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 active:scale-[0.98] text-stone-700 dark:text-stone-200 rounded-2xl font-medium text-sm transition-all disabled:opacity-60 border border-stone-200 dark:border-stone-700"
-                    >
-                      <span>Monthly Support</span>
-                      <span className="text-sm font-semibold">
-                        {isLoading || isPricingLoading ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          pricing.monthly ?? '—'
-                        )}
-                      </span>
-                    </button>
-                  </div>
+                  {/* Monthly */}
+                  <button
+                    onClick={() => handleSubscribe('biblenova', 'monthly')}
+                    disabled={isLoading}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 active:scale-[0.98] text-stone-700 dark:text-stone-200 rounded-2xl transition-all disabled:opacity-60 border border-stone-200 dark:border-stone-700"
+                  >
+                    <div className="font-medium text-sm">Monthly Support</div>
+                    <div className="font-semibold text-sm min-w-[48px] text-right">
+                      {isLoading ? <Loader2 size={16} className="animate-spin ml-auto" /> :
+                        isPricingLoading ? priceSpinner :
+                          pricing.monthly ?? '—'}
+                    </div>
+                  </button>
 
-                  {/* Footer */}
-                  <div className="flex items-center justify-between pt-1">
+                  {/* Footer row */}
+                  <div className="flex items-center justify-between pt-1 pb-2">
                     <p className="text-[10px] text-stone-400 dark:text-stone-600">
                       Secure · Cancel anytime
                     </p>
                     <button
                       onClick={onClose}
                       disabled={isLoading}
-                      className="text-[11px] text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 font-medium transition-colors disabled:opacity-30"
+                      className="text-[11px] text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       Maybe later
                     </button>
                   </div>
-                </>
+                </div>
               ) : (
-                <>
-                  <p className="text-xs text-stone-500 dark:text-stone-400">
-                    Subscriptions are only available in the mobile app. Return tomorrow for another free conversation.
+                <div className="space-y-3 pb-2">
+                  <p className="text-xs text-stone-500 dark:text-stone-400 text-center leading-relaxed">
+                    Subscriptions are only available in the mobile app.
+                    Return tomorrow for another free conversation.
                   </p>
                   <button
                     onClick={onClose}
-                    className="w-full py-2.5 bg-stone-800 dark:bg-stone-100 text-white dark:text-stone-900 rounded-2xl text-sm font-medium"
+                    className="w-full py-3 bg-stone-800 dark:bg-stone-100 text-white dark:text-stone-900 rounded-2xl text-sm font-semibold transition-all active:scale-[0.98]"
                   >
                     Peace be with you
                   </button>
-                </>
+                </div>
               )}
             </div>
           </motion.div>

@@ -12,6 +12,7 @@ interface PremiumModalProps {
 
 export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isPricingLoading, setIsPricingLoading] = useState(false);
   const [pricing, setPricing] = useState<{ yearly: string | null; monthly: string | null }>({
     yearly: null,
     monthly: null,
@@ -19,9 +20,11 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
 
   useEffect(() => {
     if (isOpen && Capacitor.isNativePlatform()) {
+      setIsPricingLoading(true);
       // Prices are available after store.update() runs; try after a short delay
       const timer = setTimeout(() => {
         setPricing(getProductPricing('biblenova'));
+        setIsPricingLoading(false);
       }, 800);
       return () => clearTimeout(timer);
     }
@@ -45,7 +48,7 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
   return (
     <AnimatePresence>
       {isOpen && (
-        <div key="modal" className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3">
+        <div key="modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -55,11 +58,11 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
           />
 
           <motion.div
-            initial={{ y: 60, opacity: 0 }}
+            initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 60, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-            className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-3xl shadow-2xl overflow-hidden border border-stone-100 dark:border-stone-800"
+            exit={{ y: 40, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+            className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-3xl shadow-2xl border border-stone-100 dark:border-stone-800 overflow-hidden max-h-[85vh] flex flex-col"
           >
             {/* Header Strip */}
             <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-4 flex items-center justify-between">
@@ -76,7 +79,7 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
               </button>
             </div>
 
-            <div className="px-5 py-4 space-y-4">
+            <div className="px-5 py-4 space-y-4 overflow-y-auto">
               {/* Benefit pills */}
               <div className="flex flex-wrap gap-2">
                 {[
@@ -109,8 +112,8 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
                         <span className="text-[10px] font-normal opacity-80">Best value · Save ~60%</span>
                       </div>
                       <span className="text-sm font-bold">
-                        {isLoading ? (
-                          <Loader2 size={16} className="animate-spin" />
+                        {isLoading || isPricingLoading ? (
+                          <Loader2 size={14} className="animate-spin" />
                         ) : (
                           pricing.yearly ?? '—'
                         )}
@@ -125,8 +128,8 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
                     >
                       <span>Monthly Support</span>
                       <span className="text-sm font-semibold">
-                        {isLoading ? (
-                          <Loader2 size={16} className="animate-spin" />
+                        {isLoading || isPricingLoading ? (
+                          <Loader2 size={14} className="animate-spin" />
                         ) : (
                           pricing.monthly ?? '—'
                         )}

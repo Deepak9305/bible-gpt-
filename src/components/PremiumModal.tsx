@@ -18,7 +18,7 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
     setIsLoading(true);
     try {
       await purchaseProduct(productId, basePlanId);
-      upgradeToPremium();
+      // Global verification listener in purchaseService already triggers upgradeToPremium()
       onUpgrade();
       onClose();
       alert("Blessings! You now have unlimited access.");

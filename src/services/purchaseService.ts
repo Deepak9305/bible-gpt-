@@ -76,10 +76,35 @@ export const purchaseProduct = (productId: string, basePlanId?: string) => {
       }
     }
 
-    store.order(offerToOrder).then(() => {
-      resolve(true);
+    let resolved = false;
+
+    const productEvents = store.when(product);
+
+    productEvents.verified((receipt: any) => {
+      if (!resolved) {
+        resolved = true;
+        receipt.finish();
+        resolve(true);
+      }
+    });
+
+    productEvents.cancelled(() => {
+      if (!resolved) {
+        resolved = true;
+        reject(new Error("Purchase was cancelled by the user."));
+      }
+    });
+
+    store.order(offerToOrder).then((error: any) => {
+      if (error && !resolved) {
+        resolved = true;
+        reject(new Error(error?.message || "Failed to initiate purchase."));
+      }
     }).catch((e: any) => {
-      reject(e);
+      if (!resolved) {
+        resolved = true;
+        reject(e);
+      }
     });
   });
 };

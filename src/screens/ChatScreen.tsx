@@ -291,9 +291,6 @@ export default function ChatScreen() {
     // Stop any current speech
     stopAudio();
 
-    // Increment usage count
-    incrementDailyUsage();
-
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: cleanText };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
@@ -317,6 +314,10 @@ export default function ChatScreen() {
             msg.id === aiMsgId ? { ...msg, content: fullContent } : msg
           ));
         });
+
+      // Only increment usage AFTER a successful response.
+      // If the API fails, the user's daily limit is not consumed.
+      incrementDailyUsage();
 
     } catch (error) {
       console.error('Chat error:', error);

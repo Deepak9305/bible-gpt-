@@ -121,7 +121,8 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
                     </div>
                     <button
                       onClick={onClose}
-                      className="w-full text-[11px] text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 font-medium transition-colors"
+                      disabled={isLoading}
+                      className="w-full text-[11px] text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       Maybe later
                     </button>

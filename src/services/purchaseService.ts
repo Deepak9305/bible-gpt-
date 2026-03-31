@@ -89,7 +89,7 @@ export const purchaseProduct = (productId: string, basePlanId?: string) => {
       if (unsubscribe) unsubscribe();
     };
 
-    const productEvents = store.when(product);
+    const productEvents = store.when().productId(productId);
 
     // Store the unsubscribe function if the plugin provides one 
     // or use the standard pattern to offload the listeners.

@@ -5,6 +5,7 @@ import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+import { setUserIdForStats } from '../services/statsService';
 
 interface User {
   id: string;
@@ -178,6 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     setUser(newUser);
+    setUserIdForStats(newUser.id);
     await StorageService.set('auth_user', JSON.stringify(newUser));
     setIsLoading(false);
   };
@@ -192,6 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // cleared on startup when Supabase had no active session.
         if (parsed && parsed.id) {
           setUser(parsed);
+          setUserIdForStats(parsed.id);
         }
       } catch (e) {
         console.error('Failed to parse user session', e);
@@ -212,6 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
     setUser(guestUser);
+    setUserIdForStats(guestUser.id);
     await StorageService.set('auth_user', JSON.stringify(guestUser));
   };
 
@@ -235,6 +239,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
     setUser(emailUser);
+    setUserIdForStats(emailUser.id);
     await StorageService.set('auth_user', JSON.stringify(emailUser));
   };
 
@@ -297,17 +302,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setUser(null);
     setSession(null);
+    setUserIdForStats('default');
     await StorageService.remove('auth_user');
   };
 
   const deleteAccount = async () => {
-    await StorageService.clear();
-    // BUG FIX: Only sign out from Supabase if it's configured.
+    // First remove from Supabase (if configured) so the local token is still valid
     if (isSupabaseConfigured) {
+      const { error } = await supabase.rpc('delete_user');
+      if (error) console.warn('Supabase delete_user error:', error);
+
       await supabase.auth.signOut().catch(e => console.warn('Supabase signOut error on delete:', e));
     }
+    await StorageService.clear();
+
     setUser(null);
     setSession(null);
+    setUserIdForStats('default');
     // BUG FIX: window.location.reload() is broken inside Capacitor native.
     // Setting state to null is sufficient — the router will redirect to /login.
   };

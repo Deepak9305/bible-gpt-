@@ -1,5 +1,6 @@
 import { StorageService } from './storageService';
 import { Capacitor } from '@capacitor/core';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 export interface UserStats {
   streak: number;
@@ -26,15 +27,51 @@ const INITIAL_STATS: UserStats = {
 };
 
 let cachedStats: UserStats = { ...INITIAL_STATS };
+let currentUserId: string | null = null;
+
+export const setUserIdForStats = async (userId: string | null) => {
+  currentUserId = userId;
+  await initStats();
+};
 
 export const initStats = async () => {
   try {
-    const saved = await StorageService.get('user_stats');
+    if (isSupabaseConfigured && currentUserId && !currentUserId.startsWith('guest-')) {
+      const { data, error } = await supabase
+        .from('user_stats')
+        .select('*')
+        .eq('id', currentUserId)
+        .single();
+
+      if (data) {
+        cachedStats = {
+          ...INITIAL_STATS,
+          streak: data.streak || 0,
+          lastVisit: data.last_visit || '',
+          totalVersesRead: data.total_verses_read || 0,
+          totalPrayers: data.total_prayers || 0,
+          userName: data.user_name || '',
+          onboardingCompleted: data.onboarding_completed || false,
+          dailyUsageCount: data.daily_usage_count || 0,
+          lastUsageDate: data.last_usage_date || '',
+          isPremium: data.is_premium || false
+        };
+        await StorageService.set(`user_stats_${currentUserId}`, JSON.stringify(cachedStats));
+        return;
+      }
+    }
+
+    // Fallback to local storage map
+    const key = currentUserId ? `user_stats_${currentUserId}` : 'user_stats';
+    const saved = await StorageService.get(key);
     if (saved) {
       cachedStats = { ...INITIAL_STATS, ...JSON.parse(saved) };
+    } else {
+      cachedStats = { ...INITIAL_STATS };
     }
   } catch (e) {
     console.error("Failed to parse user stats", e);
+    cachedStats = { ...INITIAL_STATS };
   }
 };
 
@@ -44,7 +81,27 @@ export const getStats = (): UserStats => {
 
 export const saveStats = (stats: UserStats) => {
   cachedStats = stats;
-  StorageService.set('user_stats', JSON.stringify(stats)).catch(e => console.error(e));
+  const key = currentUserId ? `user_stats_${currentUserId}` : 'user_stats';
+  StorageService.set(key, JSON.stringify(stats)).catch(e => console.error(e));
+
+  if (isSupabaseConfigured && currentUserId && !currentUserId.startsWith('guest-')) {
+    const payload = {
+      id: currentUserId,
+      streak: stats.streak,
+      last_visit: stats.lastVisit,
+      total_verses_read: stats.totalVersesRead,
+      total_prayers: stats.totalPrayers,
+      user_name: stats.userName,
+      onboarding_completed: stats.onboardingCompleted,
+      daily_usage_count: stats.dailyUsageCount,
+      last_usage_date: stats.lastUsageDate,
+      is_premium: stats.isPremium,
+      updated_at: new Date().toISOString()
+    };
+    supabase.from('user_stats').upsert(payload).then(res => {
+      if (res.error) console.error("Failed to sync stats to Supabase:", res.error);
+    });
+  }
 };
 
 export const checkDailyLimit = (): boolean => {

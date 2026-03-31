@@ -77,32 +77,54 @@ export const purchaseProduct = (productId: string, basePlanId?: string) => {
     }
 
     let resolved = false;
+    let unsubscribe: (() => void) | null = null;
+
+    const cleanup = () => {
+      if (unsubscribe) unsubscribe();
+    };
 
     const productEvents = store.when(product);
 
-    productEvents.verified((receipt: any) => {
+    // Store the unsubscribe function if the plugin provides one 
+    // or use the standard pattern to offload the listeners.
+    const vHandler = productEvents.verified((receipt: any) => {
       if (!resolved) {
         resolved = true;
         receipt.finish();
+        cleanup();
         resolve(true);
       }
     });
 
-    productEvents.cancelled(() => {
+    const cHandler = productEvents.cancelled(() => {
       if (!resolved) {
         resolved = true;
+        cleanup();
         reject(new Error("Purchase was cancelled by the user."));
       }
     });
 
+    // In most Cordova purchase plugin versions, store.when() returns an object 
+    // where you can't easily 'off' individual listeners without the event bus.
+    // However, we can use the 'un' or similar if available, or just manage the flag.
+    // For v13, the standard way is to use the global store.off().
+    unsubscribe = () => {
+      // @ts-ignore - plugin internal API for cleanup
+      if (vHandler && typeof vHandler.un === 'function') vHandler.un();
+      // @ts-ignore
+      if (cHandler && typeof cHandler.un === 'function') cHandler.un();
+    };
+
     store.order(offerToOrder).then((error: any) => {
       if (error && !resolved) {
         resolved = true;
+        cleanup();
         reject(new Error(error?.message || "Failed to initiate purchase."));
       }
     }).catch((e: any) => {
       if (!resolved) {
         resolved = true;
+        cleanup();
         reject(e);
       }
     });

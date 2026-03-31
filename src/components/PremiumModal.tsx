@@ -40,7 +40,8 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm"
-            onClick={onClose}
+            // Don't allow dismissal while a payment is in progress
+            onClick={isLoading ? undefined : onClose}
           />
 
           <motion.div
@@ -51,7 +52,8 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
           >
             <button
               onClick={onClose}
-              className="absolute top-3 right-3 p-2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors z-10"
+              disabled={isLoading}
+              className="absolute top-3 right-3 p-2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors z-10 disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <X size={18} />
             </button>

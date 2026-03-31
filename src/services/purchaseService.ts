@@ -27,7 +27,12 @@ export const initPurchases = () => {
     .verified((receipt: any) => {
       receipt.finish();
       // Automatically unlock premium features upon verification
+      // This is the ONLY place upgradeToPremium() is called — the per-purchase
+      // listener in purchaseProduct() intentionally does NOT call it to avoid duplication.
       upgradeToPremium();
+    })
+    .error((err: any) => {
+      console.error('[PurchaseService] Store error:', err?.code, err?.message);
     });
 
   // Initialize with the RSA key for Google Play (Android)
@@ -88,13 +93,13 @@ export const purchaseProduct = (productId: string, basePlanId?: string) => {
 
     // Store the unsubscribe function if the plugin provides one 
     // or use the standard pattern to offload the listeners.
-    const vHandler = productEvents.verified((receipt: any) => {
+    const vHandler = productEvents.verified((_receipt: any) => {
       if (!resolved) {
         resolved = true;
-        receipt.finish();
-        // NOTE: upgradeToPremium() is intentionally NOT called here.
-        // The global store.when().verified() listener in initPurchases() handles it.
-        // Calling it here would trigger a duplicate Supabase upsert.
+        // NOTE: Do NOT call receipt.finish() or upgradeToPremium() here.
+        // The global store.when().verified() listener in initPurchases() is
+        // solely responsible for both — doing it here causes a double-finish
+        // which can trigger a plugin error and a duplicate Supabase upsert.
         cleanup();
         resolve(true);
       }

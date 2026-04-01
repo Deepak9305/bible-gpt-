@@ -17,7 +17,21 @@ export const initializeNativeServices = async () => {
       await AdMob.removeBanner().catch(() => { });
     }
 
-    // Initialize in-app purchases AFTER AdMob
+    // Mark deviceready as fired so late callers of initPurchases run synchronously.
+    // initPurchases() internally waits for this event itself, but setting the flag
+    // here ensures the fallback path in purchaseService works correctly.
+    if (Capacitor.isNativePlatform()) {
+      const markReady = () => { (document as any).__cordovaReady = true; };
+      if ((document as any).__cordovaReady) {
+        markReady();
+      } else {
+        document.addEventListener('deviceready', markReady, { once: true });
+      }
+    }
+
+    // Initialize in-app purchases AFTER AdMob.
+    // On native, this internally waits for the 'deviceready' event before
+    // accessing window.CdvPurchase (Cordova bridge guarantee).
     initPurchases();
 
     if (Capacitor.isNativePlatform()) {
@@ -50,6 +64,7 @@ export const initializeNativeServices = async () => {
     console.error("Critical native service failure:", globalErr);
   }
 };
+
 
 const scheduleDailyDevotional = async () => {
   // Clear existing to avoid duplicates in the 1-7 range

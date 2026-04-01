@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Sparkles, Infinity, Loader2, Zap, ShieldCheck } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
-import { purchaseProduct, getProductPricing } from '../services/purchaseService';
+import { purchaseProduct, getProductPricing, restorePurchases } from '../services/purchaseService';
 
 interface PremiumModalProps {
   isOpen: boolean;
@@ -12,12 +12,14 @@ interface PremiumModalProps {
 
 export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [isPricingLoading, setIsPricingLoading] = useState(false);
   const [pricing, setPricing] = useState<{ yearly: string | null; monthly: string | null }>({
     yearly: null,
     monthly: null,
   });
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
+  const [restoreMessage, setRestoreMessage] = useState<string | null>(null);
   const retryTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -25,6 +27,7 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
       // Reset state when modal opens
       setIsPricingLoading(true);
       setPurchaseError(null);
+      setRestoreMessage(null);
       setPricing({ yearly: null, monthly: null });
       let attempts = 0;
       const MAX_ATTEMPTS = 10; // poll for up to 15s (10 × 1500ms)
@@ -60,6 +63,21 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
       setPurchaseError(e?.message || 'Purchase failed or was cancelled.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    setIsRestoring(true);
+    setRestoreMessage(null);
+    setPurchaseError(null);
+    try {
+      await restorePurchases();
+      setRestoreMessage('Purchases restored successfully!');
+      onUpgrade();
+    } catch (e: any) {
+      setRestoreMessage(e?.message || 'Could not restore purchases.');
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -162,14 +180,24 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
                   {purchaseError && (
                     <p className="text-xs text-red-400 text-center pb-1">{purchaseError}</p>
                   )}
+                  {restoreMessage && (
+                    <p className={`text-xs text-center pb-1 ${restoreMessage.includes('success') ? 'text-green-500' : 'text-red-400'}`}>
+                      {restoreMessage}
+                    </p>
+                  )}
                   {/* Footer row */}
                   <div className="flex items-center justify-between pt-1 pb-2">
-                    <p className="text-[10px] text-stone-400 dark:text-stone-600">
-                      Secure · Cancel anytime
-                    </p>
+                    <button
+                      onClick={handleRestore}
+                      disabled={isLoading || isRestoring}
+                      className="text-[11px] text-amber-500 hover:text-amber-600 font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                      {isRestoring ? <Loader2 size={10} className="animate-spin" /> : null}
+                      Restore purchases
+                    </button>
                     <button
                       onClick={onClose}
-                      disabled={isLoading}
+                      disabled={isLoading || isRestoring}
                       className="text-[11px] text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       Maybe later

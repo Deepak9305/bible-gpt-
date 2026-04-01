@@ -4,15 +4,12 @@ import { upgradeToPremium } from './statsService';
 // Track whether the store has finished initializing
 let storeReady = false;
 
-export const initPurchases = () => {
-  // Only run on native — CdvPurchase is not available in the browser
-  if (!Capacitor.isNativePlatform()) return;
-
+const setupStore = () => {
   // CdvPurchase v13 attaches to window.CdvPurchase
   const CdvPurchase = (window as any).CdvPurchase;
 
   if (!CdvPurchase?.store) {
-    console.warn('[PurchaseService] CdvPurchase not available.');
+    console.warn('[PurchaseService] CdvPurchase not available even after deviceready.');
     return;
   }
 
@@ -68,6 +65,21 @@ export const initPurchases = () => {
     }
   ]);
 };
+
+export const initPurchases = () => {
+  // Only run on native — CdvPurchase is injected by Cordova bridge
+  if (!Capacitor.isNativePlatform()) return;
+
+  // Cordova plugins (including CdvPurchase) are only available after
+  // the 'deviceready' event. Waiting for it guarantees window.CdvPurchase exists.
+  if ((document as any).__cordovaReady) {
+    // deviceready already fired (e.g. called late) — run immediately
+    setupStore();
+  } else {
+    document.addEventListener('deviceready', setupStore, { once: true });
+  }
+};
+
 
 export interface ProductPricing {
   yearly: string | null;
@@ -177,4 +189,18 @@ export const purchaseProduct = (productId: string, basePlanId?: string): Promise
         }
       });
   });
+};
+
+export const restorePurchases = (): Promise<void> => {
+  const CdvPurchase = (window as any).CdvPurchase;
+
+  if (!CdvPurchase?.store) {
+    return Promise.reject(new Error('In-app purchases are only available in the mobile app.'));
+  }
+
+  if (!storeReady) {
+    return Promise.reject(new Error('Store is still initializing. Please wait a moment and try again.'));
+  }
+
+  return CdvPurchase.store.restorePurchases();
 };

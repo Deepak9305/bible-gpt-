@@ -54,7 +54,7 @@ export default function LoginScreen() {
         // We MUST use the Web Client ID here, even on Android, because it represents
         // the server (Supabase) that will receive and verify the `idToken`.
         await GoogleAuth.initialize({
-          clientId: '1083543499729-smnbok05h0g6gl25e3tetfokigs4edqv.apps.googleusercontent.com',
+          clientId: '1083543499729-3rrelit5mm4jno7jfogpnaceh9inlgu4.apps.googleusercontent.com',
           scopes: ['profile', 'email'],
           grantOfflineAccess: true,
         });

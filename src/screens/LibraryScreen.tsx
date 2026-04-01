@@ -508,7 +508,7 @@ export default function LibraryScreen() {
             )}
           </AnimatePresence>
         </div>
-        <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} onUpgrade={() => { }} />
+        <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} onUpgrade={() => { setIsPremiumModalOpen(false); setIsPremium(getStats().isPremium); }} />
       </div>
     </div>
   );

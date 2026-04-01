@@ -1,16 +1,18 @@
 import { Capacitor } from '@capacitor/core';
 import { upgradeToPremium } from './statsService';
 
-
-// Store the CdvPurchase reference once it's ready
+// Track whether the store has finished initializing
 let storeReady = false;
 
 export const initPurchases = () => {
-  // CdvPurchase v13 attaches to window.CdvPurchase (not window.store)
+  // Only run on native — CdvPurchase is not available in the browser
+  if (!Capacitor.isNativePlatform()) return;
+
+  // CdvPurchase v13 attaches to window.CdvPurchase
   const CdvPurchase = (window as any).CdvPurchase;
 
   if (!CdvPurchase?.store) {
-    console.warn('[PurchaseService] CdvPurchase not available. Running in web?');
+    console.warn('[PurchaseService] CdvPurchase not available.');
     return;
   }
 
@@ -18,20 +20,20 @@ export const initPurchases = () => {
   const Platform = CdvPurchase.Platform;
   const ProductType = CdvPurchase.ProductType;
 
-  // BUG FIX #2: Register with explicit platform — required in CdvPurchase v13
+  // Register the product with explicit platform (required in CdvPurchase v13)
   const platform = Capacitor.getPlatform() === 'ios'
     ? Platform.APPLE_APPSTORE
     : Platform.GOOGLE_PLAY;
 
-  // BUG FIX #1 & #2: Use correct ProductType from CdvPurchase namespace + include platform
   store.register([{
     type: ProductType.PAID_SUBSCRIPTION,
     id: 'biblenova',
     platform,
   }]);
 
-  // BUG FIX #3: No receipt validator is configured, so call finish() directly
-  // instead of verify() which would auto-reject without a server endpoint.
+  // Global lifecycle handlers:
+  // - approved: finish the transaction immediately (no server validator configured)
+  // - finished: transaction is done - unlock premium
   store.when()
     .approved((transaction: any) => {
       console.log('[PurchaseService] Transaction approved, finishing:', transaction.transactionId);
@@ -39,23 +41,21 @@ export const initPurchases = () => {
     })
     .finished((transaction: any) => {
       console.log('[PurchaseService] Transaction finished, unlocking premium:', transaction.transactionId);
+      // upgradeToPremium is synchronous — writes to local cache + Supabase
       upgradeToPremium();
-    })
-    .productUpdated(() => {
-      console.log('[PurchaseService] Product updated');
     })
     .error((err: any) => {
       console.error('[PurchaseService] Store error:', err?.code, err?.message);
     });
 
-  // BUG FIX #4: Call store.update() only after the store signals it is ready
+  // Only call store.update() after the store is ready — not before
   store.ready(() => {
     storeReady = true;
-    console.log('[PurchaseService] Store is ready, fetching products...');
+    console.log('[PurchaseService] Store ready, fetching product data...');
     store.update();
   });
 
-  // Initialize the store — this triggers the ready() callback above when done
+  // Initialize the store with RSA key for Google Play receipt validation
   store.initialize([
     {
       platform: Platform.GOOGLE_PLAY,
@@ -80,14 +80,12 @@ export const getProductPricing = (productId: string): ProductPricing => {
 
   const store = CdvPurchase.store;
   const product = store.get(productId);
-
   if (!product?.offers) return { yearly: null, monthly: null };
 
   const findPrice = (basePlanId: string): string | null => {
     const offer = product.offers.find((o: any) => o.id === basePlanId);
     if (!offer?.pricingPhases?.length) return null;
-    const phase = offer.pricingPhases[0];
-    return phase?.price || null;
+    return offer.pricingPhases[0]?.price || null;
   };
 
   return {
@@ -96,76 +94,87 @@ export const getProductPricing = (productId: string): ProductPricing => {
   };
 };
 
-export const purchaseProduct = (productId: string, basePlanId?: string) => {
+export const purchaseProduct = (productId: string, basePlanId?: string): Promise<void> => {
   const CdvPurchase = (window as any).CdvPurchase;
 
   if (!CdvPurchase?.store) {
     if (Capacitor.isNativePlatform()) {
       return Promise.reject(new Error('Purchasing service is not available. Please restart the app.'));
-    } else {
-      return Promise.reject(new Error('In-app purchases are only available in the mobile app.'));
     }
+    return Promise.reject(new Error('In-app purchases are only available in the mobile app.'));
   }
 
-  return new Promise((resolve, reject) => {
-    const store = CdvPurchase.store;
+  if (!storeReady) {
+    return Promise.reject(new Error('Store is still initializing. Please wait a moment and try again.'));
+  }
 
-    if (!storeReady) {
-      return reject(new Error('Store is still initializing. Please wait a moment and try again.'));
-    }
+  const store = CdvPurchase.store;
+  const product = store.get(productId);
 
-    const product = store.get(productId);
-    if (!product) {
-      console.error(`[PurchaseService] Product '${productId}' not found.`);
-      return reject(new Error(`Product not found. Please ensure your Google Play app is published and the product is approved.`));
-    }
+  if (!product) {
+    return Promise.reject(new Error('Product not found. Please ensure your app is published and the product is approved in the Play Console.'));
+  }
 
-    let offerToOrder: any = product;
-    if (basePlanId && product.offers?.length > 0) {
-      const offer = product.offers.find((o: any) => o.id === basePlanId);
-      if (offer) offerToOrder = offer;
-    }
+  let offerToOrder: any = product;
+  if (basePlanId && product.offers?.length > 0) {
+    const offer = product.offers.find((o: any) => o.id === basePlanId);
+    if (offer) offerToOrder = offer;
+  }
 
+  return new Promise<void>((resolve, reject) => {
     let resolved = false;
 
-    // Listen for the finished event (called after approved > finish())
-    const finishedUnsub = store.when()
-      .productId(productId)
-      .finished((_transaction: any) => {
-        if (!resolved) {
-          resolved = true;
-          finishedUnsub?.();
-          cancelledUnsub?.();
-          resolve(true);
-        }
-      });
+    // BUG FIX #8: Filter by transactionId to avoid resolving on a restore
+    // of a different (previously purchased) transaction
+    let pendingTransactionId: string | null = null;
 
-    const cancelledUnsub = store.when()
+    // BUG FIX #5: store.when() returns a subscriber object, not a function.
+    // Use the returned object's .cancel() method (or store.off()) to clean up.
+    const subscriber = store.when()
       .productId(productId)
+      .approved((transaction: any) => {
+        // Capture the pending transaction ID as soon as it's approved
+        pendingTransactionId = transaction.transactionId;
+      })
+      .finished((transaction: any) => {
+        // BUG FIX #8: Only resolve for the transaction we just initiated
+        if (!resolved && transaction.transactionId === pendingTransactionId) {
+          resolved = true;
+          try { subscriber.cancel?.(); } catch (_) { }
+          // BUG FIX #6: upgradeToPremium() is called synchronously in the global
+          // finished handler above. We resolve AFTER it has been called.
+          resolve();
+        }
+      })
       .cancelled(() => {
         if (!resolved) {
           resolved = true;
-          finishedUnsub?.();
-          cancelledUnsub?.();
+          try { subscriber.cancel?.(); } catch (_) { }
           reject(new Error('Purchase was cancelled.'));
+        }
+      })
+      .error((err: any) => {
+        if (!resolved) {
+          resolved = true;
+          try { subscriber.cancel?.(); } catch (_) { }
+          reject(new Error(err?.message || 'Purchase failed.'));
         }
       });
 
-    store.order(offerToOrder).then((error: any) => {
-      if (error && !resolved) {
-        resolved = true;
-        finishedUnsub?.();
-        cancelledUnsub?.();
-        reject(new Error(error?.message || 'Failed to initiate purchase.'));
-      }
-    }).catch((e: any) => {
-      if (!resolved) {
-        resolved = true;
-        finishedUnsub?.();
-        cancelledUnsub?.();
-        reject(e);
-      }
-    });
+    store.order(offerToOrder)
+      .then((error: any) => {
+        if (error && !resolved) {
+          resolved = true;
+          try { subscriber.cancel?.(); } catch (_) { }
+          reject(new Error(error?.message || 'Failed to initiate purchase.'));
+        }
+      })
+      .catch((e: any) => {
+        if (!resolved) {
+          resolved = true;
+          try { subscriber.cancel?.(); } catch (_) { }
+          reject(e);
+        }
+      });
   });
 };
-

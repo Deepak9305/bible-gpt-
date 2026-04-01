@@ -306,7 +306,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         // Timeout prevents hanging if not logged in via Google
         await Promise.race([
-          GoogleAuth.signOut(),
+          (async () => {
+            await GoogleAuth.initialize({
+              clientId: '1083543499729-smnbok05h0g6gl25e3tetfokigs4edqv.apps.googleusercontent.com',
+              scopes: ['profile', 'email'],
+              grantOfflineAccess: true,
+            });
+            await GoogleAuth.signOut();
+          })(),
           new Promise(resolve => setTimeout(resolve, 1000))
         ]);
       } catch (e) {

@@ -22,24 +22,26 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
 
   useEffect(() => {
     if (isOpen && Capacitor.isNativePlatform()) {
+      // Reset state when modal opens
       setIsPricingLoading(true);
       setPurchaseError(null);
+      setPricing({ yearly: null, monthly: null });
       let attempts = 0;
+      const MAX_ATTEMPTS = 10; // poll for up to 15s (10 × 1500ms)
 
       const fetchPricing = () => {
         const p = getProductPricing('biblenova');
-        if (p.yearly || p.monthly || attempts > 3) {
+        if (p.yearly || p.monthly || attempts >= MAX_ATTEMPTS) {
           setPricing(p);
           setIsPricingLoading(false);
         } else {
           attempts++;
-          retryTimerRef.current = setTimeout(fetchPricing, 1000);
+          retryTimerRef.current = setTimeout(fetchPricing, 1500);
         }
       };
 
       fetchPricing();
 
-      // Cleanup: cancel any pending retry when modal closes
       return () => {
         if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       };

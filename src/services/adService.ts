@@ -66,7 +66,7 @@ class AdService {
 
             await AdMob.showBanner({
                 adId: adId,
-                adSize: BannerAdSize.ADAPTIVE_BANNER,
+                adSize: BannerAdSize.BANNER,
                 position: BannerAdPosition.BOTTOM_CENTER,
                 // BUG FIX: 100px margin was too large on small phones, overlapping content.
                 // 56px clears the bottom nav bar (h-16 = 64px) minus safe-area handling.

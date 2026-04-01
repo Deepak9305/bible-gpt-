@@ -19,7 +19,7 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
   const showBannerPadding = pathname !== '/chat' && !isKeyboardVisible && isAppReady;
   const showNavPadding = !isKeyboardVisible;
 
-  const paddingClass = showBannerPadding ? 'pb-[7rem]' : (showNavPadding ? 'pb-[calc(4rem+env(safe-area-inset-bottom))]' : 'pb-0');
+  const paddingClass = showBannerPadding ? 'pb-[6.75rem]' : (showNavPadding ? 'pb-[calc(4rem+env(safe-area-inset-bottom))]' : 'pb-0');
 
   React.useEffect(() => {
     let showListener: any;

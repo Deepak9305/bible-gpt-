@@ -1,55 +1,72 @@
 import { Capacitor } from '@capacitor/core';
 import { upgradeToPremium } from './statsService';
 
-// We use the global CdvPurchase object provided by the plugin
-export const initPurchases = () => {
-  const purchasePlugin = (window as any).CdvPurchase || (window as any).store;
 
-  if (!purchasePlugin) {
-    console.warn("CdvPurchase not available. Running in web?");
+// Store the CdvPurchase reference once it's ready
+let storeReady = false;
+
+export const initPurchases = () => {
+  // CdvPurchase v13 attaches to window.CdvPurchase (not window.store)
+  const CdvPurchase = (window as any).CdvPurchase;
+
+  if (!CdvPurchase?.store) {
+    console.warn('[PurchaseService] CdvPurchase not available. Running in web?');
     return;
   }
 
-  const store = purchasePlugin.store || purchasePlugin;
-  const platform = Capacitor.getPlatform() === 'ios' ? purchasePlugin.Platform.APPLE_APPSTORE : purchasePlugin.Platform.GOOGLE_PLAY;
+  const store = CdvPurchase.store;
+  const Platform = CdvPurchase.Platform;
+  const ProductType = CdvPurchase.ProductType;
 
-  // Register products
+  // BUG FIX #2: Register with explicit platform — required in CdvPurchase v13
+  const platform = Capacitor.getPlatform() === 'ios'
+    ? Platform.APPLE_APPSTORE
+    : Platform.GOOGLE_PLAY;
+
+  // BUG FIX #1 & #2: Use correct ProductType from CdvPurchase namespace + include platform
   store.register([{
-    type: purchasePlugin.ProductType.PAID_SUBSCRIPTION,
+    type: ProductType.PAID_SUBSCRIPTION,
     id: 'biblenova',
-    // Omit platform to let the plugin auto-detect the best match
+    platform,
   }]);
 
+  // BUG FIX #3: No receipt validator is configured, so call finish() directly
+  // instead of verify() which would auto-reject without a server endpoint.
   store.when()
     .approved((transaction: any) => {
-      transaction.verify();
+      console.log('[PurchaseService] Transaction approved, finishing:', transaction.transactionId);
+      transaction.finish();
     })
-    .verified((receipt: any) => {
-      receipt.finish();
-      // Automatically unlock premium features upon verification
-      // This is the ONLY place upgradeToPremium() is called — the per-purchase
-      // listener in purchaseProduct() intentionally does NOT call it to avoid duplication.
+    .finished((transaction: any) => {
+      console.log('[PurchaseService] Transaction finished, unlocking premium:', transaction.transactionId);
       upgradeToPremium();
+    })
+    .productUpdated(() => {
+      console.log('[PurchaseService] Product updated');
     })
     .error((err: any) => {
       console.error('[PurchaseService] Store error:', err?.code, err?.message);
     });
 
-  // Initialize with the RSA key for Google Play (Android)
+  // BUG FIX #4: Call store.update() only after the store signals it is ready
+  store.ready(() => {
+    storeReady = true;
+    console.log('[PurchaseService] Store is ready, fetching products...');
+    store.update();
+  });
+
+  // Initialize the store — this triggers the ready() callback above when done
   store.initialize([
     {
-      platform: purchasePlugin.Platform.GOOGLE_PLAY,
+      platform: Platform.GOOGLE_PLAY,
       options: {
         key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA09wkUpHpqHNL5WvGehhonKAz6bQfDqTpDcjtR8/jGPmhJRxb+UlA5ZbqnoWwpwl8P261/79JJbNSNFdF5U85K3YOVoTdFZ7B0sJhJeIzn0ZagpXMA3yyKI6QLNEzxom6px7cFsI7hD0pSvjs7ZfJzwEHokm1m4+olkkMdP0Yfb9x4uiO1lgOpbJNXLC4H3gXNA0AXvoHJcnC+fm0++R5f9eMAQtHrKxpUYAZm9TyTA7d1z+wCHq6i6pp6aCCbaZSDxIro9iAsYitV366B4u796Ppcz2Gh+hFS8tAI+Iy267OHdp9L5fsllxvTgim4QcWZvwqvr4FW+t+XK9RDn1XtwIDAQAB'
       }
     },
     {
-      platform: purchasePlugin.Platform.APPLE_APPSTORE
+      platform: Platform.APPLE_APPSTORE,
     }
   ]);
-
-  // BUG FIX: Actually connect to the stores and fetch the product data
-  store.update();
 };
 
 export interface ProductPricing {
@@ -58,17 +75,11 @@ export interface ProductPricing {
 }
 
 export const getProductPricing = (productId: string): ProductPricing => {
-  const purchasePlugin = (window as any).CdvPurchase || (window as any).store;
-  if (!purchasePlugin) return { yearly: null, monthly: null };
+  const CdvPurchase = (window as any).CdvPurchase;
+  if (!CdvPurchase?.store) return { yearly: null, monthly: null };
 
-  const store = purchasePlugin.store || purchasePlugin;
+  const store = CdvPurchase.store;
   const product = store.get(productId);
-
-  // If product not found yet, try to trigger a store update to hydrate the list
-  if (!product && store.update) {
-    console.log("[PurchaseService] Product not found, triggering store.update()...");
-    store.update();
-  }
 
   if (!product?.offers) return { yearly: null, monthly: null };
 
@@ -86,93 +97,75 @@ export const getProductPricing = (productId: string): ProductPricing => {
 };
 
 export const purchaseProduct = (productId: string, basePlanId?: string) => {
-  const purchasePlugin = (window as any).CdvPurchase || (window as any).store;
+  const CdvPurchase = (window as any).CdvPurchase;
 
-  if (!purchasePlugin) {
+  if (!CdvPurchase?.store) {
     if (Capacitor.isNativePlatform()) {
-      return Promise.reject(new Error("Purchasing service is not available on this device. Please check your connection or restart the app."));
+      return Promise.reject(new Error('Purchasing service is not available. Please restart the app.'));
     } else {
-      // On web there is no real payment flow — reject so the UI shows an error
-      // instead of silently granting free premium.
-      return Promise.reject(new Error("In-app purchases are not available on the web. Please use the mobile app."));
+      return Promise.reject(new Error('In-app purchases are only available in the mobile app.'));
     }
   }
 
   return new Promise((resolve, reject) => {
-    const store = purchasePlugin.store || purchasePlugin;
-    const products = store.products || [];
-    console.log("[PurchaseService] Available products in store:", products.map((p: any) => p.id));
+    const store = CdvPurchase.store;
+
+    if (!storeReady) {
+      return reject(new Error('Store is still initializing. Please wait a moment and try again.'));
+    }
 
     const product = store.get(productId);
     if (!product) {
-      console.error(`[PurchaseService] Product '${productId}' not found in registered products.`);
-      reject(new Error(`Product '${productId}' not found. Please ensure it is approved in the Store console.`));
-      return;
+      console.error(`[PurchaseService] Product '${productId}' not found.`);
+      return reject(new Error(`Product not found. Please ensure your Google Play app is published and the product is approved.`));
     }
 
-    let offerToOrder = product;
-    if (basePlanId && product.offers && product.offers.length > 0) {
-      // Find the specific base plan offer
+    let offerToOrder: any = product;
+    if (basePlanId && product.offers?.length > 0) {
       const offer = product.offers.find((o: any) => o.id === basePlanId);
-      if (offer) {
-        offerToOrder = offer;
-      }
+      if (offer) offerToOrder = offer;
     }
 
     let resolved = false;
-    let unsubscribe: (() => void) | null = null;
 
-    const cleanup = () => {
-      if (unsubscribe) unsubscribe();
-    };
+    // Listen for the finished event (called after approved > finish())
+    const finishedUnsub = store.when()
+      .productId(productId)
+      .finished((_transaction: any) => {
+        if (!resolved) {
+          resolved = true;
+          finishedUnsub?.();
+          cancelledUnsub?.();
+          resolve(true);
+        }
+      });
 
-    const productEvents = store.when().productId(productId);
-
-    // Store the unsubscribe function if the plugin provides one 
-    // or use the standard pattern to offload the listeners.
-    const vHandler = productEvents.verified((_receipt: any) => {
-      if (!resolved) {
-        resolved = true;
-        // NOTE: Do NOT call receipt.finish() or upgradeToPremium() here.
-        // The global store.when().verified() listener in initPurchases() is
-        // solely responsible for both — doing it here causes a double-finish
-        // which can trigger a plugin error and a duplicate Supabase upsert.
-        cleanup();
-        resolve(true);
-      }
-    });
-
-    const cHandler = productEvents.cancelled(() => {
-      if (!resolved) {
-        resolved = true;
-        cleanup();
-        reject(new Error("Purchase was cancelled by the user."));
-      }
-    });
-
-    // In most Cordova purchase plugin versions, store.when() returns an object 
-    // where you can't easily 'off' individual listeners without the event bus.
-    // However, we can use the 'un' or similar if available, or just manage the flag.
-    // For v13, the standard way is to use the global store.off().
-    unsubscribe = () => {
-      // @ts-ignore - plugin internal API for cleanup
-      if (vHandler && typeof vHandler.un === 'function') vHandler.un();
-      // @ts-ignore
-      if (cHandler && typeof cHandler.un === 'function') cHandler.un();
-    };
+    const cancelledUnsub = store.when()
+      .productId(productId)
+      .cancelled(() => {
+        if (!resolved) {
+          resolved = true;
+          finishedUnsub?.();
+          cancelledUnsub?.();
+          reject(new Error('Purchase was cancelled.'));
+        }
+      });
 
     store.order(offerToOrder).then((error: any) => {
       if (error && !resolved) {
         resolved = true;
-        cleanup();
-        reject(new Error(error?.message || "Failed to initiate purchase."));
+        finishedUnsub?.();
+        cancelledUnsub?.();
+        reject(new Error(error?.message || 'Failed to initiate purchase.'));
       }
     }).catch((e: any) => {
       if (!resolved) {
         resolved = true;
-        cleanup();
+        finishedUnsub?.();
+        cancelledUnsub?.();
         reject(e);
       }
     });
   });
 };
+

@@ -10,7 +10,7 @@ interface SplashScreenProps {
 }
 
 export default function SplashScreen({ onComplete, isReady = true }: SplashScreenProps) {
-  // Show for at least 2000ms, and only exit once isReady is also true
+  // Show for at least 1200ms, and only exit once isReady is also true
   const minTimerDone = useRef(false);
   const readyRef = useRef(isReady);
 
@@ -24,7 +24,7 @@ export default function SplashScreen({ onComplete, isReady = true }: SplashScree
       if (readyRef.current) {
         onComplete();
       }
-    }, 2000);
+    }, 1200);
     return () => clearTimeout(timer);
   }, [onComplete]);
 
@@ -41,12 +41,12 @@ export default function SplashScreen({ onComplete, isReady = true }: SplashScree
       initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.6 }}
+      transition={{ duration: 0.35 }}
     >
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 1.2, ease: 'easeOut' }}
+        transition={{ duration: 0.55, ease: 'easeOut' }}
         className="relative"
       >
         <motion.div
@@ -61,7 +61,7 @@ export default function SplashScreen({ onComplete, isReady = true }: SplashScree
       <motion.h1
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.4, duration: 0.9 }}
+        transition={{ delay: 0.2, duration: 0.45 }}
         className="mt-8 text-3xl font-serif font-medium text-gray-800 dark:text-gray-100 tracking-wide"
       >
         Bible Nova
@@ -70,7 +70,7 @@ export default function SplashScreen({ onComplete, isReady = true }: SplashScree
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1, duration: 0.9 }}
+        transition={{ delay: 0.4, duration: 0.45 }}
         className="mt-3 text-lg text-gray-600 dark:text-gray-300 font-serif italic tracking-wide"
       >
         Peace be with you

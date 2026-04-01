@@ -119,8 +119,9 @@ const VerseItem = React.memo(({
 
 export default function LibraryScreen() {
   const { theme } = useTheme();
-  const stats = getStats();
-  const isPremium = stats.isPremium;
+  const [isPremium, setIsPremium] = useState(() => getStats().isPremium);
+  // Refresh on mount — stats may not be hydrated from Supabase yet at first render
+  useEffect(() => { setIsPremium(getStats().isPremium); }, []);
   const [view, setView] = useState<ViewState>('books');
   const [books] = useState<any[]>(BIBLE_BOOKS);
   const [selectedBook, setSelectedBook] = useState<any>(null);
@@ -240,8 +241,9 @@ export default function LibraryScreen() {
             text: shareText,
           });
         } else {
-          navigator.clipboard.writeText(shareText);
-          alert("Verse copied to clipboard!");
+          navigator.clipboard.writeText(shareText)
+            .then(() => console.info('Verse copied to clipboard!'))
+            .catch(() => console.warn('Clipboard write failed.'));
         }
       } else {
         await Share.share({
@@ -299,7 +301,7 @@ export default function LibraryScreen() {
       if (data && data.length > 0) {
         setVerses(data);
         setView('verses');
-      } else { alert("Failed to load chapter data."); }
+      } else { console.error("Failed to load chapter data — empty result."); }
     } catch (error) { console.error(error); } finally { setLoading(false); }
   }, [selectedBook]);
 
@@ -485,7 +487,7 @@ export default function LibraryScreen() {
                       <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
                         {verses.map((verse, index) => (
                           <VerseItem
-                            key={verse.verse}
+                            key={`${verse.chapter}-${verse.verse}`}
                             verse={verse}
                             index={index}
                             theme={theme}

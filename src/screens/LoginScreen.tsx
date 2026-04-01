@@ -91,12 +91,13 @@ export default function LoginScreen() {
     }
   };
 
-  const handleGuestLogin = () => {
+  const handleGuestLogin = async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      loginGuest();
+    try {
+      await loginGuest();
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   return (

@@ -44,20 +44,15 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
         </button>
       </div>
 
-      {/* Web Onboarding Content */}
-      <div className="flex-1 w-full h-full relative bg-gray-50 dark:bg-gray-950">
-        <iframe
-          src="https://bible-gpt-ebon.vercel.app/onboarding"
-          className="absolute inset-0 w-full h-full border-0"
-          title="Bible Nova Onboarding"
-          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-        />
-
-        {/* Loading Indicator Overlay (Hidden when iframe loads) */}
-        <div className="absolute inset-0 -z-10 flex flex-col items-center justify-center opacity-40">
-          <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-          <p className="text-sm font-medium">Connecting to sanctuary...</p>
+      {/* Local Onboarding Content */}
+      <div className="flex-1 w-full h-full relative bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center p-8 text-center">
+        <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-6">
+          <CheckCircle2 className="text-blue-600 dark:text-blue-400" size={40} />
         </div>
+        <h2 className="text-2xl font-bold mb-4">Welcome to Bible Nova</h2>
+        <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto leading-relaxed">
+          Your sanctuary is now ready. We've synchronized your local Bible and initialized your spiritual journal.
+        </p>
       </div>
 
       {/* Footer hint */}

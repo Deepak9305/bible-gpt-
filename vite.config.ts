@@ -34,7 +34,7 @@ export default defineConfig(({ mode }) => {
       hmr: process.env.DISABLE_HMR !== 'true',
       proxy: {
         '/api': {
-          target: env.APP_URL || 'https://bible-gpt-ebon.vercel.app',
+          target: env.APP_URL || '',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, '/api'),
         }

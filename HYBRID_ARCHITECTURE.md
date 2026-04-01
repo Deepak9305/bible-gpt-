@@ -16,7 +16,7 @@ To ensure the Word of God is always accessible, the core Bible reading experienc
 
 ### 2. Web Guidance (Online Enhanced)
 Features that require dynamic processing or AI wisdom utilize secure web services.
-*   **Onboarding**: The initial setup and spiritual alignment process is served via our [Vercel-hosted sanctuary](https://bible-gpt-ebon.vercel.app/onboarding).
+*   **Onboarding**: The initial setup process is handled locally within the application.
 *   **Father AI Chat**: Spiritual guidance, counseling, and deep theological explanations are powered by our AI proxy.
 *   **Verse Reflections**: Every daily verse receives a unique, AI-generated reflection to help you apply the Word to your life.
 *   **Audio (TTS)**: While the logic is local, the high-quality synthesis of "Father's Voice" often requires system-level web-connected voice modules.

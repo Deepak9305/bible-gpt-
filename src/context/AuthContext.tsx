@@ -83,6 +83,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await loadLocalUser();
       } finally {
         initialCheckDone.current = true;
+        // Guarantee loading clears even if syncUserFromSupabase/loadLocalUser
+        // forgot to call setIsLoading(false) — prevents the splash screen from
+        // getting permanently stuck.
+        setIsLoading(false);
       }
     };
 

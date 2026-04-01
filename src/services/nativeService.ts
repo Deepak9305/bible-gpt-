@@ -13,7 +13,7 @@ export const initializeNativeServices = async () => {
 
     // 1.1 Initialize AdMob only on native to avoid web bridge errors
     if (Capacitor.isNativePlatform()) {
-      await AdMob.initialize();
+      await AdMob.initialize({ initializeForTesting: false });
       await AdMob.removeBanner().catch(() => { });
     }
 

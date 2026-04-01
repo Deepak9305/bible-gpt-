@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -56,12 +56,12 @@ function AppContent() {
   // The splash only exits once BOTH auth and native init are done
   const splashReady = !isLoading && !isInitializing;
 
-  const handleSplashComplete = () => {
+  // STABLE reference — must not change on every render or SplashScreen's
+  // 2-second timer will be cleared & restarted on each auth/init state update.
+  const handleSplashComplete = useCallback(() => {
     setShowSplash(false);
-    // BUG FIX: onExitComplete is never guaranteed to fire when Suspense is inside
-    // AnimatePresence. Set isAppReady here instead, immediately after splash exits.
     setIsAppReady(true);
-  };
+  }, []);
 
   return (
     <AnimatePresence mode="wait">

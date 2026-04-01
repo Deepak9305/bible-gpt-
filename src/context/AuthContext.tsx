@@ -51,6 +51,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // HARD-CAP: If auth initialization hangs (e.g. getSession() never resolves
+    // due to network issues), force isLoading=false after 8s so the splash screen
+    // is never permanently stuck. Native services already have a 5s race in App.tsx.
+    const authHardCapTimer = setTimeout(() => {
+      setIsLoading(prev => {
+        if (prev) {
+          console.warn('[AuthContext] Auth init timed out after 8s — forcing isLoading=false');
+        }
+        return false;
+      });
+    }, 8000);
+
     const initializeAuth = async () => {
       try {
         // 1. Manually handle PKCE code exchange for Web (prevent React Router race condition)
@@ -119,6 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     return () => {
+      clearTimeout(authHardCapTimer);
       if (subscription) subscription.unsubscribe();
     };
   }, []);

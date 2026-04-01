@@ -94,8 +94,8 @@ export default function BookmarksScreen() {
               <p>No bookmarks yet.</p>
             </div>
           ) : (
-            bookmarks.map((verse, index) => (
-              <div key={index} className={`p-4 rounded-xl ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow-sm border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-100'}`}>
+            bookmarks.map((verse) => (
+              <div key={`${verse.book_id}-${verse.chapter}-${verse.verse}`} className={`p-4 rounded-xl ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow-sm border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-100'}`}>
                 <div className="flex justify-between items-start gap-4">
                   <div className="flex-1">
                     <h3 className="text-sm font-semibold text-blue-500 mb-2">

@@ -85,8 +85,9 @@ export default function PrayerJournalScreen() {
     } catch (err) {
       console.error("Share failed", err);
       if (!Capacitor.isNativePlatform()) {
-        navigator.clipboard.writeText(shareText);
-        alert("Prayer copied to clipboard!");
+        navigator.clipboard.writeText(shareText)
+          .then(() => console.info("Prayer copied to clipboard!"))
+          .catch(() => console.warn("Clipboard write failed."));
       }
     }
   }, []);

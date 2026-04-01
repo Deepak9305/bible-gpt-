@@ -299,6 +299,9 @@ export default function ChatScreen() {
     setMessages(prev => [...prev, { id: aiMsgId, role: 'assistant', content: '' }]);
 
     try {
+      // Capture history BEFORE setMessages appends the new user message.
+      // Using the stale `messages` closure here is intentional — it reflects
+      // the conversation up to (but not including) the user's current turn.
       const history = messages.map(m => ({ role: m.role, content: m.content }));
 
       let fullContent = "";

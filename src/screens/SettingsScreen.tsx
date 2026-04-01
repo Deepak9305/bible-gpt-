@@ -14,7 +14,13 @@ const AVATARS = ['✝️', '👤', '🕊️', '📖', '🕯️', '⛪', '🌟', 
 export default function SettingsScreen() {
   const { theme, toggleTheme, highContrastNav, toggleHighContrastNav, setTheme } = useTheme();
   const { logout, user, updateProfile, deleteAccount } = useAuth();
-  const stats = getStats();
+  const [stats, setStats] = useState(getStats());
+
+  // Refresh stats on mount — initStats() may resolve after this component
+  // first renders, so we need to pull the latest values once it settles.
+  React.useEffect(() => {
+    setStats(getStats());
+  }, []);
 
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editName, setEditName] = useState(user?.name || '');

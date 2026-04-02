@@ -289,49 +289,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    // BUG FIX: Explicitly clear the native Google credential cache so that on the next
-    // login attempt, it triggers the account selection prompt again.
-    // MUST initialize first or it natively crashes the app on Android.
-    if (Capacitor.isNativePlatform()) {
-      try {
-        // Timeout prevents hanging if not logged in via Google
-        await Promise.race([
-          GoogleAuth.signOut().catch(e => console.warn('GoogleAuth signOut ignorable:', e)),
-          new Promise(resolve => setTimeout(resolve, 1000))
-        ]);
-      } catch (e) {
-        console.warn('GoogleAuth native signOut error:', e);
-      }
-    }
+    console.log('[AuthContext] logout() called. Setting immediate local state null.');
 
-    // BUG FIX: Only call supabase.auth.signOut() when Supabase is configured.
-    // Calling it against the placeholder URL causes a silent network error.
-    if (isSupabaseConfigured) {
-      await supabase.auth.signOut().catch(e => console.warn('Supabase signOut error:', e));
-    }
+    // Clear state IMMEDIATELY so the user navigates away, 
+    // even if background network tasks hang.
     setUser(null);
     setSession(null);
-    // BUG FIX: await setUserIdForStats(null) for reliable cleanup
-    await setUserIdForStats(null);
-    await StorageService.remove('auth_user');
+
+    try {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          // Timeout prevents hanging if not logged in via Google
+          await Promise.race([
+            GoogleAuth.signOut().catch(e => console.warn('GoogleAuth signOut ignorable:', e)),
+            new Promise(resolve => setTimeout(resolve, 1000))
+          ]);
+        } catch (e) {
+          console.warn('GoogleAuth native signOut error:', e);
+        }
+      }
+
+      if (isSupabaseConfigured) {
+        console.log('[AuthContext] Calling supabase.auth.signOut()');
+        await supabase.auth.signOut().catch(e => console.warn('Supabase signOut error:', e));
+      }
+    } catch (err) {
+      console.error('[AuthContext] Error during logout process:', err);
+    } finally {
+      console.log('[AuthContext] Cleanup final storage.');
+      await setUserIdForStats(null).catch(e => console.error(e));
+      await StorageService.remove('auth_user').catch(e => console.error(e));
+    }
   };
 
   const deleteAccount = async () => {
-    // First remove from Supabase (if configured) so the local token is still valid
-    if (isSupabaseConfigured) {
-      const { error } = await supabase.rpc('delete_user');
-      if (error) console.warn('Supabase delete_user error:', error);
+    console.log('[AuthContext] deleteAccount() called.');
+    try {
+      if (isSupabaseConfigured) {
+        console.log('[AuthContext] Calling supabase RPC delete_user');
+        const { error } = await supabase.rpc('delete_user');
+        if (error) console.warn('Supabase delete_user error:', error);
 
-      await supabase.auth.signOut().catch(e => console.warn('Supabase signOut error on delete:', e));
+        await supabase.auth.signOut().catch(e => console.warn('Supabase signOut error on delete:', e));
+      }
+    } catch (err) {
+      console.error('[AuthContext] deleteAccount RPC or SignOut failed:', err);
+    } finally {
+      // Regardless of network errors, destroy session locally
+      console.log('[AuthContext] Removing local session data and UI state for deletion.');
+      setUser(null);
+      setSession(null);
+      await StorageService.clear().catch(e => console.error(e));
+      await setUserIdForStats(null).catch(e => console.error(e));
     }
-    await StorageService.clear();
-
-    setUser(null);
-    setSession(null);
-    // BUG FIX: await setUserIdForStats(null) for reliable cleanup
-    await setUserIdForStats(null);
-    // BUG FIX: window.location.reload() is broken inside Capacitor native.
-    // Setting state to null is sufficient — the router will redirect to /login.
   };
 
   const updateProfile = async (name: string, avatar?: string, preferences?: User['preferences']) => {

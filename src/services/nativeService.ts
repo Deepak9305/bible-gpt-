@@ -1,7 +1,7 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { StatusBar } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
-import { initPurchases } from './purchaseService';
+import { initPurchases } from './IAPService';
 import { AppTrackingTransparency } from '@capgo/capacitor-app-tracking-transparency';
 import { AdMob } from '@capacitor-community/admob';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';

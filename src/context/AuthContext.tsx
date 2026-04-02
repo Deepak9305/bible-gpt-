@@ -196,12 +196,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (storedUser) {
       try {
         const parsed = JSON.parse(storedUser);
-        // BUG FIX: Restore ALL valid persisted users (guests AND email users),
-        // not just guests. Previously, non-guest users stored locally were
-        // cleared on startup when Supabase had no active session.
+        // Restore all valid persisted users (guests and email users)
         if (parsed && parsed.id) {
           setUser(parsed);
-          // BUG FIX: await setUserIdForStats to prevent stats race condition on startup
           await setUserIdForStats(parsed.id);
         }
       } catch (e) {
@@ -223,7 +220,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
     setUser(guestUser);
-    // BUG FIX: await setUserIdForStats to prevent stats race condition
     await setUserIdForStats(guestUser.id);
     await StorageService.set('auth_user', JSON.stringify(guestUser));
   };
@@ -249,7 +245,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
     setUser(emailUser);
-    // BUG FIX: await setUserIdForStats to prevent stats race condition
     await setUserIdForStats(emailUser.id);
     await StorageService.set('auth_user', JSON.stringify(emailUser));
   };
@@ -289,19 +284,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    console.log('[AuthContext] logout() called. Setting immediate local state null.');
-
-    // Clear state IMMEDIATELY so the user navigates away, 
-    // even if background network tasks hang.
     setUser(null);
     setSession(null);
 
     try {
       if (Capacitor.isNativePlatform()) {
         try {
-          // Timeout prevents hanging if not logged in via Google
           await Promise.race([
-            GoogleAuth.signOut().catch(e => console.warn('GoogleAuth signOut ignorable:', e)),
+            GoogleAuth.signOut().catch(() => { }),
             new Promise(resolve => setTimeout(resolve, 1000))
           ]);
         } catch (e) {
@@ -310,37 +300,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (isSupabaseConfigured) {
-        console.log('[AuthContext] Calling supabase.auth.signOut()');
-        await supabase.auth.signOut().catch(e => console.warn('Supabase signOut error:', e));
+        await supabase.auth.signOut().catch(() => { });
       }
     } catch (err) {
-      console.error('[AuthContext] Error during logout process:', err);
+      console.error('Error during logout process:', err);
     } finally {
-      console.log('[AuthContext] Cleanup final storage.');
-      await setUserIdForStats(null).catch(e => console.error(e));
-      await StorageService.remove('auth_user').catch(e => console.error(e));
+      await setUserIdForStats(null).catch(() => { });
+      await StorageService.remove('auth_user').catch(() => { });
     }
   };
 
   const deleteAccount = async () => {
-    console.log('[AuthContext] deleteAccount() called.');
     try {
       if (isSupabaseConfigured) {
-        console.log('[AuthContext] Calling supabase RPC delete_user');
         const { error } = await supabase.rpc('delete_user');
         if (error) console.warn('Supabase delete_user error:', error);
 
-        await supabase.auth.signOut().catch(e => console.warn('Supabase signOut error on delete:', e));
+        await supabase.auth.signOut().catch(() => { });
       }
     } catch (err) {
-      console.error('[AuthContext] deleteAccount RPC or SignOut failed:', err);
+      console.error('deleteAccount RPC or SignOut failed:', err);
     } finally {
-      // Regardless of network errors, destroy session locally
-      console.log('[AuthContext] Removing local session data and UI state for deletion.');
       setUser(null);
       setSession(null);
-      await StorageService.clear().catch(e => console.error(e));
-      await setUserIdForStats(null).catch(e => console.error(e));
+      await StorageService.clear().catch(() => { });
+      await setUserIdForStats(null).catch(() => { });
     }
   };
 

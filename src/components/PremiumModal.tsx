@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Sparkles, Infinity, Loader2, Zap, ShieldCheck } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
-import { purchaseProduct, getProductPricing, restorePurchases } from '../services/purchaseService';
+import { purchaseProduct, getProductPricing, restorePurchases } from '../services/IAPService';
 
 interface PremiumModalProps {
   isOpen: boolean;

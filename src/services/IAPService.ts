@@ -135,13 +135,8 @@ export const purchaseProduct = (productId: string, basePlanId?: string): Promise
 
   return new Promise<void>((resolve, reject) => {
     let resolved = false;
-
-    // BUG FIX #8: Filter by transactionId to avoid resolving on a restore
-    // of a different (previously purchased) transaction
     let pendingTransactionId: string | null = null;
 
-    // BUG FIX #5: store.when() returns a subscriber object, not a function.
-    // Use the returned object's .cancel() method (or store.off()) to clean up.
     const subscriber = store.when()
       .productId(productId)
       .approved((transaction: any) => {

@@ -43,7 +43,12 @@ const setupStore = () => {
   // Only call store.update() after the store is ready — not before
   store.ready(() => {
     storeReady = true;
+    console.log('IAP: Store is ready. All registered products:', store.products.map((p: any) => `${p.id} (${p.type})`));
     store.update();
+  });
+
+  store.when().updated((product: any) => {
+    console.log(`IAP: Product updated: ${product.id}`, { state: product.state, offers: product.offers?.length });
   });
 
   // Initialize the store with RSA key for Google Play receipt validation
@@ -118,6 +123,7 @@ export const purchaseProduct = (productId: string, basePlanId?: string): Promise
   const product = store.get(productId);
 
   if (!product) {
+    console.error(`IAP: Product ${productId} not found. Current products in store:`, store.products.map((p: any) => p.id));
     return Promise.reject(new Error('Product not found. Please ensure your app is published and the product is approved in the Play Console.'));
   }
 

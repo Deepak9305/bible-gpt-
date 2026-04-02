@@ -76,7 +76,6 @@ export default function LoginScreen() {
         await signInWithGoogle();
       }
     } catch (e: any) {
-      console.error("Google Auth Error", e);
       setError(e?.message || 'Failed to sign in with Google');
     } finally {
       setIsLoading(false);

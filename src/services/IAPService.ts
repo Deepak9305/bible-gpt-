@@ -9,7 +9,6 @@ const setupStore = () => {
   const CdvPurchase = (window as any).CdvPurchase;
 
   if (!CdvPurchase?.store) {
-    console.warn('[PurchaseService] CdvPurchase not available even after deviceready.');
     return;
   }
 
@@ -33,22 +32,17 @@ const setupStore = () => {
   // - finished: transaction is done - unlock premium
   store.when()
     .approved((transaction: any) => {
-      console.log('[PurchaseService] Transaction approved, finishing:', transaction.transactionId);
       transaction.finish();
     })
     .finished((transaction: any) => {
-      console.log('[PurchaseService] Transaction finished, unlocking premium:', transaction.transactionId);
-      // upgradeToPremium is synchronous — writes to local cache + Supabase
       upgradeToPremium();
     })
     .error((err: any) => {
-      console.error('[PurchaseService] Store error:', err?.code, err?.message);
     });
 
   // Only call store.update() after the store is ready — not before
   store.ready(() => {
     storeReady = true;
-    console.log('[PurchaseService] Store ready, fetching product data...');
     store.update();
   });
 

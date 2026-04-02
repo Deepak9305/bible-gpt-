@@ -56,9 +56,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // is never permanently stuck. Native services already have a 5s race in App.tsx.
     const authHardCapTimer = setTimeout(() => {
       setIsLoading(prev => {
-        if (prev) {
-          console.warn('[AuthContext] Auth init timed out after 8s — forcing isLoading=false');
-        }
         return false;
       });
     }, 8000);

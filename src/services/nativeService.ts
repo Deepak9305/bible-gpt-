@@ -21,7 +21,7 @@ export const initializeNativeServices = async () => {
         clientId: '1083543499729-3rrelit5mm4jno7jfogpnaceh9inlgu4.apps.googleusercontent.com',
         scopes: ['profile', 'email'],
         grantOfflineAccess: true,
-      }).catch(e => console.warn('GoogleAuth init failed:', e));
+      }).catch(() => { });
     }
 
     // Mark deviceready as fired so late callers of initPurchases run synchronously.
@@ -43,7 +43,7 @@ export const initializeNativeServices = async () => {
 
     if (Capacitor.isNativePlatform()) {
       // 0. Hide Status Bar (Immersive Mode)
-      await StatusBar.hide().catch(e => console.warn("StatusBar hide failed", e));
+      await StatusBar.hide().catch(() => { });
 
       // 1.5 Request App Tracking Transparency (iOS)
       if (Capacitor.getPlatform() === 'ios') {
@@ -53,7 +53,7 @@ export const initializeNativeServices = async () => {
             await AppTrackingTransparency.requestPermission();
           }
         } catch (e) {
-          console.warn("ATT request failed", e);
+          // Ignore
         }
       }
 
@@ -64,11 +64,11 @@ export const initializeNativeServices = async () => {
           await scheduleDailyDevotional();
         }
       } catch (e) {
-        console.warn("Notifications init failed", e);
+        // Ignore
       }
     }
   } catch (globalErr) {
-    console.error("Critical native service failure:", globalErr);
+    // Ignore
   }
 };
 

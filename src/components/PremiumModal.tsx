@@ -59,7 +59,6 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
       onUpgrade();
       onClose();
     } catch (e: any) {
-      console.error('Purchase failed', e);
       setPurchaseError(e?.message || 'Purchase failed or was cancelled.');
     } finally {
       setIsLoading(false);

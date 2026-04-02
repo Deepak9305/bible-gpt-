@@ -6,3 +6,5 @@ coverage/
 *.log
 .env*
 !.env.example
+url_full.txt
+url_ascii.txt

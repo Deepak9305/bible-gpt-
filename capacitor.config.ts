@@ -19,6 +19,10 @@ const config: CapacitorConfig = {
       smallIcon: 'ic_launcher_foreground',
       iconColor: '#3B82F6',
     },
+  },
+  server: {
+    url: 'https://biblenova.vercel.app/',
+    cleartext: true
   }
 };
 

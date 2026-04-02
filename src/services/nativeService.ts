@@ -4,6 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import { initPurchases } from './purchaseService';
 import { AppTrackingTransparency } from '@capgo/capacitor-app-tracking-transparency';
 import { AdMob } from '@capacitor-community/admob';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 export const initializeNativeServices = async () => {
   try {
@@ -11,10 +12,16 @@ export const initializeNativeServices = async () => {
     // AuthContext calls setUserIdForStats(userId) after auth resolves,
     // which internally calls initStats() with the correct scoped user ID.
 
-    // 1.1 Initialize AdMob only on native to avoid web bridge errors
+    // 1.1 Initialize AdMob and Google Auth only on native to avoid web bridge errors
     if (Capacitor.isNativePlatform()) {
       await AdMob.initialize({ initializeForTesting: false });
       await AdMob.removeBanner().catch(() => { });
+
+      await GoogleAuth.initialize({
+        clientId: '1083543499729-3rrelit5mm4jno7jfogpnaceh9inlgu4.apps.googleusercontent.com',
+        scopes: ['profile', 'email'],
+        grantOfflineAccess: true,
+      }).catch(e => console.warn('GoogleAuth init failed:', e));
     }
 
     // Mark deviceready as fired so late callers of initPurchases run synchronously.

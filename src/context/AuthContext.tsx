@@ -65,19 +65,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initializeAuth = async () => {
       try {
-        // 1. Manually handle PKCE code exchange for Web (prevent React Router race condition)
-        if (!Capacitor.isNativePlatform()) {
-          const params = new URLSearchParams(window.location.search);
-          const code = params.get('code');
-          if (code) {
-            console.log('Exchanging OAuth code for session...');
-            const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-            if (exchangeError) console.error('OAuth code exchange failed:', exchangeError);
-
-            // Clean up the URL to prevent re-exchanging
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
-        }
+        // Supabase v2 client with detectSessionInUrl: true automatically handles PKCE code
+        // exchanges. Manually handling it here causes a double-exchange race condition that throws
+        // invalid_grant and breaks caching on second logins.
 
         // 2. Check for existing Supabase session
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -306,14 +296,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         // Timeout prevents hanging if not logged in via Google
         await Promise.race([
-          (async () => {
-            await GoogleAuth.initialize({
-              clientId: '1083543499729-3rrelit5mm4jno7jfogpnaceh9inlgu4.apps.googleusercontent.com',
-              scopes: ['profile', 'email'],
-              grantOfflineAccess: true,
-            });
-            await GoogleAuth.signOut();
-          })(),
+          GoogleAuth.signOut().catch(e => console.warn('GoogleAuth signOut ignorable:', e)),
           new Promise(resolve => setTimeout(resolve, 1000))
         ]);
       } catch (e) {

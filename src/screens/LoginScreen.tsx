@@ -50,14 +50,6 @@ export default function LoginScreen() {
     setError('');
     try {
       if (Capacitor.isNativePlatform()) {
-        // BUG FIX: Must initialize before calling signIn on native platforms.
-        // We MUST use the Web Client ID here, even on Android, because it represents
-        // the server (Supabase) that will receive and verify the `idToken`.
-        await GoogleAuth.initialize({
-          clientId: '1083543499729-3rrelit5mm4jno7jfogpnaceh9inlgu4.apps.googleusercontent.com',
-          scopes: ['profile', 'email'],
-          grantOfflineAccess: true,
-        });
         const googleUser = await GoogleAuth.signIn();
         const idToken = googleUser?.authentication?.idToken;
         if (idToken && isSupabaseConfigured) {

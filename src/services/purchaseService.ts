@@ -145,16 +145,16 @@ export const purchaseProduct = (productId: string, basePlanId?: string): Promise
     const subscriber = store.when()
       .productId(productId)
       .approved((transaction: any) => {
-        // Capture the pending transaction ID as soon as it's approved
-        pendingTransactionId = transaction.transactionId;
-      })
-      .finished((transaction: any) => {
-        // BUG FIX #8: Only resolve for the transaction we just initiated
-        if (!resolved && transaction.transactionId === pendingTransactionId) {
+        if (!resolved) {
           resolved = true;
           try { subscriber.cancel?.(); } catch (_) { }
-          // BUG FIX #6: upgradeToPremium() is called synchronously in the global
-          // finished handler above. We resolve AFTER it has been called.
+          resolve();
+        }
+      })
+      .owned((product: any) => {
+        if (!resolved) {
+          resolved = true;
+          try { subscriber.cancel?.(); } catch (_) { }
           resolve();
         }
       })

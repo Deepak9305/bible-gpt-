@@ -4,4 +4,5 @@
     <string name="title_activity_main">Bible Nova</string>
     <string name="package_name">com.biblenova.app</string>
     <string name="custom_url_scheme">com.biblenova.app</string>
+    <string name="server_client_id">1083543499729-3rrelit5mm4jno7jfogpnaceh9inlgu4.apps.googleusercontent.com</string>
 </resources>

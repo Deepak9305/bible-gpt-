@@ -232,8 +232,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Standard Supabase Email + Password Login
     if (isSupabaseConfigured) {
       if (!password) throw new Error('Password is required');
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      if (data.session) await syncUserFromSupabase(data.session);
       return;
     }
     // Fallback: offline/dev mode — create a local email user
@@ -256,10 +257,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUpEmail = async (email: string, password?: string) => {
     if (isSupabaseConfigured) {
       if (!password) throw new Error('Password is required');
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
-      // Note: Depending on Supabase settings, the user may still need to verify their email
-      // before they can log in.
+      if (data.session) await syncUserFromSupabase(data.session);
       return;
     }
     // Fallback: just login in dev mode

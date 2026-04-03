@@ -26,7 +26,7 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isConfigured: boolean;
-  loginGuest: () => void;
+  loginGuest: () => Promise<void>;
   loginEmail: (email: string, password?: string) => Promise<void>;
   signUpEmail: (email: string, password?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;

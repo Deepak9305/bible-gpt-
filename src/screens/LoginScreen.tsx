@@ -91,7 +91,7 @@ export default function LoginScreen() {
     try {
       await loginGuest();
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) setIsLoading(false);
     }
   };
 

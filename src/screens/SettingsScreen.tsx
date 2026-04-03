@@ -81,18 +81,18 @@ export default function SettingsScreen() {
 
   const executeConfirmAction = async () => {
     if (confirmAction?.type === 'delete') {
-      deleteAccount();
+      await deleteAccount();
     } else if (confirmAction?.type === 'clear') {
       await StorageService.clear();
       // BUG FIX: window.location.reload() breaks Capacitor WebView on native.
       // Logging out and clearing state forces the router to redirect to /login.
-      logout();
+      await logout();
     }
     setConfirmAction(null);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
   };
 
   const openEditProfile = () => {

@@ -13,6 +13,10 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
+  // Bug fix: guard setState calls so they don't fire on an unmounted component
+  // (e.g. when Google sign-in succeeds and navigation happens before finally runs).
+  const isMounted = React.useRef(true);
+  React.useEffect(() => { return () => { isMounted.current = false; }; }, []);
 
   // GoogleAuth.initialize is only needed for native platforms.
   // On web, Supabase handles the full OAuth redirect flow.
@@ -76,9 +80,9 @@ export default function LoginScreen() {
         await signInWithGoogle();
       }
     } catch (e: any) {
-      setError(e?.message || 'Failed to sign in with Google');
+      if (isMounted.current) setError(e?.message || 'Failed to sign in with Google');
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) setIsLoading(false);
     }
   };
 

@@ -30,7 +30,7 @@ interface AuthContextType {
   loginEmail: (email: string, password?: string) => Promise<void>;
   signUpEmail: (email: string, password?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   deleteAccount: () => void;
   updateProfile: (name: string, avatar?: string, preferences?: User['preferences']) => void;
 }
@@ -54,10 +54,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // HARD-CAP: If auth initialization hangs (e.g. getSession() never resolves
     // due to network issues), force isLoading=false after 8s so the splash screen
     // is never permanently stuck. Native services already have a 5s race in App.tsx.
+    let authHardCapTimerFired = false;
     const authHardCapTimer = setTimeout(() => {
-      setIsLoading(prev => {
-        return false;
-      });
+      authHardCapTimerFired = true;
+      setIsLoading(false);
     }, 8000);
 
     const initializeAuth = async () => {
@@ -82,10 +82,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await loadLocalUser();
       } finally {
         initialCheckDone.current = true;
-        // Guarantee loading clears even if syncUserFromSupabase/loadLocalUser
-        // forgot to call setIsLoading(false) — prevents the splash screen from
-        // getting permanently stuck.
-        setIsLoading(false);
+        // Clear the hard-cap timer since init completed normally.
+        // Only fire setIsLoading(false) here as a guarantee if the timer hasn't already done so.
+        clearTimeout(authHardCapTimer);
+        if (!authHardCapTimerFired) {
+          setIsLoading(false);
+        }
       }
     };
 
@@ -98,10 +100,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(newSession);
 
         if (event === 'SIGNED_IN' && newSession?.user) {
-          // User just signed in (e.g. OAuth redirect landed)
-          await syncUserFromSupabase(newSession);
+          // Bug fix: only handle SIGNED_IN after the initial getSession() check
+          // has completed, to avoid a race condition where both initializeAuth()
+          // and the listener call syncUserFromSupabase concurrently on cold start.
+          if (initialCheckDone.current) {
+            await syncUserFromSupabase(newSession);
+          }
         } else if (event === 'TOKEN_REFRESHED' && newSession?.user) {
-          // Silently update session
+          // Silently update session — this only fires after initial load is done
           await syncUserFromSupabase(newSession);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
@@ -128,11 +134,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (Capacitor.isNativePlatform()) {
       const handleDeepLink = async (urlStr: string) => {
         try {
-          const url = new URL(urlStr.replace('#', '?'));
-          const params = new URLSearchParams(url.search);
+          // Bug fix: use URL API properly. Tokens may appear in either the query
+          // string (?access_token=) or hash fragment (#access_token=). The old
+          // naive replace('#','?') would corrupt URLs containing both.
+          const url = new URL(urlStr);
+          // Merge query params and hash params into one searchable object
+          const queryParams = new URLSearchParams(url.search);
+          const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''));
+          const get = (k: string) => queryParams.get(k) || hashParams.get(k);
 
-          const accessToken = params.get('access_token');
-          const refreshToken = params.get('refresh_token');
+          const accessToken = get('access_token');
+          const refreshToken = get('refresh_token');
 
           if (accessToken && refreshToken) {
             const { error } = await supabase.auth.setSession({
@@ -207,6 +219,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loginGuest = async () => {
+    // Bug fix: reuse existing guest identity so the user doesn't lose stats/data
+    // if they tap "Continue as Guest" more than once (e.g. after a session check).
+    const existing = await StorageService.get('auth_user');
+    if (existing) {
+      try {
+        const parsed: User = JSON.parse(existing);
+        if (parsed?.isGuest && parsed?.id) {
+          setUser(parsed);
+          await setUserIdForStats(parsed.id);
+          return;
+        }
+      } catch (_) { /* fall through to create new guest */ }
+    }
+
     const guestUser: User = {
       id: 'guest-' + Date.now(),
       name: 'Guest',

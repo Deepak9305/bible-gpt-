@@ -21,7 +21,7 @@ export const initializeNativeServices = async () => {
         // Use the OAuth client registered against Google Play's signing certificate.
         // The upload-key client ID only works for local/debug builds; the Play signing
         // key client ID is required for production (Play Store) installs.
-        clientId: '1083543499729-6h6e96849m3nn9qe8ir4ugc21djr1rlu.apps.googleusercontent.com',
+        clientId: '1083543499729-3rrelit5mm4jno7jfogpnaceh9inlgu4.apps.googleusercontent.com',
         scopes: ['profile', 'email'],
         grantOfflineAccess: true,
       }).catch(() => { });

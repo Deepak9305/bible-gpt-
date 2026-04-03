@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Sparkles, Infinity, Loader2, Zap, ShieldCheck } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
-import { purchaseProduct, getProductPricing, restorePurchases } from '../services/IAPService';
+import { purchaseProduct, getProductPricing, restorePurchases, storeInitError } from '../services/IAPService';
 
 interface PremiumModalProps {
   isOpen: boolean;
@@ -20,6 +20,7 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
   });
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [restoreMessage, setRestoreMessage] = useState<string | null>(null);
+  const [storeError, setStoreError] = useState<string | null>(null);
   const retryTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
       setIsPricingLoading(true);
       setPurchaseError(null);
       setRestoreMessage(null);
+      setStoreError(null);
       setPricing({ yearly: null, monthly: null });
       let attempts = 0;
       const MAX_ATTEMPTS = 10; // poll for up to 15s (10 × 1500ms)
@@ -37,6 +39,14 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
         if (p.yearly || p.monthly || attempts >= MAX_ATTEMPTS) {
           setPricing(p);
           setIsPricingLoading(false);
+          if (attempts >= MAX_ATTEMPTS && !p.yearly && !p.monthly) {
+            // If storeInitError is true the billing connection itself failed
+            if (storeInitError) {
+              setStoreError('Store unavailable. Please check your Play Store account and restart the app.');
+            } else {
+              setStoreError('Products not loaded. Ensure the app is published and products are approved in Play Console.');
+            }
+          }
         } else {
           attempts++;
           retryTimerRef.current = setTimeout(fetchPricing, 1500);
@@ -178,6 +188,9 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
 
                   {purchaseError && (
                     <p className="text-xs text-red-400 text-center pb-1">{purchaseError}</p>
+                  )}
+                  {storeError && (
+                    <p className="text-xs text-orange-400 text-center pb-1">{storeError}</p>
                   )}
                   {restoreMessage && (
                     <p className={`text-xs text-center pb-1 ${restoreMessage.includes('success') ? 'text-green-500' : 'text-red-400'}`}>

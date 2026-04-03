@@ -27,14 +27,9 @@ export const initializeNativeServices = async () => {
     // Mark deviceready as fired so late callers of initPurchases run synchronously.
     // initPurchases() internally waits for this event itself, but setting the flag
     // here ensures the fallback path in purchaseService works correctly.
-    if (Capacitor.isNativePlatform()) {
-      // Bug fix: the old if/else had the condition inverted — it called markReady()
-      // only when __cordovaReady was already true (a no-op). Always register the
-      // listener; { once: true } makes it safe to re-register.
-      document.addEventListener('deviceready', () => {
-        (document as any).__cordovaReady = true;
-      }, { once: true });
-    }
+    // initPurchases() now handles setting __cordovaReady and calling setupStore
+    // after deviceready. No need for a separate listener here.
+
 
     // Initialize in-app purchases AFTER AdMob.
     // On native, this internally waits for the 'deviceready' event before

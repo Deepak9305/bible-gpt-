@@ -3,15 +3,36 @@ import { upgradeToPremium } from './statsService';
 
 // Track whether the store has finished initializing
 let storeReady = false;
+// Track if initialization failed (for UI feedback)
+export let storeInitError = false;
 
 const setupStore = () => {
-  // CdvPurchase v13 attaches to window.CdvPurchase
   const CdvPurchase = (window as any).CdvPurchase;
 
+  // Bug fix: CdvPurchase may not be injected immediately when deviceready fires
+  // in a Capacitor/Cordova hybrid. Poll with backoff rather than silently returning.
   if (!CdvPurchase?.store) {
+    let attempts = 0;
+    const MAX_ATTEMPTS = 75; // 75 × 200ms = 15s total wait
+    const poll = setInterval(() => {
+      attempts++;
+      const cdv = (window as any).CdvPurchase;
+      if (cdv?.store) {
+        clearInterval(poll);
+        runSetup(cdv);
+      } else if (attempts >= MAX_ATTEMPTS) {
+        clearInterval(poll);
+        storeInitError = true;
+        console.error('IAP: CdvPurchase never became available after 15s. IAP disabled.');
+      }
+    }, 200);
     return;
   }
 
+  runSetup(CdvPurchase);
+};
+
+const runSetup = (CdvPurchase: any) => {
   const store = CdvPurchase.store;
   const Platform = CdvPurchase.Platform;
   const ProductType = CdvPurchase.ProductType;
@@ -34,16 +55,16 @@ const setupStore = () => {
     .approved((transaction: any) => {
       transaction.finish();
     })
-    .finished((transaction: any) => {
+    .finished((_transaction: any) => {
       upgradeToPremium();
     })
-    .error((err: any) => {
-    });
+    .error((_err: any) => { });
 
   // Only call store.update() after the store is ready — not before
   store.ready(() => {
     storeReady = true;
-    console.log('IAP: Store is ready. All registered products:', store.products.map((p: any) => `${p.id} (${p.type})`));
+    storeInitError = false;
+    console.log('IAP: Store is ready. Products:', store.products.map((p: any) => `${p.id} (${p.type})`));
     store.update();
   });
 
@@ -69,13 +90,15 @@ export const initPurchases = () => {
   // Only run on native — CdvPurchase is injected by Cordova bridge
   if (!Capacitor.isNativePlatform()) return;
 
-  // Cordova plugins (including CdvPurchase) are only available after
-  // the 'deviceready' event. Waiting for it guarantees window.CdvPurchase exists.
+  // Cordova plugins are guaranteed available after 'deviceready'.
+  // If it already fired, run immediately; otherwise wait for it.
   if ((document as any).__cordovaReady) {
-    // deviceready already fired (e.g. called late) — run immediately
     setupStore();
   } else {
-    document.addEventListener('deviceready', setupStore, { once: true });
+    document.addEventListener('deviceready', () => {
+      (document as any).__cordovaReady = true;
+      setupStore();
+    }, { once: true });
   }
 };
 

@@ -15,8 +15,8 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
   const [isRestoring, setIsRestoring] = useState(false);
   const [isPricingLoading, setIsPricingLoading] = useState(false);
   const [pricing, setPricing] = useState<{ yearly: string | null; monthly: string | null }>({
-    yearly: null,
-    monthly: null,
+    yearly: '$89.99',
+    monthly: '$9.99',
   });
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [restoreMessage, setRestoreMessage] = useState<string | null>(null);
@@ -153,7 +153,7 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
                   >
                     <div className="text-left">
                       <div className="font-semibold text-sm">Annual Blessing</div>
-                      <div className="text-[10px] opacity-80 font-normal">Best value · Save ~60%</div>
+                      <div className="text-[10px] opacity-80 font-normal">Best value · Save ~25%</div>
                     </div>
                     <div className="font-bold text-sm min-w-[48px] text-right">
                       {isLoading ? <Loader2 size={16} className="animate-spin ml-auto" /> :

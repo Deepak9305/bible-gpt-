@@ -31,7 +31,7 @@ interface AuthContextType {
   signUpEmail: (email: string, password?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
-  deleteAccount: () => void;
+  deleteAccount: () => Promise<void>;
   updateProfile: (name: string, avatar?: string, preferences?: User['preferences']) => void;
 }
 

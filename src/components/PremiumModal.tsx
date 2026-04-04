@@ -31,23 +31,31 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
       setRestoreMessage(null);
       setStoreError(null);
       setPricing({ yearly: null, monthly: null });
+      let isMounted = true;
       let attempts = 0;
       const MAX_ATTEMPTS = 10; // poll for up to 15s (10 × 1500ms)
 
-      const fetchPricing = () => {
-        const p = getProductPricing('biblenova');
-        if (p.yearly || p.monthly || attempts >= MAX_ATTEMPTS) {
-          setPricing(p);
-          setIsPricingLoading(false);
-          if (attempts >= MAX_ATTEMPTS && !p.yearly && !p.monthly) {
-            // If storeInitError is true the billing connection itself failed
-            if (storeInitError) {
-              setStoreError('Store unavailable. Please check your Play Store account and restart the app.');
-            } else {
-              setStoreError('Products not loaded. Ensure the app is published and products are approved in Play Console.');
+      const fetchPricing = async () => {
+        try {
+          const p = await getProductPricing();
+          if (!isMounted) return;
+
+          if (p.yearly || p.monthly || attempts >= MAX_ATTEMPTS) {
+            setPricing(p);
+            setIsPricingLoading(false);
+            if (attempts >= MAX_ATTEMPTS && !p.yearly && !p.monthly) {
+              if (storeInitError) {
+                setStoreError('Store unavailable. Please check your Play Store account and restart the app.');
+              } else {
+                setStoreError('Products not loaded. Ensure the app is published and products are approved in Play Console.');
+              }
             }
+          } else {
+            attempts++;
+            retryTimerRef.current = setTimeout(fetchPricing, 1500);
           }
-        } else {
+        } catch (error) {
+          if (!isMounted) return;
           attempts++;
           retryTimerRef.current = setTimeout(fetchPricing, 1500);
         }
@@ -56,16 +64,17 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
       fetchPricing();
 
       return () => {
+        isMounted = false;
         if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       };
     }
   }, [isOpen]);
 
-  const handleSubscribe = async (productId: string, basePlanId?: string) => {
+  const handleSubscribe = async (productType: 'yearly' | 'monthly') => {
     setIsLoading(true);
     setPurchaseError(null);
     try {
-      await purchaseProduct(productId, basePlanId);
+      await purchaseProduct(productType);
       onUpgrade();
       onClose();
     } catch (e: any) {
@@ -157,7 +166,7 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
                 <div className="space-y-2.5">
                   {/* Yearly */}
                   <button
-                    onClick={() => handleSubscribe('biblenova', 'yearly')}
+                    onClick={() => handleSubscribe('yearly')}
                     disabled={isLoading}
                     className="w-full flex items-center justify-between px-4 py-3.5 bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-white rounded-2xl transition-all disabled:opacity-60 shadow-lg shadow-amber-400/30"
                   >
@@ -174,7 +183,7 @@ export default function PremiumModal({ isOpen, onClose, onUpgrade }: PremiumModa
 
                   {/* Monthly */}
                   <button
-                    onClick={() => handleSubscribe('biblenova', 'monthly')}
+                    onClick={() => handleSubscribe('monthly')}
                     disabled={isLoading}
                     className="w-full flex items-center justify-between px-4 py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 active:scale-[0.98] text-stone-700 dark:text-stone-200 rounded-2xl transition-all disabled:opacity-60 border border-stone-200 dark:border-stone-700"
                   >

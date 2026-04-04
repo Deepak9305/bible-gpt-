@@ -169,8 +169,8 @@ export default function HomeScreen() {
       return;
     }
 
-    setIsLoadingAudio(true);
     setIsSpeaking(true);
+    setIsLoadingAudio(true);
 
     const textToSpeak = `${dailyVerse.text}. ${dailyReflection || ''}`;
 

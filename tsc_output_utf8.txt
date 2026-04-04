@@ -1,0 +1,4 @@
+﻿supabase/functions/verify-iap/index.ts(1,23): error TS2307: Cannot find module 'https://deno.land/std@0.168.0/http/server.ts' or its corresponding type declarations.
+supabase/functions/verify-iap/index.ts(2,30): error TS2307: Cannot find module 'https://esm.sh/@supabase/supabase-js@2' or its corresponding type declarations.
+supabase/functions/verify-iap/index.ts(19,13): error TS2304: Cannot find name 'Deno'.
+supabase/functions/verify-iap/index.ts(20,13): error TS2304: Cannot find name 'Deno'.

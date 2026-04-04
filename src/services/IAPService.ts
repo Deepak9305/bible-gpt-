@@ -1,224 +1,122 @@
 import { Capacitor } from '@capacitor/core';
+import { NativePurchases } from '@capgo/native-purchases';
 import { upgradeToPremium } from './statsService';
+import { supabase } from './supabaseClient';
 
-// Track whether the store has finished initializing
-let storeReady = false;
-// Track if initialization failed (for UI feedback)
+// Product IDs are platform-specific because Google Play uses base plans under a single product ID
+export const PRODUCT_YEARLY = Capacitor.getPlatform() === 'android' ? 'biblenova:yearly' : 'biblenova_yearly';
+export const PRODUCT_MONTHLY = Capacitor.getPlatform() === 'android' ? 'biblenova:monthly' : 'biblenova_monthly';
+
+// Google Play Billing Public Key for optional local signature verification
+export const GOOGLE_PLAY_PUBLIC_KEY = import.meta.env.VITE_GOOGLE_PLAY_PUBLIC_KEY;
+
 export let storeInitError = false;
+export let storeReady = false;
 
-const setupStore = () => {
-  const CdvPurchase = (window as any).CdvPurchase;
-
-  // Bug fix: CdvPurchase may not be injected immediately when deviceready fires
-  // in a Capacitor/Cordova hybrid. Poll with backoff rather than silently returning.
-  if (!CdvPurchase?.store) {
-    let attempts = 0;
-    const MAX_ATTEMPTS = 75; // 75 × 200ms = 15s total wait
-    const poll = setInterval(() => {
-      attempts++;
-      const cdv = (window as any).CdvPurchase;
-      if (cdv?.store) {
-        clearInterval(poll);
-        runSetup(cdv);
-      } else if (attempts >= MAX_ATTEMPTS) {
-        clearInterval(poll);
-        storeInitError = true;
-        console.error('IAP: CdvPurchase never became available after 15s. IAP disabled.');
-      }
-    }, 200);
-    return;
-  }
-
-  runSetup(CdvPurchase);
-};
-
-const runSetup = (CdvPurchase: any) => {
-  const store = CdvPurchase.store;
-  const Platform = CdvPurchase.Platform;
-  const ProductType = CdvPurchase.ProductType;
-
-  // Register the product with explicit platform (required in CdvPurchase v13)
-  const platform = Capacitor.getPlatform() === 'ios'
-    ? Platform.APPLE_APPSTORE
-    : Platform.GOOGLE_PLAY;
-
-  store.register([{
-    type: ProductType.PAID_SUBSCRIPTION,
-    id: 'biblenova',
-    platform,
-  }]);
-
-  // Global lifecycle handlers:
-  // - approved: finish the transaction immediately (no server validator configured)
-  // - finished: transaction is done - unlock premium
-  store.when()
-    .approved((transaction: any) => {
-      transaction.finish();
-    })
-    .finished((_transaction: any) => {
-      upgradeToPremium();
-    })
-    .error((_err: any) => { });
-
-  // Only call store.update() after the store is ready — not before
-  store.ready(() => {
-    storeReady = true;
-    storeInitError = false;
-    console.log('IAP: Store is ready. Products:', store.products.map((p: any) => `${p.id} (${p.type})`));
-    store.update();
-  });
-
-  store.when().updated((product: any) => {
-    console.log(`IAP: Product updated: ${product.id}`, { state: product.state, offers: product.offers?.length });
-  });
-
-  // Initialize the store with RSA key for Google Play receipt validation
-  store.initialize([
-    {
-      platform: Platform.GOOGLE_PLAY,
-      options: {
-        key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA09wkUpHpqHNL5WvGehhonKAz6bQfDqTpDcjtR8/jGPmhJRxb+UlA5ZbqnoWwpwl8P261/79JJbNSNFdF5U85K3YOVoTdFZ7B0sJhJeIzn0ZagpXMA3yyKI6QLNEzxom6px7cFsI7hD0pSvjs7ZfJzwEHokm1m4+olkkMdP0Yfb9x4uiO1lgOpbJNXLC4H3gXNA0AXvoHJcnC+fm0++R5f9eMAQtHrKxpUYAZm9TyTA7d1z+wCHq6i6pp6aCCbaZSDxIro9iAsYitV366B4u796Ppcz2Gh+hFS8tAI+Iy267OHdp9L5fsllxvTgim4QcWZvwqvr4FW+t+XK9RDn1XtwIDAQAB'
-      }
-    },
-    {
-      platform: Platform.APPLE_APPSTORE,
-    }
-  ]);
-};
-
-export const initPurchases = () => {
-  // Only run on native — CdvPurchase is injected by Cordova bridge
+export const initPurchases = async () => {
   if (!Capacitor.isNativePlatform()) return;
 
-  // Cordova plugins are guaranteed available after 'deviceready'.
-  // If it already fired, run immediately; otherwise wait for it.
-  if ((document as any).__cordovaReady) {
-    setupStore();
-  } else {
-    document.addEventListener('deviceready', () => {
-      (document as any).__cordovaReady = true;
-      setupStore();
-    }, { once: true });
+  try {
+    storeInitError = false;
+    storeReady = true;
+    console.log('IAP: Capgo NativePurchases store is ready.');
+  } catch (error) {
+    storeInitError = true;
+    console.error('IAP Error: failed to init purchases', error);
   }
 };
-
 
 export interface ProductPricing {
   yearly: string | null;
   monthly: string | null;
 }
 
-export const getProductPricing = (productId: string): ProductPricing => {
-  const CdvPurchase = (window as any).CdvPurchase;
-  if (!CdvPurchase?.store) return { yearly: null, monthly: null };
+export const getProductPricing = async (): Promise<ProductPricing> => {
+  if (!Capacitor.isNativePlatform()) return { yearly: null, monthly: null };
 
-  const store = CdvPurchase.store;
-  const product = store.get(productId);
-  if (!product?.offers) return { yearly: null, monthly: null };
+  try {
+    const { products } = await NativePurchases.getProducts({
+      productIdentifiers: [PRODUCT_YEARLY, PRODUCT_MONTHLY]
+    });
 
-  const findPrice = (basePlanId: string): string | null => {
-    const offer = product.offers.find((o: any) => o.id === basePlanId);
-    if (!offer?.pricingPhases?.length) return null;
-    return offer.pricingPhases[0]?.price || null;
-  };
+    const yearlyProd = products.find((p: any) => p.identifier === PRODUCT_YEARLY);
+    const monthlyProd = products.find((p: any) => p.identifier === PRODUCT_MONTHLY);
 
-  return {
-    yearly: findPrice('yearly'),
-    monthly: findPrice('monthly'),
-  };
+    return {
+      yearly: yearlyProd?.priceString || null,
+      monthly: monthlyProd?.priceString || null,
+    };
+  } catch (e) {
+    console.error('IAP Error: failed to fetch pricing', e);
+    return { yearly: null, monthly: null };
+  }
 };
 
-export const purchaseProduct = (productId: string, basePlanId?: string): Promise<void> => {
-  const CdvPurchase = (window as any).CdvPurchase;
+export const purchaseProduct = async (productType: 'yearly' | 'monthly'): Promise<void> => {
+  if (!Capacitor.isNativePlatform()) {
+    return Promise.reject(new Error('In-app purchases are only available in the mobile app.'));
+  }
 
-  if (!CdvPurchase?.store) {
-    if (Capacitor.isNativePlatform()) {
-      return Promise.reject(new Error('Purchasing service is not available. Please restart the app.'));
+  const productId = productType === 'yearly' ? PRODUCT_YEARLY : PRODUCT_MONTHLY;
+
+  try {
+    const transaction = await NativePurchases.purchaseProduct({
+      productIdentifier: productId,
+    });
+
+    if (transaction) {
+      // Attempt server-side validation — non-fatal. If it fails for any reason, always
+      // grant premium locally since the native store already authorised the transaction.
+      try {
+        const { data, error } = await supabase.functions.invoke('verify-iap', {
+          body: {
+            purchaseToken: (transaction as any).receipt || (transaction as any).token,
+            productId: productId,
+            platform: Capacitor.getPlatform(),
+            packageName: 'com.biblenova.app'
+          }
+        });
+
+        if (error) {
+          console.warn('IAP: Server validation call failed (non-fatal):', error);
+        } else {
+          console.log('IAP: Server validation response:', data);
+        }
+      } catch (err) {
+        console.warn('IAP: Edge Function unreachable (non-fatal):', err);
+      }
+
+      // Always unlock premium — the store already confirmed payment.
+      upgradeToPremium();
+      return Promise.resolve();
     }
-    return Promise.reject(new Error('In-app purchases are only available in the mobile app.'));
+    return Promise.reject(new Error('Purchase incomplete or failed.'));
+  } catch (error: any) {
+    return Promise.reject(new Error(error?.message || 'Purchase failed.'));
   }
-
-  if (!storeReady) {
-    return Promise.reject(new Error('Store is still initializing. Please wait a moment and try again.'));
-  }
-
-  const store = CdvPurchase.store;
-  const product = store.get(productId);
-
-  if (!product) {
-    console.error(`IAP: Product ${productId} not found. Current products in store:`, store.products.map((p: any) => p.id));
-    return Promise.reject(new Error('Product not found. Please ensure your app is published and the product is approved in the Play Console.'));
-  }
-
-  let offerToOrder: any = product;
-  if (basePlanId && product.offers?.length > 0) {
-    const offer = product.offers.find((o: any) => o.id === basePlanId);
-    if (offer) offerToOrder = offer;
-  }
-
-  return new Promise<void>((resolve, reject) => {
-    let resolved = false;
-    let pendingTransactionId: string | null = null;
-
-    const subscriber = store.when()
-      .productId(productId)
-      .approved((transaction: any) => {
-        if (!resolved) {
-          resolved = true;
-          try { subscriber.cancel?.(); } catch (_) { }
-          resolve();
-        }
-      })
-      .owned((product: any) => {
-        if (!resolved) {
-          resolved = true;
-          try { subscriber.cancel?.(); } catch (_) { }
-          resolve();
-        }
-      })
-      .cancelled(() => {
-        if (!resolved) {
-          resolved = true;
-          try { subscriber.cancel?.(); } catch (_) { }
-          reject(new Error('Purchase was cancelled.'));
-        }
-      })
-      .error((err: any) => {
-        if (!resolved) {
-          resolved = true;
-          try { subscriber.cancel?.(); } catch (_) { }
-          reject(new Error(err?.message || 'Purchase failed.'));
-        }
-      });
-
-    store.order(offerToOrder)
-      .then((error: any) => {
-        if (error && !resolved) {
-          resolved = true;
-          try { subscriber.cancel?.(); } catch (_) { }
-          reject(new Error(error?.message || 'Failed to initiate purchase.'));
-        }
-      })
-      .catch((e: any) => {
-        if (!resolved) {
-          resolved = true;
-          try { subscriber.cancel?.(); } catch (_) { }
-          reject(e);
-        }
-      });
-  });
 };
 
-export const restorePurchases = (): Promise<void> => {
-  const CdvPurchase = (window as any).CdvPurchase;
-
-  if (!CdvPurchase?.store) {
+export const restorePurchases = async (): Promise<void> => {
+  if (!Capacitor.isNativePlatform()) {
     return Promise.reject(new Error('In-app purchases are only available in the mobile app.'));
   }
 
-  if (!storeReady) {
-    return Promise.reject(new Error('Store is still initializing. Please wait a moment and try again.'));
-  }
+  try {
+    const result = await NativePurchases.restorePurchases();
 
-  return CdvPurchase.store.restorePurchases();
+    // Bug fix: only grant premium if the store actually confirms active entitlements.
+    // Calling restorePurchases() with no prior purchases returns an empty list — we
+    // must NOT blindly call upgradeToPremium() in that case.
+    const restoredTransactions: any[] = (result as any)?.transactions ?? (result as any)?.customerInfo?.entitlements ?? [];
+    const hasActive = Array.isArray(restoredTransactions) && restoredTransactions.length > 0;
+
+    if (hasActive) {
+      upgradeToPremium();
+      return Promise.resolve();
+    }
+
+    return Promise.reject(new Error('No active subscriptions found to restore.'));
+  } catch (error: any) {
+    return Promise.reject(new Error(error?.message || 'Failed to restore purchases.'));
+  }
 };

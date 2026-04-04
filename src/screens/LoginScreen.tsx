@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { Capacitor } from '@capacitor/core';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 
@@ -43,9 +42,9 @@ export default function LoginScreen() {
         await loginEmail(email, password);
       }
     } catch (e: any) {
-      setError(e?.message || (isSignUp ? 'Failed to create account.' : 'Failed to log in. Please check your credentials.'));
+      if (isMounted.current) setError(e?.message || (isSignUp ? 'Failed to create account.' : 'Failed to log in. Please check your credentials.'));
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) setIsLoading(false);
     }
   };
 
@@ -53,32 +52,12 @@ export default function LoginScreen() {
     setIsLoading(true);
     setError('');
     try {
-      if (Capacitor.isNativePlatform()) {
-        const googleUser = await GoogleAuth.signIn();
-        const idToken = googleUser?.authentication?.idToken;
-        if (idToken && isSupabaseConfigured) {
-          // Proper session via Supabase Google OAuth with idToken
-          const { error } = await supabase.auth.signInWithIdToken({
-            provider: 'google',
-            token: idToken,
-          });
-          if (error) throw error;
-          // onAuthStateChange will handle SIGNED_IN and sync the user
-        } else if (googleUser?.email) {
-          // Fallback if Supabase not configured: create local user from Google profile
-          await loginEmail(googleUser.email);
-        } else {
-          setError('Google login failed: No credentials returned.');
-        }
-      } else {
-        // Web: Use Supabase OAuth redirect flow
-        if (!isSupabaseConfigured) {
-          setError('Supabase is not configured locally. Please fill in your .env file or use guest login.');
-          setIsLoading(false);
-          return;
-        }
-        await signInWithGoogle();
+      if (!isSupabaseConfigured && !Capacitor.isNativePlatform()) {
+        setError('Supabase is not configured locally. Please fill in your .env file or use guest login.');
+        setIsLoading(false);
+        return;
       }
+      await signInWithGoogle();
     } catch (e: any) {
       if (isMounted.current) setError(e?.message || 'Failed to sign in with Google');
     } finally {

@@ -4,7 +4,7 @@ import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+import { SocialLogin } from '@capgo/capacitor-social-login';
 import { setUserIdForStats } from '../services/statsService';
 
 interface User {
@@ -285,13 +285,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    const isNative = Capacitor.isNativePlatform();
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const res = await SocialLogin.login({
+          provider: 'google',
+          options: { scopes: ['email', 'profile'] }
+        });
 
-    // For native apps, use custom scheme. For web, always use the current origin
+        const idToken = 'idToken' in res.result ? res.result.idToken : null;
+        if (!idToken) {
+          // User dismissed the sign-in dialog or provider returned no token
+          throw new Error('Google sign-in was cancelled or no ID token was returned.');
+        }
+
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: idToken,
+        });
+        if (error) throw error;
+        return;
+      } catch (err) {
+        console.error('Native Google Sign-In error:', err);
+        throw err;
+      }
+    }
+
+    // For web, always use the current origin
     // This dynamically handles local, preview, and production web environments
-    const redirectTo = isNative
-      ? 'com.biblenova.app://google-auth'
-      : `${window.location.origin}/auth/callback`;
+    const redirectTo = `${window.location.origin}/auth/callback`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -314,11 +335,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (Capacitor.isNativePlatform()) {
         try {
           await Promise.race([
-            GoogleAuth.signOut().catch(() => { }),
+            SocialLogin.logout({ provider: 'google' }).catch(() => { }),
             new Promise(resolve => setTimeout(resolve, 1000))
           ]);
         } catch (e) {
-          console.warn('GoogleAuth native signOut error:', e);
+          console.warn('SocialLogin native signOut error:', e);
         }
       }
 

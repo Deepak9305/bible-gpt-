@@ -43,6 +43,11 @@ export default function SettingsScreen() {
       setSelectedVoiceIdx(pref);
     }
     loadVoices();
+
+    // Stop any audio preview when the user navigates away from Settings
+    return () => {
+      stopAudio();
+    };
   }, []);
 
   const handleVoiceChange = async (idx: number | undefined) => {

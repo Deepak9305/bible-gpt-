@@ -4,7 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import { initPurchases } from './IAPService';
 import { AppTrackingTransparency } from '@capgo/capacitor-app-tracking-transparency';
 import { AdMob } from '@capacitor-community/admob';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+import { SocialLogin } from '@capgo/capacitor-social-login';
 
 export const initializeNativeServices = async () => {
   try {
@@ -17,27 +17,15 @@ export const initializeNativeServices = async () => {
       await AdMob.initialize({ initializeForTesting: false });
       await AdMob.removeBanner().catch(() => { });
 
-      await GoogleAuth.initialize({
-        // Use the OAuth client registered against Google Play's signing certificate.
-        // The upload-key client ID only works for local/debug builds; the Play signing
-        // key client ID is required for production (Play Store) installs.
-        clientId: '1083543499729-3rrelit5mm4jno7jfogpnaceh9inlgu4.apps.googleusercontent.com',
-        scopes: ['profile', 'email'],
-        grantOfflineAccess: true,
+      await SocialLogin.initialize({
+        google: {
+          webClientId: '1083543499729-3rrelit5mm4jno7jfogpnaceh9inlgu4.apps.googleusercontent.com',
+        }
       }).catch(() => { });
     }
 
-    // Mark deviceready as fired so late callers of initPurchases run synchronously.
-    // initPurchases() internally waits for this event itself, but setting the flag
-    // here ensures the fallback path in purchaseService works correctly.
-    // initPurchases() now handles setting __cordovaReady and calling setupStore
-    // after deviceready. No need for a separate listener here.
-
-
     // Initialize in-app purchases AFTER AdMob.
-    // On native, this internally waits for the 'deviceready' event before
-    // accessing window.CdvPurchase (Cordova bridge guarantee).
-    initPurchases();
+    await initPurchases();
 
     if (Capacitor.isNativePlatform()) {
       // 0. Hide Status Bar (Immersive Mode)

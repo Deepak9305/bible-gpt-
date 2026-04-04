@@ -4,8 +4,8 @@ import { upgradeToPremium } from './statsService';
 import { supabase } from './supabaseClient';
 
 // Product IDs are platform-specific because Google Play uses base plans under a single product ID
-export const PRODUCT_YEARLY = Capacitor.getPlatform() === 'android' ? 'biblenova:yearly' : 'biblenova_yearly';
-export const PRODUCT_MONTHLY = Capacitor.getPlatform() === 'android' ? 'biblenova:monthly' : 'biblenova_monthly';
+export const PRODUCT_YEARLY = Capacitor.getPlatform() === 'android' ? 'blessing:annual' : 'biblenova_yearly';
+export const PRODUCT_MONTHLY = Capacitor.getPlatform() === 'android' ? 'blessing:monthly' : 'biblenova_monthly';
 
 // Google Play Billing Public Key for optional local signature verification
 export const GOOGLE_PLAY_PUBLIC_KEY = import.meta.env.VITE_GOOGLE_PLAY_PUBLIC_KEY;

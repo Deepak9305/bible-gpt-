@@ -5,7 +5,7 @@
             "destination": "/api/$1"
         },
         {
-            "source": "/(.*)",
+            "source": "/((?!app-ads\\.txt|manifest\\.json|bible\\.json|assets/).*)",
             "destination": "/index.html"
         }
     ]

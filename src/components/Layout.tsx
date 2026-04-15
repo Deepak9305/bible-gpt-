@@ -26,10 +26,23 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
     let hideListener: any;
 
     if (Capacitor.isNativePlatform()) {
-      Keyboard.addListener('keyboardWillShow', () => setIsKeyboardVisible(true)).then(h => showListener = h);
-      Keyboard.addListener('keyboardWillHide', () => setIsKeyboardVisible(false)).then(h => hideListener = h);
+      let cancelled = false;
+
+      Promise.all([
+        Keyboard.addListener('keyboardWillShow', () => setIsKeyboardVisible(true)),
+        Keyboard.addListener('keyboardWillHide', () => setIsKeyboardVisible(false)),
+      ]).then(([show, hide]) => {
+        if (cancelled) {
+          show.remove();
+          hide.remove();
+          return;
+        }
+        showListener = show;
+        hideListener = hide;
+      });
 
       return () => {
+        cancelled = true;
         showListener?.remove();
         hideListener?.remove();
       };

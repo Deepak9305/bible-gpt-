@@ -104,7 +104,7 @@ export const saveStats = (stats: UserStats) => {
     };
     supabase.from('user_stats').upsert(payload).then(res => {
       if (res.error) console.error("Failed to sync stats to Supabase:", res.error);
-    });
+    }).catch(e => console.error("Failed to sync stats to Supabase:", e));
   }
 };
 

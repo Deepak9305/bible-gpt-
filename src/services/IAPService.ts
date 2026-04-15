@@ -3,9 +3,13 @@ import { NativePurchases } from '@capgo/native-purchases';
 import { upgradeToPremium } from './statsService';
 import { supabase } from './supabaseClient';
 
-// Product IDs are platform-specific because Google Play uses base plans under a single product ID
-export const PRODUCT_YEARLY = Capacitor.getPlatform() === 'android' ? 'blessing:annual' : 'biblenova_yearly';
-export const PRODUCT_MONTHLY = Capacitor.getPlatform() === 'android' ? 'monthlyblessing:monthly' : 'biblenova_monthly';
+// Product IDs for getProducts() lookup — must be the base subscription ID only (no base plan suffix)
+export const PRODUCT_YEARLY = Capacitor.getPlatform() === 'android' ? 'blessing' : 'biblenova_yearly';
+export const PRODUCT_MONTHLY = Capacitor.getPlatform() === 'android' ? 'monthlyblessing' : 'biblenova_monthly';
+
+// Offer IDs used when initiating a purchase — format is productId:basePlanId on Android
+export const OFFER_YEARLY = Capacitor.getPlatform() === 'android' ? 'blessing:annual' : 'biblenova_yearly';
+export const OFFER_MONTHLY = Capacitor.getPlatform() === 'android' ? 'monthlyblessing:monthly' : 'biblenova_monthly';
 
 // Google Play Billing Public Key for optional local signature verification
 export const GOOGLE_PLAY_PUBLIC_KEY = import.meta.env.VITE_GOOGLE_PLAY_PUBLIC_KEY;
@@ -57,7 +61,7 @@ export const purchaseProduct = async (productType: 'yearly' | 'monthly'): Promis
     return Promise.reject(new Error('In-app purchases are only available in the mobile app.'));
   }
 
-  const productId = productType === 'yearly' ? PRODUCT_YEARLY : PRODUCT_MONTHLY;
+  const productId = productType === 'yearly' ? OFFER_YEARLY : OFFER_MONTHLY;
 
   try {
     const transaction = await NativePurchases.purchaseProduct({

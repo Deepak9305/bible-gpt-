@@ -297,7 +297,7 @@ export default function SettingsScreen() {
                   Bible Nova is your spiritual companion, designed to provide comfort and guidance through Scripture.
                 </p>
                 <div className="flex items-center gap-2 opacity-60 text-sm">
-                  <span>Version 1.1.9</span>
+                  <span>Version 1.2.2</span>
                 </div>
               </div>
 

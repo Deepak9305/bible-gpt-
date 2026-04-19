@@ -178,6 +178,8 @@ export default function LibraryScreen() {
     } else if (isPlayingPlaylist && currentPlaylistIndex >= verses.length) {
       setIsPlayingPlaylist(false);
       setCurrentPlaylistIndex(-1);
+      setSpeakingVerse(null);
+      setIsLoadingAudio(false);
     }
   }, [currentPlaylistIndex, isPlayingPlaylist]);
 

@@ -104,13 +104,11 @@ export const saveStats = (stats: UserStats) => {
     };
     supabase.from('user_stats').upsert(payload).then(res => {
       if (res.error) console.error("Failed to sync stats to Supabase:", res.error);
-    }).catch(e => console.error("Failed to sync stats to Supabase:", e));
+    }, e => console.error("Failed to sync stats to Supabase:", e));
   }
 };
 
 export const checkDailyLimit = (): boolean => {
-  // Bypass premium limits completely on Web
-  if (!Capacitor.isNativePlatform()) return false;
 
   const stats = getStats();
   const today = new Date().toLocaleDateString('en-CA');
@@ -121,8 +119,8 @@ export const checkDailyLimit = (): boolean => {
   // If it's a new day, limit is not reached
   if (stats.lastUsageDate !== today) return false;
 
-  // Return true if usage count is 2 or more (users get 2 free messages per day)
-  return stats.dailyUsageCount >= 2;
+  // Return true if usage count is 3 or more (users get 3 free messages per day)
+  return stats.dailyUsageCount >= 3;
 };
 
 export const incrementDailyUsage = () => {

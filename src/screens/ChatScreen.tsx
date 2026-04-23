@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { sendMessageStream } from '../services/aiService';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
 import { checkDailyLimit, incrementDailyUsage } from '../services/statsService';
-import PremiumModal from '../components/PremiumModal';
+import LimitModal from '../components/LimitModal';
 import { Send, User, Bot, Volume2, VolumeX, Mic, MicOff, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useLocation } from 'react-router-dom';
@@ -102,7 +102,7 @@ export default function ChatScreen() {
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeechSupported, setIsSpeechSupported] = useState(true);
-  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
@@ -168,17 +168,13 @@ export default function ChatScreen() {
 
     try {
       await playTextToSpeech(text, () => {
-        setSpeakingMessageId(current => {
-          if (current === id) setIsLoadingAudio(false);
-          return current === id ? null : current;
-        });
+        setSpeakingMessageId(current => current === id ? null : current);
+        setIsLoadingAudio(false);
       });
     } catch (error) {
       console.error("Audio failed", error);
-      setSpeakingMessageId(current => {
-        if (current === id) setIsLoadingAudio(false);
-        return current === id ? null : current;
-      });
+      setSpeakingMessageId(current => current === id ? null : current);
+      setIsLoadingAudio(false);
     }
   }, [speakingMessageId]);
   useEffect(() => {
@@ -281,7 +277,7 @@ export default function ChatScreen() {
 
     // Check daily limit
     if (checkDailyLimit()) {
-      setIsPremiumModalOpen(true);
+      setIsLimitModalOpen(true);
       return;
     }
 
@@ -333,10 +329,9 @@ export default function ChatScreen() {
 
   return (
     <div className={`flex flex-col flex-1 min-h-0 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-      <PremiumModal
-        isOpen={isPremiumModalOpen}
-        onClose={() => setIsPremiumModalOpen(false)}
-        onUpgrade={() => setIsPremiumModalOpen(false)}
+      <LimitModal
+        isOpen={isLimitModalOpen}
+        onClose={() => setIsLimitModalOpen(false)}
       />
 
       {/* Header */}

@@ -1,0 +1,25 @@
+# Graphify ignore file — excludes large/binary asset folders
+
+# Root assets (logo, splash images)
+assets/
+
+# Android built web bundles (compiled dist — not source)
+android/app/src/main/assets/public/
+
+# Android drawable/mipmap image resources
+android/app/src/main/res/
+
+# iOS compiled web assets
+ios/App/App/public/
+
+# iOS image asset catalogs (icons, splash screens)
+ios/App/App/Assets.xcassets/
+
+# Dist output
+dist/
+
+# Node modules
+node_modules/
+
+# Graphify output itself
+graphify-out/

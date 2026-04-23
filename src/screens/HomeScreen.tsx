@@ -51,24 +51,19 @@ export default function HomeScreen() {
       }
 
       const dateKey = cycleDate.toISOString().split('T')[0];
-      console.info(`[HomeScreen] Fetching daily verse for ${dateKey}`);
 
       const storedData = await StorageService.get('daily_verse_data');
       if (storedData) {
         try {
           const parsed = JSON.parse(storedData);
           if (parsed.date === dateKey) {
-            console.info("[HomeScreen] Daily verse cache hit");
             setDailyVerse(parsed.verse);
             if (parsed.reflection) setDailyReflection(parsed.reflection);
             return;
           }
-          console.info("[HomeScreen] Daily verse cache expired", { stored: parsed.date, current: dateKey });
         } catch (e) {
           console.error("Failed to parse daily verse data", e);
         }
-      } else {
-        console.info("[HomeScreen] No daily verse cache found");
       }
 
       let hash = 0;
@@ -219,15 +214,12 @@ export default function HomeScreen() {
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
+    visible: { opacity: 1, transition: { duration: 0.4, ease: 'easeOut' } }
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 }
   };
 
   return (

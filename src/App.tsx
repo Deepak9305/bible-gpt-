@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 
 import SplashScreen from './components/SplashScreen';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 import { initializeNativeServices } from './services/nativeService';
 import { Loader2 } from 'lucide-react';
 

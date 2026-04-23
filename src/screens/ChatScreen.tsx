@@ -179,7 +179,7 @@ export default function ChatScreen() {
   }, [speakingMessageId]);
   useEffect(() => {
     handleSendRef.current = handleSend;
-  });
+  }, [handleSend]);
 
   useEffect(() => {
     const initSpeech = async () => {
@@ -301,16 +301,31 @@ export default function ChatScreen() {
       const history = messages.map(m => ({ role: m.role, content: m.content }));
 
       let fullContent = "";
+      let rafId: number | null = null;
+
       await sendMessageStream(
         cleanText,
         history,
         user?.preferences,
         (chunk) => {
           fullContent += chunk;
-          setMessages(prev => prev.map(msg =>
-            msg.id === aiMsgId ? { ...msg, content: fullContent } : msg
-          ));
+          // Batch DOM updates with rAF to avoid re-rendering on every tiny chunk
+          if (rafId !== null) cancelAnimationFrame(rafId);
+          rafId = requestAnimationFrame(() => {
+            setMessages(prev => prev.map(msg =>
+              msg.id === aiMsgId ? { ...msg, content: fullContent } : msg
+            ));
+            rafId = null;
+          });
         });
+
+      // Flush any final pending update
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        setMessages(prev => prev.map(msg =>
+          msg.id === aiMsgId ? { ...msg, content: fullContent } : msg
+        ));
+      }
 
       // Only increment usage AFTER a successful response.
       // If the API fails, the user's daily limit is not consumed.

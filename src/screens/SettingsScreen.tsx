@@ -13,7 +13,7 @@ const AVATARS = ['✝️', '👤', '🕊️', '📖', '🕯️', '⛪', '🌟', 
 
 export default function SettingsScreen() {
   const { theme, toggleTheme, highContrastNav, toggleHighContrastNav, setTheme } = useTheme();
-  const { logout, user, updateProfile, deleteAccount } = useAuth();
+  const { user, updateProfile, deleteAccount } = useAuth();
   const [stats, setStats] = useState(getStats());
 
   // Refresh stats on mount — initStats() may resolve after this component
@@ -90,14 +90,18 @@ export default function SettingsScreen() {
     } else if (confirmAction?.type === 'clear') {
       await StorageService.clear();
       // BUG FIX: window.location.reload() breaks Capacitor WebView on native.
-      // Logging out and clearing state forces the router to redirect to /login.
-      await logout();
+      // Logging out and clearing state forces the router to redirect to /onboarding.
+      await deleteAccount();
     }
     setConfirmAction(null);
   };
 
   const handleLogout = async () => {
-    await logout();
+    setConfirmAction({
+      type: 'clear',
+      title: 'Sign Out & Clear',
+      message: 'This will reset your local profile and take you back to onboarding. Are you sure?'
+    });
   };
 
   const openEditProfile = () => {
@@ -168,7 +172,7 @@ export default function SettingsScreen() {
               >
                 <div className="flex items-center gap-3">
                   <LogOut size={20} />
-                  <span>Log Out</span>
+                  <span>Restart Journey</span>
                 </div>
               </button>
 

@@ -4,7 +4,6 @@ import { Capacitor } from '@capacitor/core';
 import { initPurchases } from './IAPService';
 import { AppTrackingTransparency } from '@capgo/capacitor-app-tracking-transparency';
 import { AdMob } from '@capacitor-community/admob';
-import { SocialLogin } from '@capgo/capacitor-social-login';
 
 export const initializeNativeServices = async () => {
   try {
@@ -12,16 +11,10 @@ export const initializeNativeServices = async () => {
     // AuthContext calls setUserIdForStats(userId) after auth resolves,
     // which internally calls initStats() with the correct scoped user ID.
 
-    // 1.1 Initialize AdMob and Google Auth only on native to avoid web bridge errors
+    // 1.1 Initialize AdMob only on native to avoid web bridge errors
     if (Capacitor.isNativePlatform()) {
       await AdMob.initialize({ initializeForTesting: false });
       await AdMob.removeBanner().catch(() => { });
-
-      await SocialLogin.initialize({
-        google: {
-          webClientId: '1083543499729-3rrelit5mm4jno7jfogpnaceh9inlgu4.apps.googleusercontent.com',
-        }
-      }).catch(() => { });
     }
 
     // Initialize in-app purchases AFTER AdMob.

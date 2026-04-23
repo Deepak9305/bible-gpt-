@@ -17,7 +17,6 @@ const BookmarksScreen = lazy(() => import('./screens/BookmarksScreen'));
 const SettingsScreen = lazy(() => import('./screens/SettingsScreen'));
 const PrayerJournalScreen = lazy(() => import('./screens/PrayerJournalScreen'));
 const OnboardingScreen = lazy(() => import('./screens/OnboardingScreen'));
-const LoginScreen = lazy(() => import('./screens/LoginScreen'));
 const PrivacyPolicyScreen = lazy(() => import('./screens/PrivacyPolicyScreen'));
 const TermsOfServiceScreen = lazy(() => import('./screens/TermsOfServiceScreen'));
 
@@ -29,11 +28,7 @@ function LoadingFallback() {
   );
 }
 
-// Wrapper to give OnboardingScreen access to the navigate hook (Router context needed)
-function OnboardingRouteWrapper() {
-  const navigate = useNavigate();
-  return <OnboardingScreen onComplete={() => navigate('/')} />;
-}
+
 
 function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
@@ -77,8 +72,8 @@ function AppContent() {
             {/* Auth Guarded Routes */}
             {!user ? (
               <>
-                <Route path="/login" element={<LoginScreen />} />
-                <Route path="*" element={<Navigate to="/login" replace />} />
+                <Route path="/onboarding" element={<OnboardingScreen />} />
+                <Route path="*" element={<Navigate to="/onboarding" replace />} />
               </>
             ) : (
               <Route element={<Layout isAppReady={isAppReady} />}>
@@ -90,10 +85,7 @@ function AppContent() {
                 <Route path="settings" element={<SettingsScreen />} />
                 <Route path="privacy" element={<PrivacyPolicyScreen />} />
                 <Route path="terms" element={<TermsOfServiceScreen />} />
-                <Route
-                  path="onboarding"
-                  element={<OnboardingRouteWrapper />}
-                />
+
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             )}

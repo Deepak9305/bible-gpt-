@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "if": "Bash(git commit*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -m graphify rebuild 2>/dev/null || true",
+            "async": true,
+            "statusMessage": "Rebuilding knowledge graph after commit..."
+          }
+        ]
+      }
+    ]
+  }
+}

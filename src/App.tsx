@@ -11,7 +11,7 @@ import { Loader2 } from 'lucide-react';
 
 // Lazy load screens for performance
 const HomeScreen = lazy(() => import('./screens/HomeScreen'));
-const ChatScreen = lazy(() => import('./screens/ChatScreen'));
+
 const LibraryScreen = lazy(() => import('./screens/LibraryScreen'));
 const BookmarksScreen = lazy(() => import('./screens/BookmarksScreen'));
 const SettingsScreen = lazy(() => import('./screens/SettingsScreen'));
@@ -78,7 +78,7 @@ function AppContent() {
             ) : (
               <Route element={<Layout isAppReady={isAppReady} />}>
                 <Route index element={<HomeScreen />} />
-                <Route path="chat" element={<ChatScreen />} />
+
                 <Route path="library" element={<LibraryScreen />} />
                 <Route path="bookmarks" element={<BookmarksScreen />} />
                 <Route path="journal" element={<PrayerJournalScreen />} />

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Home, MessageSquare, BookOpen, Settings } from 'lucide-react';
+import { Home, BookOpen, Settings } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { motion } from 'motion/react';
 import BannerAd from './BannerAd';
@@ -12,8 +12,8 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
   const { pathname } = useLocation();
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
-  const showAd = pathname !== '/chat' && !isKeyboardVisible && isAppReady;
-  const showBannerPadding = pathname !== '/chat' && !isKeyboardVisible && isAppReady;
+  const showAd = !isKeyboardVisible && isAppReady;
+  const showBannerPadding = !isKeyboardVisible && isAppReady;
   const showNavPadding = !isKeyboardVisible;
 
   const paddingClass = showBannerPadding ? 'pb-[6.75rem]' : (showNavPadding ? 'pb-[calc(4rem+env(safe-area-inset-bottom))]' : 'pb-0');
@@ -48,7 +48,6 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
 
   const navItems = [
     { to: "/", icon: Home, label: "Home" },
-    { to: "/chat", icon: MessageSquare, label: "Chat" },
     { to: "/library", icon: BookOpen, label: "Library" },
     { to: "/settings", icon: Settings, label: "Settings" },
   ];

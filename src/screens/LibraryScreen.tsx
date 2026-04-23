@@ -6,8 +6,7 @@ import { playTextToSpeech, stopAudio } from '../services/ttsService';
 import { ChevronRight, ArrowLeft, Bookmark, Volume2, VolumeX, Loader2, Crown, Sparkles, Search, PlayCircle, PauseCircle, DownloadCloud, Share2 } from 'lucide-react';
 import { incrementVersesRead, getStats } from '../services/statsService';
 import { motion, AnimatePresence } from 'motion/react';
-import { useAuth } from '../context/AuthContext';
-import PremiumModal from '../components/PremiumModal';
+
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { StorageService } from '../services/storageService';
@@ -119,9 +118,6 @@ const VerseItem = React.memo(({
 
 export default function LibraryScreen() {
   const { theme } = useTheme();
-  const [isPremium, setIsPremium] = useState(() => getStats().isPremium);
-  // Refresh on mount — stats may not be hydrated from Supabase yet at first render
-  useEffect(() => { setIsPremium(getStats().isPremium); }, []);
   const [view, setView] = useState<ViewState>('books');
   const [books] = useState<any[]>(BIBLE_BOOKS);
   const [selectedBook, setSelectedBook] = useState<any>(null);
@@ -133,7 +129,6 @@ export default function LibraryScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [speakingVerse, setSpeakingVerse] = useState<string | null>(null);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
-  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
 
   const [isPlayingPlaylist, setIsPlayingPlaylist] = useState(false);
   const [currentPlaylistIndex, setCurrentPlaylistIndex] = useState<number>(-1);
@@ -510,7 +505,6 @@ export default function LibraryScreen() {
             )}
           </AnimatePresence>
         </div>
-        <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} onUpgrade={() => { setIsPremiumModalOpen(false); setIsPremium(getStats().isPremium); }} />
       </div>
     </div>
   );

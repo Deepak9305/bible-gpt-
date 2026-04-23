@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Home, MessageSquare, BookOpen, Bookmark, Settings, PenLine, Users, LogOut, Plus, User } from 'lucide-react';
+import { Home, MessageSquare, BookOpen, Settings } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import BannerAd from './BannerAd';
 import { Keyboard } from '@capacitor/keyboard';
 import { Capacitor } from '@capacitor/core';
 
 export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
   const { theme, highContrastNav } = useTheme();
-  const { user, logout } = useAuth();
   const { pathname } = useLocation();
-  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const showAd = pathname !== '/chat' && !isKeyboardVisible && isAppReady;
@@ -49,16 +46,6 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
     }
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    setIsAccountMenuOpen(false);
-  };
-
-  const handleAddAccount = () => {
-    logout();
-    setIsAccountMenuOpen(false);
-  };
-
   const navItems = [
     { to: "/", icon: Home, label: "Home" },
     { to: "/chat", icon: MessageSquare, label: "Chat" },
@@ -68,84 +55,6 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
 
   return (
     <div className={`h-screen flex flex-col overflow-hidden ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
-
-      {/* Sticky Switch IDs Button & Popup */}
-      <div className="fixed top-2 right-2 z-50 safe-area-top">
-        <button
-          onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
-          className={`p-1.5 rounded-full shadow-lg transition-transform transition-colors duration-200 active:scale-95 ${theme === 'dark'
-            ? 'bg-gray-800 text-gray-200 border border-gray-700 hover:bg-gray-700'
-            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-            }`}
-          title="Switch Account"
-        >
-          <Users size={18} />
-        </button>
-
-        <AnimatePresence>
-          {isAccountMenuOpen && (
-            <div key="account-menu" className="fixed inset-0 z-40">
-              <div
-                className="absolute inset-0"
-                onClick={() => setIsAccountMenuOpen(false)}
-              />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: -10, x: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -10, x: 10 }}
-                transition={{ duration: 0.1 }}
-                className={`absolute right-4 top-16 w-64 rounded-2xl shadow-2xl border z-50 overflow-hidden ${theme === 'dark'
-                  ? 'bg-gray-800 border-gray-700'
-                  : 'bg-white border-gray-200'
-                  }`}
-              >
-                <div className={`p-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-100'}`}>
-                  <p className="text-xs font-semibold uppercase tracking-wider opacity-50 mb-1">Current Account</p>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full overflow-hidden flex items-center justify-center ${theme === 'dark' ? 'bg-blue-900/50 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
-                      {user?.avatar?.startsWith('http') ? (
-                        <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
-                      ) : user?.avatar ? (
-                        <span className="text-lg">{user.avatar}</span>
-                      ) : (
-                        <User size={16} />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{user?.name || 'Guest'}</p>
-                      <p className="text-xs opacity-60 truncate">{user?.email || 'Guest User'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-2">
-                  <button
-                    onClick={handleAddAccount}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${theme === 'dark'
-                      ? 'hover:bg-gray-700 text-gray-300'
-                      : 'hover:bg-gray-50 text-gray-700'
-                      }`}
-                  >
-                    <Plus size={16} />
-                    <span>Add another account</span>
-                  </button>
-
-                  <button
-                    onClick={handleLogout}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-red-500 ${theme === 'dark'
-                      ? 'hover:bg-red-900/20'
-                      : 'hover:bg-red-50'
-                      }`}
-                  >
-                    <LogOut size={16} />
-                    <span>Log out</span>
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-      </div>
 
       <main className={`flex-1 min-h-0 overflow-hidden flex flex-col ${paddingClass} md:pb-0 md:pl-64`}>
         <Outlet />

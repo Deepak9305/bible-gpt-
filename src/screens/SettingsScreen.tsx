@@ -144,15 +144,10 @@ export default function SettingsScreen() {
                     )}
                   </div>
                   <div>
-                    <p className="font-medium">{user?.name || 'Guest'}</p>
-                    <p className="text-xs opacity-60">{user?.email || 'Guest Account'}</p>
+                    <p className="font-medium">{user?.name || 'Beloved'}</p>
                   </div>
                 </div>
-                {stats.isPremium && (
-                  <span className="px-2 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-bold rounded-full uppercase tracking-wide">
-                    Premium
-                  </span>
-                )}
+
               </div>
 
               <button

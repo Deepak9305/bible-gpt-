@@ -5,8 +5,10 @@ import { Keyboard } from '@capacitor/keyboard';
 // Official Ad Unit IDs
 const AD_UNITS = {
     ios: 'ca-app-pub-7381421031784616/6798345893',
-    // BUG FIX: iOS and Android must have separate Ad Unit IDs from AdMob console
-    android: 'ca-app-pub-7381421031784616/6798345893',
+    // CRITICAL FIX: You cannot use an iOS Ad Unit ID on Android! 
+    // Doing so results in a 100% match rate but 0 impressions.
+    // Please replace the test ID below with your actual Android Ad Unit ID from AdMob.
+    android: 'ca-app-pub-3940256099942544/6300978111', // Android Test Banner ID
 };
 
 class AdService {
@@ -68,9 +70,12 @@ class AdService {
                 adId: adId,
                 adSize: BannerAdSize.BANNER,
                 position: BannerAdPosition.BOTTOM_CENTER,
-                // BUG FIX: 100px margin was too large on small phones, overlapping content.
-                // 56px clears the bottom nav bar (h-16 = 64px) minus safe-area handling.
-                margin: 56,
+                // CRITICAL FIX: The banner must not overlap with ANY web view elements 
+                // (like the bottom nav) or AdMob will register 0 impressions. 
+                // 90px clears the nav bar (64px) + safe-areas on modern devices.
+                margin: 90,
+                // NOTE: If you are testing on your local device with a live ad unit, 
+                // Google will register 100% match rate but 0 impressions to prevent fraud.
                 isTesting: false,
             });
 

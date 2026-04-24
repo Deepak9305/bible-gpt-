@@ -16,7 +16,8 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
   const showBannerPadding = !isKeyboardVisible && isAppReady;
   const showNavPadding = !isKeyboardVisible;
 
-  const paddingClass = showBannerPadding ? 'pb-[6.75rem]' : (showNavPadding ? 'pb-[calc(4rem+env(safe-area-inset-bottom))]' : 'pb-0');
+  // 9rem (144px) clears the new 90px banner margin + 50px banner height
+  const paddingClass = showBannerPadding ? 'pb-[9rem]' : (showNavPadding ? 'pb-[calc(4rem+env(safe-area-inset-bottom))]' : 'pb-0');
 
   React.useEffect(() => {
     let showListener: any;

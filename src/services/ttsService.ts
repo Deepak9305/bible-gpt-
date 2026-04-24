@@ -5,143 +5,98 @@ import { Capacitor } from '@capacitor/core';
 let currentCallId = 0; // Incremented on every new playback — used to detect superseded calls
 const PREFERRED_VOICE_KEY = 'preferred_tts_voice';
 
-// Target voice name fragments (lowercase). Google Neural2 voices are Android-only.
-const FATHER_VOICE_ID = 'neural2-j';  // Matches "en-US-Neural2-J" and "Google en-US-Neural2-J"
-const MOTHER_VOICE_ID = 'neural2-f';  // Matches "en-US-Neural2-F" — NOT a prefix of Neural2-J
-
-export const stopAudio = async () => {
-  currentCallId++; // Invalidate any in-flight call
-  try {
-    await TextToSpeech.stop();
-  } catch (e) {
-    console.warn("Failed to stop TTS", e);
-  }
-};
-
-export const getVoices = async () => {
-  try {
-    const { voices } = await TextToSpeech.getSupportedVoices();
-    return voices;
-  } catch (e) {
-    console.error("Failed to get voices", e);
-    return [];
-  }
-};
-
-export const setPreferredVoice = async (voiceIndex: number | undefined) => {
-  if (voiceIndex === undefined) {
-    await StorageService.remove(PREFERRED_VOICE_KEY);
-  } else {
-    await StorageService.set(PREFERRED_VOICE_KEY, voiceIndex.toString());
-  }
-};
-
-export const getPreferredVoiceIndex = async (): Promise<number | undefined> => {
-  const stored = await StorageService.get(PREFERRED_VOICE_KEY);
-  return stored ? parseInt(stored, 10) : undefined;
-};
+// High-quality voice targets ordered by preference
+const PREFERRED_MALE_VOICES = [
+  'arthur', 'aaron', 'daniel', 'en-us-neural2-j', 'en-us-neural2-d', 'en-us-wavenet-d', 'en-gb-wavenet-d', 'google-en-us-local-d'
+];
+const PREFERRED_FEMALE_VOICES = [
+  'samantha', 'martha', 'nicky', 'en-us-neural2-f', 'en-us-neural2-h', 'en-us-wavenet-f', 'en-gb-wavenet-a', 'google-en-us-local-f'
+];
 
 /**
- * Find a voice by matching name or voiceURI (case-insensitive).
+ * Find the best voice matching a list of preferred names (case-insensitive).
  */
-const findVoiceByTarget = (voices: any[], targetId: string): { voice: any; index: number } | null => {
-  const target = targetId.toLowerCase();
-  const idx = voices.findIndex(v => {
-    const name = (v.name || '').toLowerCase();
-    const uri = (v.voiceURI || '').toLowerCase();
-    // Replace spaces with dashes for "Google en-US-Neural2-J" -> "google-en-us-neural2-j"
-    const nameNorm = name.replace(/\s+/g, '-');
-    return name.includes(target) || uri.includes(target) || nameNorm.includes(target);
-  });
-  return idx !== -1 ? { voice: voices[idx], index: idx } : null;
+const findBestVoice = (voices: any[], preferredNames: string[]): { voice: any; index: number } | null => {
+  for (const target of preferredNames) {
+    const targetLower = target.toLowerCase();
+    const idx = voices.findIndex(v => {
+      const name = (v.name || '').toLowerCase();
+      const uri = (v.voiceURI || '').toLowerCase();
+      const nameNorm = name.replace(/\s+/g, '-');
+      return name.includes(targetLower) || uri.includes(targetLower) || nameNorm.includes(targetLower);
+    });
+    if (idx !== -1) return { voice: voices[idx], index: idx };
+  }
+  return null;
 };
 
 export const getCuratedVoices = async () => {
   try {
     const { voices } = await TextToSpeech.getSupportedVoices();
-
     const curated: any[] = [];
 
-    // --- 1. Target User's Specific Choices (Neural2) ---
-    const fatherMatch = findVoiceByTarget(voices, FATHER_VOICE_ID);
-    if (fatherMatch) {
+    // Filter to English voices first
+    const enVoices = voices.filter(v => (v.lang || '').toLowerCase().startsWith('en') || (v.voiceURI || '').toLowerCase().includes('en-'));
+    
+    if (enVoices.length === 0) return curated; // Fallback to system default if no English voices
+
+    // --- 1. Find Best Male Voice (Father) ---
+    const fatherMatch = findBestVoice(enVoices, PREFERRED_MALE_VOICES);
+    
+    // --- 2. Find Best Female Voice (Mother) ---
+    const motherMatch = findBestVoice(enVoices, PREFERRED_FEMALE_VOICES);
+
+    // --- 3. Fallbacks if preferred not found ---
+    const explicitMale = ['male', 'guy', 'david', 'mark', 'james', 'brian', 'george'];
+    const explicitFemale = ['female', 'woman', 'girl', 'zira', 'victoria', 'karen', 'moira', 'tessa'];
+
+    let bestMale = fatherMatch?.voice;
+    let bestMaleIdx = fatherMatch ? voices.indexOf(fatherMatch.voice) : -1;
+    let bestFemale = motherMatch?.voice;
+    let bestFemaleIdx = motherMatch ? voices.indexOf(motherMatch.voice) : -1;
+
+    if (!bestMale) {
+      const fallbackMale = enVoices.find(v => {
+        const n = v.name.toLowerCase();
+        return explicitMale.some(p => n.includes(p)) && !explicitFemale.some(p => n.includes(p));
+      }) || enVoices.find(v => {
+         const n = v.name.toLowerCase();
+         return !explicitFemale.some(p => n.includes(p)) && (n.includes('google') || n.includes('network'));
+      }) || enVoices[0];
+      
+      bestMale = fallbackMale;
+      bestMaleIdx = fallbackMale ? voices.indexOf(fallbackMale) : -1;
+    }
+
+    if (!bestFemale) {
+       const fallbackFemale = enVoices.find(v => {
+        const n = v.name.toLowerCase();
+        return explicitFemale.some(p => n.includes(p)) && v !== bestMale;
+      }) || enVoices.find(v => v !== bestMale);
+      
+      bestFemale = fallbackFemale;
+      bestFemaleIdx = fallbackFemale ? voices.indexOf(fallbackFemale) : -1;
+    }
+
+    // --- 4. Add to Curated List ---
+    if (bestMale && bestMaleIdx !== -1) {
       curated.push({
         label: "Father's Voice",
-        index: fatherMatch.index,
-        voice: fatherMatch.voice,
-        pitch: 0.75,
-        rate: 0.9,
+        index: bestMaleIdx,
+        voice: bestMale,
+        pitch: 0.9, // Adjusted for more natural sound
+        rate: 0.95,
       });
     }
 
-    const motherMatch = findVoiceByTarget(voices, MOTHER_VOICE_ID);
-    if (motherMatch && motherMatch.index !== fatherMatch?.index) {
+    if (bestFemale && bestFemaleIdx !== -1 && bestFemaleIdx !== bestMaleIdx) {
       curated.push({
         label: "Mother's Voice",
-        index: motherMatch.index,
-        voice: motherMatch.voice,
-        pitch: 1.3,
-        rate: 0.9,
+        index: bestFemaleIdx,
+        voice: bestFemale,
+        pitch: 1.1, // Adjusted for more natural sound
+        rate: 0.95,
       });
-    }
-
-    // --- 2. Robust Fallback for Web/iOS/Other Android ---
-    if (curated.length === 0) {
-      // Filter to English voices
-      const enVoices = voices.filter(v => (v.lang || '').startsWith('en') || (v.voiceURI || '').includes('en-'));
-
-      // Explicit lists of known names to prevent "Google US English" (which is female) from being picked for male.
-      const explicitMale = ['male', 'guy', 'david', 'mark', 'james', 'arthur', 'daniel', 'brian', 'george', 'fred', 'alex', 'tom'];
-      const explicitFemale = ['female', 'woman', 'girl', 'zira', 'samantha', 'victoria', 'karen', 'moira', 'fiona', 'tessa', 'veena', 'google us english'];
-
-      const findFallback = (isMale: boolean) => {
-        const patterns = isMale ? explicitMale : explicitFemale;
-        const opposite = isMale ? explicitFemale : explicitMale;
-
-        // 1. Explicit Gender Matches (Safest)
-        const explicitMatch = enVoices.find(v => {
-          const n = v.name.toLowerCase();
-          return patterns.some(p => n.includes(p)) && !opposite.some(p => n.includes(p));
-        });
-        if (explicitMatch) return explicitMatch;
-
-        // 2. Google / Premium Voice with appropriate gender exclusion
-        const secondary = enVoices.find(v => {
-          const n = v.name.toLowerCase();
-          // If we want MALE, we MUST NOT pick voices explicitly female. 
-          // Note: Many generic names (like 'en-us-x-sfg-local') have no explicit gender in the name.
-          if (opposite.some(p => n.includes(p))) return false;
-          return n.includes('google') || n.includes('network') || n.includes('neural') || n.includes('wavenet') || n.includes('premium');
-        });
-        if (secondary) return secondary;
-
-        // 3. Just pick anything that isn't explicitly the opposite gender
-        return enVoices.find(v => {
-          const n = v.name.toLowerCase();
-          return !opposite.some(p => n.includes(p));
-        }) ?? null;
-      };
-
-      const bestMale = findFallback(true);
-      // For bestFemale, don't pick the same as bestMale
-      const availableFemales = enVoices.filter(v => v !== bestMale);
-      const bestFemale = availableFemales.find(v => {
-        const n = v.name.toLowerCase();
-        return explicitFemale.some(p => n.includes(p));
-      }) || availableFemales[0]; // Just take first available if no explicit female found
-
-      if (bestMale) {
-        curated.push({ label: "Father's Voice", index: voices.indexOf(bestMale), voice: bestMale, pitch: 0.75, rate: 0.9 });
-      }
-      if (bestFemale && bestFemale !== bestMale) {
-        curated.push({ label: "Mother's Voice", index: voices.indexOf(bestFemale), voice: bestFemale, pitch: 1.3, rate: 0.9 });
-      }
-
-      // 3. Absolute Last Resort emergency fallback
-      if (curated.length === 0 && enVoices.length > 0) {
-        curated.push({ label: "Father's Voice", index: voices.indexOf(enVoices[0]), voice: enVoices[0], pitch: 0.75, rate: 0.9 });
-        if (enVoices[1]) curated.push({ label: "Mother's Voice", index: voices.indexOf(enVoices[1]), voice: enVoices[1], pitch: 1.3, rate: 0.9 });
-      }
     }
 
     return curated;

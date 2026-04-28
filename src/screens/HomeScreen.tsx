@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, Bookmark, Volume2, VolumeX, Loader2, Heart, PenLine, Share2, Flame, Trophy, Rocket } from 'lucide-react';
+import { BookOpen, Bookmark, Volume2, VolumeX, Loader2, PenLine, Share2, Flame, Trophy, Rocket } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { POPULAR_VERSES } from '../data/popularVerses';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
@@ -18,8 +18,6 @@ export default function HomeScreen() {
   const { theme } = useTheme();
   const { user } = useAuth();
   const [dailyVerse, setDailyVerse] = useState<{ text: string; reference: string } | null>(null);
-  const [dailyReflection, setDailyReflection] = useState<string | null>(null);
-  const [isReflecting, setIsReflecting] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [stats, setStats] = useState<UserStats>(getStats());
@@ -51,7 +49,6 @@ export default function HomeScreen() {
           const parsed = JSON.parse(storedData);
           if (parsed.date === dateKey) {
             setDailyVerse(parsed.verse);
-            if (parsed.reflection) setDailyReflection(parsed.reflection);
             return;
           }
         } catch (e) {
@@ -80,41 +77,10 @@ export default function HomeScreen() {
 
         setDailyVerse(newVerse);
 
-        // Save verse immediately (even without reflection yet)
         await StorageService.set('daily_verse_data', JSON.stringify({
           date: dateKey,
           verse: newVerse,
-          reflection: ""
         }));
-
-        // Generate reflection
-        setIsReflecting(true);
-        let reflection = "";
-        const prompt = `As "Father", provide a very short (1-2 sentences), warm, and wise reflection on this verse: "${newVerse.text}" (${newVerse.reference}). Speak directly to the user's heart.`;
-
-        try {
-          await sendMessageStream(prompt, [], {}, (chunk) => {
-            reflection += chunk;
-            setDailyReflection(reflection);
-          });
-
-          // Update cache with reflection
-          await StorageService.set('daily_verse_data', JSON.stringify({
-            date: dateKey,
-            verse: newVerse,
-            reflection: reflection
-          }));
-        } catch (aiErr) {
-          console.warn("AI reflection failed, using default", aiErr);
-          reflection = "May this word guide your path today and bring peace to your heart.";
-          setDailyReflection(reflection);
-
-          await StorageService.set('daily_verse_data', JSON.stringify({
-            date: dateKey,
-            verse: newVerse,
-            reflection: reflection
-          }));
-        }
       } catch (err) {
         console.error("Failed to fetch daily verse, falling back to local:", err);
         const { getRandomVerseLocally } = await import('../services/bibleService');
@@ -126,16 +92,12 @@ export default function HomeScreen() {
             reference: `${localVerse.book_name} ${localVerse.chapter}:${localVerse.verse}`
           };
           setDailyVerse(fallbackVerse);
-          setDailyReflection("The Word of the Lord endures forever, even when the world fades.");
         } else {
           setDailyVerse({
             text: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
             reference: "John 3:16"
           });
-          setDailyReflection("A timeless promise for your soul today.");
         }
-      } finally {
-        setIsReflecting(false);
       }
     };
 
@@ -160,7 +122,7 @@ export default function HomeScreen() {
     setIsSpeaking(true);
     setIsLoadingAudio(true);
 
-    const textToSpeak = `${dailyVerse.text}. ${dailyReflection || ''}`;
+    const textToSpeak = dailyVerse.text;
 
     try {
       await playTextToSpeech(textToSpeak, () => {
@@ -291,18 +253,9 @@ export default function HomeScreen() {
                   {`"${dailyVerse.text}"`}
                 </ReactMarkdown>
               </div>
-              <div className="flex items-center gap-3 mb-8">
+              <div className="flex items-center gap-3">
                 <div className="h-px w-10 bg-white/40"></div>
                 <p className="font-bold text-xl tracking-wide opacity-90">{dailyVerse.reference}</p>
-              </div>
-
-              {/* AI Reflection */}
-              <div className={`p-5 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 transition-opacity duration-300`}>
-                <div className={`text-sm md:text-base font-medium leading-relaxed opacity-95 ${isReflecting ? 'animate-pulse' : ''}`}>
-                  <ReactMarkdown>
-                    {dailyReflection || (isReflecting ? "Father is reflecting on this word..." : "")}
-                  </ReactMarkdown>
-                </div>
               </div>
             </div>
           ) : (

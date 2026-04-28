@@ -6,7 +6,7 @@ import { sendMessageStream } from '../services/aiService';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
 import { checkDailyLimit, incrementDailyUsage } from '../services/statsService';
 import LimitModal from '../components/LimitModal';
-import { Send, User, Bot, Volume2, VolumeX, Mic, MicOff, Loader2 } from 'lucide-react';
+import { Send, Bot, Volume2, VolumeX, Mic, MicOff, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useLocation } from 'react-router-dom';
 import { SpeechRecognition } from '@capgo/capacitor-speech-recognition';

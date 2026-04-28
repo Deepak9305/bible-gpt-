@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Home, BookOpen, Settings, PenLine } from 'lucide-react';
+import { Home, MessageSquare, BookOpen, Settings, PenLine } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { motion } from 'motion/react';
 import BannerAd from './BannerAd';
@@ -49,6 +49,7 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
 
   const navItems = [
     { to: "/", icon: Home, label: "Home" },
+    { to: "/chat", icon: MessageSquare, label: "Chat" },
     { to: "/journal", icon: PenLine, label: "Journal" },
     { to: "/library", icon: BookOpen, label: "Library" },
     { to: "/settings", icon: Settings, label: "Settings" },

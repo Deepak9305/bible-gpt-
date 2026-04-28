@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, Bookmark, Volume2, VolumeX, Loader2, PenLine, Share2, Flame, Trophy, Rocket } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { MessageSquare, BookOpen, Bookmark, Volume2, VolumeX, Loader2, Heart, Shield, Sun, Lightbulb, PenLine, Share2, Flame, Trophy, Rocket } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { POPULAR_VERSES } from '../data/popularVerses';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
 import { getStats, updateStreak, UserStats } from '../services/statsService';
@@ -14,9 +14,17 @@ import ReactMarkdown from 'react-markdown';
 
 
 
+const MOODS = [
+  { name: 'Anxious', icon: Shield, color: 'bg-blue-100 text-blue-600', prompt: 'I am feeling anxious and need peace.' },
+  { name: 'Lonely', icon: Heart, color: 'bg-red-100 text-red-600', prompt: 'I am feeling lonely and need comfort.' },
+  { name: 'Grateful', icon: Sun, color: 'bg-yellow-100 text-yellow-600', prompt: 'I am feeling grateful and want to give thanks.' },
+  { name: 'Inspired', icon: Lightbulb, color: 'bg-emerald-100 text-emerald-600', prompt: 'I am feeling inspired and want to grow in my faith.' },
+];
+
 export default function HomeScreen() {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [dailyVerse, setDailyVerse] = useState<{ text: string; reference: string } | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
@@ -163,6 +171,10 @@ export default function HomeScreen() {
     }
   };
 
+  const handleMoodClick = (prompt: string) => {
+    navigate('/chat', { state: { initialPrompt: prompt } });
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { duration: 0.4, ease: 'easeOut' } }
@@ -269,8 +281,47 @@ export default function HomeScreen() {
 
 
 
+        {/* Mood Guidance */}
+        <motion.section variants={itemVariants} className="mb-10">
+          <h2 className="text-xl font-bold mb-5 flex items-center gap-2">
+            <Heart size={20} className="text-red-500" /> How is your heart today?
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {MOODS.map((mood) => (
+              <button
+                key={mood.name}
+                onClick={() => handleMoodClick(mood.prompt)}
+                className={`flex flex-col items-center gap-3 p-4 rounded-2xl border transition-colors transition-shadow transition-transform duration-200 active:scale-95 hover:shadow-md ${theme === 'dark'
+                  ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
+                  : 'bg-white border-gray-100 hover:bg-gray-50'
+                  }`}
+              >
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${mood.color} shadow-sm`}>
+                  <mood.icon size={24} />
+                </div>
+                <span className="font-bold text-sm">{mood.name}</span>
+              </button>
+            ))}
+          </div>
+        </motion.section>
+
         {/* Quick Actions */}
         <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 gap-4">
+
+          <Link to="/chat" className={`col-span-2 md:col-span-1 p-6 rounded-3xl border transition-colors transition-shadow transition-transform duration-200 active:scale-95 hover:shadow-xl ${theme === 'dark'
+            ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
+            : 'bg-white border-gray-100 hover:bg-blue-50/50'
+            }`}>
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center shadow-sm">
+                <MessageSquare size={24} />
+              </div>
+              <h3 className="font-bold text-xl">Ask Father</h3>
+            </div>
+            <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              Seek wisdom and comfort in your time of need.
+            </p>
+          </Link>
 
           <Link to="/library" className={`p-6 rounded-3xl border transition-colors transition-shadow transition-transform duration-200 active:scale-95 hover:shadow-xl ${theme === 'dark'
             ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'

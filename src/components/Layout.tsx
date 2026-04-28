@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Home, MessageSquare, BookOpen, Settings } from 'lucide-react';
+import { Home, MessageSquare, BookOpen, Settings, Loader2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { motion } from 'motion/react';
 import BannerAd from './BannerAd';
@@ -58,7 +58,13 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
     <div className={`h-screen flex flex-col overflow-hidden ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
 
       <main className={`flex-1 min-h-0 overflow-hidden flex flex-col ${paddingClass} md:pb-0 md:pl-64`}>
-        <Outlet />
+        <Suspense fallback={
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="animate-spin text-blue-400 dark:text-blue-300" size={28} />
+          </div>
+        }>
+          <Outlet />
+        </Suspense>
       </main>
 
       {/* Banner Ad Component (triggers native ad) */}

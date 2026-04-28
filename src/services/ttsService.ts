@@ -103,12 +103,17 @@ export const setPreferredVoice = async (index: number | undefined) => {
 let activeUtterance: SpeechSynthesisUtterance | null = null;
 
 export const stopAudio = () => {
+  if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   activeUtterance = null;
 };
 
 export const playTextToSpeech = async (text: string, onEnded?: () => void): Promise<void> => {
+  if (!window.speechSynthesis) { onEnded?.(); return; }
+
   stopAudio();
+  // Give the engine 50ms to settle after cancel() — fixes silent speech on Android WebView
+  await new Promise(r => setTimeout(r, 50));
 
   const clean = text
     .replace(/[*_>#`]/g, '')
@@ -166,9 +171,8 @@ export const playTextToSpeech = async (text: string, onEnded?: () => void): Prom
       finish();
     };
 
+    // Unconditional resume fixes the stuck-paused state on Android WebView
+    window.speechSynthesis.resume();
     window.speechSynthesis.speak(utterance);
-
-    // Android WebView sometimes starts paused — kick it
-    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
   });
 };

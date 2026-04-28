@@ -1,9 +1,9 @@
+import { Capacitor } from '@capacitor/core';
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { StorageService } from './storageService';
 
 const PREFERRED_VOICE_KEY = 'preferred_tts_voice';
 
-// Priority-ordered target voices — highest quality first.
-// Chrome/Android WebView serves "Google UK English Male" as a neural-quality voice.
 const MALE_TARGETS = [
   'Google UK English Male',
   'Google US English',
@@ -32,21 +32,31 @@ const FEMALE_TARGETS = [
 
 const FEMALE_KEYWORDS = ['female', 'woman', 'girl', 'zira', 'samantha', 'victoria', 'karen', 'moira', 'tessa', 'martha'];
 
-// Voices load asynchronously on first access — wait for them.
+const cleanText = (text: string) =>
+  text
+    .replace(/[*_>#`]/g, '')
+    .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+    .replace(/\|/g, ',')
+    .replace(/\[|\]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([.,])/g, '$1')
+    .trim();
+
+// ─── Web Speech helpers ───────────────────────────────────────────────────────
+
 const loadVoices = (): Promise<SpeechSynthesisVoice[]> =>
   new Promise(resolve => {
-    const immediate = window.speechSynthesis.getVoices();
+    const immediate = window.speechSynthesis?.getVoices() ?? [];
     if (immediate.length > 0) return resolve(immediate);
 
     const handler = () => {
       window.speechSynthesis.removeEventListener('voiceschanged', handler);
       resolve(window.speechSynthesis.getVoices());
     };
-    window.speechSynthesis.addEventListener('voiceschanged', handler);
-    // Timeout safety net for environments that never fire voiceschanged
+    window.speechSynthesis?.addEventListener('voiceschanged', handler);
     setTimeout(() => {
-      window.speechSynthesis.removeEventListener('voiceschanged', handler);
-      resolve(window.speechSynthesis.getVoices());
+      window.speechSynthesis?.removeEventListener('voiceschanged', handler);
+      resolve(window.speechSynthesis?.getVoices() ?? []);
     }, 3000);
   });
 
@@ -59,7 +69,12 @@ const pickBest = (voices: SpeechSynthesisVoice[], targets: string[]): SpeechSynt
   return null;
 };
 
+// ─── Public API ───────────────────────────────────────────────────────────────
+
 export const getCuratedVoices = async () => {
+  // Voice picker is only meaningful on web; native uses the system TTS voice.
+  if (Capacitor.isNativePlatform()) return [];
+
   const all = await loadVoices();
   const en = all.filter(v => v.lang.toLowerCase().startsWith('en'));
   if (en.length === 0) return [];
@@ -74,13 +89,8 @@ export const getCuratedVoices = async () => {
     en.find(v => v !== male);
 
   const curated: { label: string; index: number; voice: SpeechSynthesisVoice; pitch: number; rate: number }[] = [];
-
-  if (male) {
-    curated.push({ label: "Father's Voice", index: all.indexOf(male), voice: male, pitch: 0.88, rate: 0.82 });
-  }
-  if (female && female !== male) {
-    curated.push({ label: "Mother's Voice", index: all.indexOf(female), voice: female, pitch: 1.05, rate: 0.82 });
-  }
+  if (male) curated.push({ label: "Father's Voice", index: all.indexOf(male), voice: male, pitch: 0.88, rate: 0.82 });
+  if (female && female !== male) curated.push({ label: "Mother's Voice", index: all.indexOf(female), voice: female, pitch: 1.05, rate: 0.82 });
 
   return curated;
 };
@@ -100,31 +110,62 @@ export const setPreferredVoice = async (index: number | undefined) => {
   }
 };
 
+// Tracks whether native speech is still "owned" by the current speak call.
+// Set to false by stopAudio() so the onEnded callback is suppressed after a manual stop.
+let nativeSpeaking = false;
+
+// Web utterance ref for cancellation
 let activeUtterance: SpeechSynthesisUtterance | null = null;
 
-export const stopAudio = () => {
-  if (!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  activeUtterance = null;
+export const stopAudio = async (): Promise<void> => {
+  if (Capacitor.isNativePlatform()) {
+    nativeSpeaking = false;
+    try { await TextToSpeech.stop(); } catch {}
+  } else {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    activeUtterance = null;
+  }
 };
 
 export const playTextToSpeech = async (text: string, onEnded?: () => void): Promise<void> => {
+  const clean = cleanText(text);
+  if (!clean) { onEnded?.(); return; }
+
+  // ── Native path (Android / iOS) ──────────────────────────────────────────
+  if (Capacitor.isNativePlatform()) {
+    await stopAudio();
+    nativeSpeaking = true;
+    try {
+      await TextToSpeech.speak({
+        text: clean,
+        lang: 'en-GB',
+        rate: 0.82,
+        pitch: 0.88,
+        volume: 1.0,
+        category: 'playback', // iOS: plays even when ringer is muted
+      });
+      // Only fire the callback if stopAudio() wasn't called while we were speaking
+      if (nativeSpeaking) onEnded?.();
+    } catch (e: any) {
+      // 'interrupted' fires when stop() is called — that's expected, not an error
+      if (e?.message !== 'interrupted') {
+        console.error('[TTS] native error:', e);
+      }
+      if (nativeSpeaking) onEnded?.();
+    } finally {
+      nativeSpeaking = false;
+    }
+    return;
+  }
+
+  // ── Web Speech API fallback (browser / dev) ──────────────────────────────
   if (!window.speechSynthesis) { onEnded?.(); return; }
 
-  stopAudio();
-  // Give the engine 50ms to settle after cancel() — fixes silent speech on Android WebView
+  // Cancel any ongoing speech and let the engine settle before speaking again
+  window.speechSynthesis.cancel();
+  activeUtterance = null;
   await new Promise(r => setTimeout(r, 50));
-
-  const clean = text
-    .replace(/[*_>#`]/g, '')
-    .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
-    .replace(/\|/g, ',')
-    .replace(/\[|\]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .replace(/\s+([.,])/g, '$1')
-    .trim();
-
-  if (!clean) { onEnded?.(); return; }
 
   const all = await loadVoices();
   const preferredIdx = await getPreferredVoiceIndex();
@@ -164,14 +205,12 @@ export const playTextToSpeech = async (text: string, onEnded?: () => void): Prom
 
     utterance.onend = finish;
     utterance.onerror = e => {
-      // 'canceled' and 'interrupted' are normal when stopAudio() is called
       if (e.error !== 'canceled' && e.error !== 'interrupted') {
-        console.error('[TTS] error:', e.error);
+        console.error('[TTS] web error:', e.error);
       }
       finish();
     };
 
-    // Unconditional resume fixes the stuck-paused state on Android WebView
     window.speechSynthesis.resume();
     window.speechSynthesis.speak(utterance);
   });

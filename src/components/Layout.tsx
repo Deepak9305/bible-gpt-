@@ -11,13 +11,15 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
   const { theme, highContrastNav } = useTheme();
   const { pathname } = useLocation();
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  // Only true once AdMob fires the Loaded event — prevents dead space before an ad renders
+  const [bannerLoaded, setBannerLoaded] = useState(false);
 
   const showAd = pathname !== '/chat' && !isKeyboardVisible && isAppReady;
-  const showBannerPadding = pathname !== '/chat' && !isKeyboardVisible && isAppReady;
+  const showBannerPadding = showAd && bannerLoaded;
   const showNavPadding = !isKeyboardVisible;
 
-  // 9rem (144px) clears the new 90px banner margin + 50px banner height
-  const paddingClass = showBannerPadding ? 'pb-[9rem]' : (showNavPadding ? 'pb-[calc(4rem+env(safe-area-inset-bottom))]' : 'pb-0');
+  // 70px margin (adService) + 50px banner height = 120px → pb-[7.5rem] with a 4px buffer
+  const paddingClass = showBannerPadding ? 'pb-[7.5rem]' : (showNavPadding ? 'pb-[calc(4rem+env(safe-area-inset-bottom))]' : 'pb-0');
 
   React.useEffect(() => {
     let showListener: any;
@@ -68,7 +70,7 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
       </main>
 
       {/* Banner Ad Component (triggers native ad) */}
-      <BannerAd shouldShow={showAd} />
+      <BannerAd shouldShow={showAd} onLoaded={() => setBannerLoaded(true)} />
 
       {/* Mobile Bottom Nav */}
       {!isKeyboardVisible && (

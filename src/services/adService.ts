@@ -64,7 +64,7 @@ class AdService {
                     adId,
                     adSize: BannerAdSize.BANNER,
                     position: BannerAdPosition.BOTTOM_CENTER,
-                    margin: 90,
+                    margin: 70,
                     isTesting: false,
                 });
                 this.bannerCreated = true;

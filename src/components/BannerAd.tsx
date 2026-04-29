@@ -1,27 +1,39 @@
 import React, { useEffect } from 'react';
+import { AdMob, BannerAdPluginEvents } from '@capacitor-community/admob';
 import { adService } from '../services/adService';
 import { Capacitor } from '@capacitor/core';
 
-export const BannerAd: React.FC<{ shouldShow?: boolean }> = ({ shouldShow = true }) => {
-    useEffect(() => {
-        if (Capacitor.isNativePlatform()) {
-            if (shouldShow) {
-                adService.showBanner();
-            } else {
-                adService.hideBanner();
-            }
-        }
+interface BannerAdProps {
+  shouldShow?: boolean;
+  onLoaded?: () => void;
+}
 
-        // Cleanup function to hide the banner when the component unmounts
-        // This ensures ads don't persist on screens without the Layout wrapper (e.g. LoginScreen)
-        return () => {
-            if (Capacitor.isNativePlatform()) {
-                adService.hideBanner();
-            }
-        };
-    }, [shouldShow]);
+export const BannerAd: React.FC<BannerAdProps> = ({ shouldShow = true, onLoaded }) => {
+  // Notify parent the moment an ad actually renders so it can add padding
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
 
-    return null; // The banner is handled by the native plugin, not by React DOM
+    let handle: any;
+    AdMob.addListener(BannerAdPluginEvents.Loaded, () => {
+      onLoaded?.();
+    }).then(h => { handle = h; });
+
+    return () => { handle?.remove(); };
+  }, [onLoaded]);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    if (shouldShow) {
+      adService.showBanner();
+    } else {
+      adService.hideBanner();
+    }
+
+    return () => { adService.hideBanner(); };
+  }, [shouldShow]);
+
+  return null;
 };
 
 export default BannerAd;

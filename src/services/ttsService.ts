@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { TextToSpeech } from '@capacitor-community/text-to-speech';
+import { TextToSpeech, QueueStrategy } from '@capacitor-community/text-to-speech';
 import { StorageService } from './storageService';
 
 const PREFERRED_VOICE_KEY = 'preferred_tts_voice';
@@ -112,6 +112,51 @@ export const setPreferredVoice = async (index: number | undefined) => {
 
 // Tracks whether native speech is still "owned" by the current speak call.
 // Set to false by stopAudio() so the onEnded callback is suppressed after a manual stop.
+// Priority-ordered voice name fragments for picking the best male English voice.
+// Android Google TTS network voices are neural quality; local voices are cached neural.
+const NATIVE_MALE_VOICE_PRIORITY = [
+  'en-us-x-tpf-network',  // Google US English (neural, network)
+  'en-us-x-tpd-network',
+  'en-us-x-tpc-network',
+  'en-us-x-tpf-local',    // Google US English (neural, local/cached)
+  'en-us-x-tpd-local',
+  'en-gb-x-gbd-network',  // Google UK English Male (neural, network)
+  'en-gb-x-gbd-local',
+  // iOS Siri / premium voices
+  'siri_male_en-us',
+  'siri_male_en-gb',
+  'aaron',
+  'daniel',
+  'arthur',
+  'fred',
+];
+
+let nativeBestVoiceIndex: number | undefined = undefined;
+let nativeVoiceResolved = false;
+
+const resolveNativeVoice = async (): Promise<number | undefined> => {
+  if (nativeVoiceResolved) return nativeBestVoiceIndex;
+  nativeVoiceResolved = true;
+  try {
+    const { voices } = await TextToSpeech.getSupportedVoices();
+    for (const fragment of NATIVE_MALE_VOICE_PRIORITY) {
+      const idx = voices.findIndex(v =>
+        v.name.toLowerCase().includes(fragment) ||
+        v.voiceURI.toLowerCase().includes(fragment)
+      );
+      if (idx !== -1) { nativeBestVoiceIndex = idx; return idx; }
+    }
+    // Fallback: any en-US voice, then any English voice
+    const usIdx = voices.findIndex(v => v.lang === 'en-US' || v.lang === 'en_US');
+    if (usIdx !== -1) { nativeBestVoiceIndex = usIdx; return usIdx; }
+    const enIdx = voices.findIndex(v => v.lang.startsWith('en'));
+    if (enIdx !== -1) { nativeBestVoiceIndex = enIdx; return enIdx; }
+  } catch (e) {
+    console.warn('[TTS] getSupportedVoices failed:', e);
+  }
+  return undefined;
+};
+
 let nativeSpeaking = false;
 
 // Web utterance ref for cancellation
@@ -136,14 +181,17 @@ export const playTextToSpeech = async (text: string, onEnded?: () => void): Prom
   if (Capacitor.isNativePlatform()) {
     await stopAudio();
     nativeSpeaking = true;
+    const voiceIndex = await resolveNativeVoice();
     try {
       await TextToSpeech.speak({
         text: clean,
-        lang: 'en-GB',
-        rate: 0.82,
-        pitch: 0.88,
+        lang: 'en-US',
+        rate: 0.9,      // natural pace — not dragging
+        pitch: 0.9,     // slightly warm/deep without sounding synthetic
         volume: 1.0,
-        category: 'playback', // iOS: plays even when ringer is muted
+        category: 'playback',
+        queueStrategy: QueueStrategy.Flush,
+        ...(voiceIndex !== undefined ? { voice: voiceIndex } : {}),
       });
       // Only fire the callback if stopAudio() wasn't called while we were speaking
       if (nativeSpeaking) onEnded?.();

@@ -4,7 +4,7 @@ import { Keyboard } from '@capacitor/keyboard';
 
 const AD_UNITS = {
     ios: 'ca-app-pub-7381421031784616/6798345893',
-    android: 'ca-app-pub-7381421031784616/6300978111',
+    android: 'ca-app-pub-7381421031784616/6798345893',
 };
 
 class AdService {

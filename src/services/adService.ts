@@ -9,12 +9,7 @@ const AD_UNITS = {
 
 class AdService {
     private static instance: AdService;
-
-    // Whether the native banner view has been created (survives hide/resume cycles)
-    private bannerCreated = false;
-    // Whether the banner is currently visible on screen
     private isBannerVisible = false;
-    // The last intended state — used to restore after keyboard dismiss
     private intendedBannerState = false;
 
     private constructor() {
@@ -57,21 +52,14 @@ class AdService {
         if (this.isBannerVisible) return;
 
         try {
-            if (!this.bannerCreated) {
-                // First time — create and show the banner
-                const adId = Capacitor.getPlatform() === 'ios' ? AD_UNITS.ios : AD_UNITS.android;
-                await AdMob.showBanner({
-                    adId,
-                    adSize: BannerAdSize.BANNER,
-                    position: BannerAdPosition.BOTTOM_CENTER,
-                    margin: 70,
-                    isTesting: false,
-                });
-                this.bannerCreated = true;
-            } else {
-                // Banner already exists — resume it (avoids duplicate native views)
-                await AdMob.resumeBanner();
-            }
+            const adId = Capacitor.getPlatform() === 'ios' ? AD_UNITS.ios : AD_UNITS.android;
+            await AdMob.showBanner({
+                adId,
+                adSize: BannerAdSize.BANNER,
+                position: BannerAdPosition.BOTTOM_CENTER,
+                margin: 70,
+                isTesting: false,
+            });
             this.isBannerVisible = true;
         } catch (error) {
             console.error('AdMob: Failed to show banner', error);
@@ -95,7 +83,6 @@ class AdService {
         try {
             await AdMob.removeBanner();
             this.isBannerVisible = false;
-            this.bannerCreated = false;
         } catch (error) {
             console.error('AdMob: Failed to remove banner', error);
         }

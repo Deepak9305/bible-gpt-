@@ -58,7 +58,7 @@ class AdService {
                 adSize: BannerAdSize.BANNER,
                 position: BannerAdPosition.BOTTOM_CENTER,
                 margin: 70,
-                isTesting: true, // set false before Play Store release
+                isTesting: false,
             });
             this.isBannerVisible = true;
         } catch (error) {

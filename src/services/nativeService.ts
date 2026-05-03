@@ -40,10 +40,19 @@ export const initializeNativeServices = async () => {
       try {
         const permStatus = await LocalNotifications.requestPermissions();
         if (permStatus.display === 'granted') {
+          if (Capacitor.getPlatform() === 'android') {
+            await LocalNotifications.createChannel({
+              id: 'devotional_channel',
+              name: 'Daily Devotionals',
+              description: 'Reminders for daily devotionals',
+              importance: 4,
+              visibility: 1
+            });
+          }
           await scheduleDailyDevotional();
         }
       } catch (e) {
-        // Ignore
+        console.error('Notification setup failed:', e);
       }
     }
   } catch (globalErr) {
@@ -74,6 +83,7 @@ const scheduleDailyDevotional = async () => {
       body: msg.body,
       schedule: { on: { weekday: msg.weekday, hour: 8, minute: 0 }, repeats: true },
       smallIcon: "ic_launcher_foreground",
+      channelId: "devotional_channel",
     }))
   });
 };

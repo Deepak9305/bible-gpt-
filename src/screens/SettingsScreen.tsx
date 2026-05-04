@@ -31,7 +31,7 @@ const SettingItem = ({ icon: Icon, iconColor, title, subtitle, onClick, rightEle
   return (
     <button
       onClick={onClick}
-      disabled={!onClick}
+      disabled={!onClick && !rightElement}
       className={`w-full flex items-center justify-between p-4 transition-all duration-200 
         ${onClick ? (theme === 'dark' ? 'hover:bg-gray-750/50' : 'hover:bg-gray-50/80') : ''} 
         border-b border-gray-100/50 dark:border-gray-700/50 last:border-0`}

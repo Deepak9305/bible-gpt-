@@ -76,7 +76,7 @@ export default function SettingsScreen() {
   const [editLifeStage, setEditLifeStage] = useState(user?.preferences?.lifeStage || '');
   const [editSpiritualFocus, setEditSpiritualFocus] = useState(user?.preferences?.spiritualFocus || '');
   const [editTone, setEditTone] = useState<any>(user?.preferences?.tone || 'pastoral');
-  const [confirmAction, setConfirmAction] = useState<{ type: 'delete' | 'clear', title: string, message: string, buttonText: string, buttonStyle: string } | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'delete' | 'clear' | 'restart', title: string, message: string, buttonText: string, buttonStyle: string } | null>(null);
 
   const [availableVoices, setAvailableVoices] = useState<any[]>([]);
   const [selectedVoiceIdx, setSelectedVoiceIdx] = useState<number | undefined>(undefined);
@@ -103,6 +103,11 @@ export default function SettingsScreen() {
       await stopAudio();
       setIsPreviewing(false);
       return;
+    }
+    // Apply the selected voice before previewing
+    if (voiceIdx !== selectedVoiceIdx) {
+      await setPreferredVoice(voiceIdx);
+      setSelectedVoiceIdx(voiceIdx);
     }
     setIsPreviewing(true);
     await playTextToSpeech("I am your spiritual guide. Peace be with you.", () => {
@@ -134,6 +139,11 @@ export default function SettingsScreen() {
     if (confirmAction?.type === 'delete') {
       await deleteAccount();
     } else if (confirmAction?.type === 'clear') {
+      // Clear local data only — does NOT delete the account
+      await StorageService.clear();
+      window.location.reload();
+    } else if (confirmAction?.type === 'restart') {
+      // Restart journey: wipe local storage and return to onboarding
       await StorageService.clear();
       await deleteAccount();
     }
@@ -142,7 +152,7 @@ export default function SettingsScreen() {
 
   const handleLogout = async () => {
     setConfirmAction({
-      type: 'clear',
+      type: 'restart',
       title: 'Restart Journey',
       message: 'This will reset your local profile and take you back to onboarding. You will lose unsaved local progress.',
       buttonText: 'Restart',
@@ -242,9 +252,12 @@ export default function SettingsScreen() {
                   checked={user?.preferences?.isPersonalizationEnabled ?? true} 
                   onChange={() => {
                     const currentPrefs = user?.preferences || { isPersonalizationEnabled: true };
+                    const newVal = !(currentPrefs.isPersonalizationEnabled ?? true);
+                    // Keep local modal state in sync with the quick-toggle
+                    setIsPersonalizationEnabled(newVal);
                     updateProfile(user?.name || 'Beloved', user?.avatar, {
                       ...currentPrefs,
-                      isPersonalizationEnabled: !(currentPrefs.isPersonalizationEnabled ?? true)
+                      isPersonalizationEnabled: newVal
                     });
                   }} 
                   activeColor="bg-purple-500" 
@@ -493,8 +506,14 @@ export default function SettingsScreen() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className={`relative w-full max-w-sm p-6 rounded-3xl shadow-2xl text-center ${theme === 'dark' ? 'bg-slate-800 border border-slate-700' : 'bg-white'}`}
             >
-              <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${confirmAction.type === 'delete' || confirmAction.type === 'clear' ? 'bg-red-100 text-red-500 dark:bg-red-900/30 dark:text-red-400' : 'bg-orange-100 text-orange-500'}`}>
-                 {confirmAction.type === 'delete' ? <UserX size={32} /> : <Trash2 size={32} />}
+              <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                confirmAction.type === 'delete'
+                  ? 'bg-red-100 text-red-500 dark:bg-red-900/30 dark:text-red-400'
+                  : confirmAction.type === 'clear'
+                  ? 'bg-red-100 text-red-400 dark:bg-red-900/30 dark:text-red-300'
+                  : 'bg-orange-100 text-orange-500 dark:bg-orange-900/30 dark:text-orange-400'
+              }`}>
+                {confirmAction.type === 'delete' ? <UserX size={32} /> : confirmAction.type === 'restart' ? <LogOut size={32} /> : <Trash2 size={32} />}
               </div>
               <h3 className="text-xl font-bold mb-2">{confirmAction.title}</h3>
               <p className={`mb-8 text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>{confirmAction.message}</p>

@@ -66,8 +66,9 @@ const scheduleDailyDevotional = async () => {
   const idsToCancel = [1, 2, 3, 4, 5, 6, 7];
   await LocalNotifications.cancel({ notifications: idsToCancel.map(id => ({ id })) });
 
+  // Capacitor LocalNotifications weekday convention: 1=Sunday, 2=Monday, ..., 7=Saturday
   const weeklyMessages = [
-    { id: 1, weekday: 1, title: "Sabbath Reflection", body: "Begin your week with rest and the Word." },
+    { id: 1, weekday: 1, title: "Sunday Reflection", body: "Begin your week with rest and the Word." },
     { id: 2, weekday: 2, title: "Monday Strength", body: "Find divine strength for the week ahead." },
     { id: 3, weekday: 3, title: "Tuesday Trust", body: "Trust in the Lord with all your heart today." },
     { id: 4, weekday: 4, title: "Mid-Week Grace", body: "Refresh your soul with a moment of prayer." },
@@ -81,9 +82,11 @@ const scheduleDailyDevotional = async () => {
       id: msg.id,
       title: msg.title,
       body: msg.body,
+      // 'on' scheduling fires at the given weekday/time each week when repeats: true
       schedule: { on: { weekday: msg.weekday, hour: 8, minute: 0 }, repeats: true },
-      smallIcon: "ic_launcher_foreground",
-      channelId: "devotional_channel",
+      // ic_stat_notify is the conventional small notification icon name in Android projects
+      smallIcon: 'ic_stat_notify',
+      channelId: 'devotional_channel',
     }))
   });
 };

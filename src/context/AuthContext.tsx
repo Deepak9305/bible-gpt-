@@ -8,6 +8,9 @@ interface User {
   avatar?: string;
   preferences?: {
     isPersonalizationEnabled: boolean;
+    lifeStage?: string;
+    spiritualFocus?: string;
+    tone?: string;
   };
 }
 

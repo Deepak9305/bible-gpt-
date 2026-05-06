@@ -1,6 +1,5 @@
 import { AdMob, BannerAdPosition, BannerAdSize, BannerAdPluginEvents, AdMobBannerSize } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
-import { Keyboard } from '@capacitor/keyboard';
 
 const AD_UNITS = {
     ios: 'ca-app-pub-7381421031784616/6798345893',
@@ -12,23 +11,7 @@ class AdService {
     private isBannerVisible = false;
     private intendedBannerState = false;
 
-    private constructor() {
-        this.initKeyboardListeners();
-    }
-
-    private initKeyboardListeners() {
-        if (Capacitor.isNativePlatform()) {
-            Keyboard.addListener('keyboardWillShow', () => {
-                this.hideBannerInternal();
-            }).catch(e => console.warn('AdService: keyboardWillShow listener failed', e));
-
-            Keyboard.addListener('keyboardWillHide', () => {
-                if (this.intendedBannerState) {
-                    this.showBannerInternal();
-                }
-            }).catch(e => console.warn('AdService: keyboardWillHide listener failed', e));
-        }
-    }
+    private constructor() {}
 
     public static getInstance(): AdService {
         if (!AdService.instance) {

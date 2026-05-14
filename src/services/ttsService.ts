@@ -5,7 +5,7 @@ import { StorageService } from './storageService';
 const PREFERRED_VOICE_KEY = 'preferred_tts_voice_preset';
 const LEGACY_PREFERRED_VOICE_KEY = 'preferred_tts_voice';
 
-export type FatherlyVoiceId = 'father-david' | 'father-thomas' | 'father-matthew';
+export type FatherlyVoiceId = 'father-gabriel' | 'father-thomas' | 'father-matthew';
 
 export interface FatherlyVoicePreset {
   id: FatherlyVoiceId;
@@ -15,32 +15,40 @@ export interface FatherlyVoicePreset {
   pitch: number;
   webTargets: string[];
   nativeTargets: string[];
+  avoidTargets?: string[];
   fallbackOffset: number;
 }
 
 export const FATHERLY_VOICE_PRESETS: FatherlyVoicePreset[] = [
   {
-    id: 'father-david',
-    label: 'Father David',
-    description: 'Warm, deep, and steady',
-    rate: 0.86,
-    pitch: 0.84,
+    id: 'father-gabriel',
+    label: 'Father Gabriel',
+    description: 'Rich, warm, and reassuring',
+    rate: 0.84,
+    pitch: 0.88,
     webTargets: [
-      'Microsoft David',
-      'Google UK English Male',
+      'Microsoft George',
+      'Microsoft Richard',
       'Daniel',
       'Arthur',
       'Aaron',
       'Alex',
     ],
     nativeTargets: [
-      'en-us-x-tpf-network',
-      'en-us-x-tpf-local',
-      'siri_male_en-us',
+      'en-gb-x-gbd-network',
+      'en-gb-x-gbd-local',
+      'en-au-x-aud-network',
+      'en-au-x-aud-local',
       'siri_male_en-gb',
-      'david',
       'daniel',
       'arthur',
+      'george',
+    ],
+    avoidTargets: [
+      'en-us-x-tpf-network',
+      'en-us-x-tpf-local',
+      'david',
+      'Microsoft David',
     ],
     fallbackOffset: 0,
   },
@@ -132,6 +140,7 @@ const MALE_KEYWORDS = [
   'bruce',
   'george',
   'guy',
+  'richard',
   'tpf',
   'tpd',
   'tpc',
@@ -195,15 +204,19 @@ const loadWebVoices = (): Promise<SpeechSynthesisVoice[]> =>
 const chooseVoice = (voices: SpeechSynthesisVoice[], preset: FatherlyVoicePreset, targets: string[]) => {
   const englishVoices = voices.filter(isEnglishVoice);
   const candidateVoices = englishVoices.length > 0 ? englishVoices : voices;
+  const preferredCandidates = preset.avoidTargets
+    ? candidateVoices.filter(voice => !preset.avoidTargets?.some(target => voiceMatchesTarget(voice, target)))
+    : candidateVoices;
+  const usableVoices = preferredCandidates.length > 0 ? preferredCandidates : candidateVoices;
 
   for (const target of targets) {
-    const hit = candidateVoices.find(voice => voiceMatchesTarget(voice, target) && !isLikelyFemaleVoice(voice));
+    const hit = usableVoices.find(voice => voiceMatchesTarget(voice, target) && !isLikelyFemaleVoice(voice));
     if (hit) return hit;
   }
 
-  const maleVoices = candidateVoices.filter(voice => hasMaleSignal(voice) && !isLikelyFemaleVoice(voice));
-  const neutralVoices = candidateVoices.filter(voice => !isLikelyFemaleVoice(voice));
-  const pool = maleVoices.length > 0 ? maleVoices : neutralVoices.length > 0 ? neutralVoices : candidateVoices;
+  const maleVoices = usableVoices.filter(voice => hasMaleSignal(voice) && !isLikelyFemaleVoice(voice));
+  const neutralVoices = usableVoices.filter(voice => !isLikelyFemaleVoice(voice));
+  const pool = maleVoices.length > 0 ? maleVoices : neutralVoices.length > 0 ? neutralVoices : usableVoices;
   return pool[preset.fallbackOffset % pool.length] ?? null;
 };
 
@@ -236,6 +249,8 @@ const resolveNativeVoiceIndex = async (preset: FatherlyVoicePreset): Promise<num
 export const getPreferredVoiceId = async (): Promise<FatherlyVoiceId> => {
   const stored = await StorageService.get(PREFERRED_VOICE_KEY);
   if (isFatherlyVoiceId(stored)) return stored;
+
+  if (stored) await StorageService.remove(PREFERRED_VOICE_KEY);
 
   // Drop the old numeric voice-index preference so the app uses the new male presets.
   await StorageService.remove(LEGACY_PREFERRED_VOICE_KEY);

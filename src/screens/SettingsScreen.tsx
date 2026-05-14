@@ -6,7 +6,7 @@ import { Moon, Sun, Trash2, ChevronRight, LogOut, Edit2, X, Check, UserX, Sparkl
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { StorageService } from '../services/storageService';
-import { getCuratedVoices, getPreferredVoiceIndex, setPreferredVoice, playTextToSpeech, stopAudio } from '../services/ttsService';
+import { FATHERLY_VOICE_PRESETS, getPreferredVoiceId, setPreferredVoiceId, playTextToSpeech, stopAudio, type FatherlyVoiceId } from '../services/ttsService';
 
 const AVATARS = ['✝️', '👤', '🕊️', '📖', '🕯️', '⛪', '🌟', '😇', '🦁', '🐑', '🍞', '🍷', '🔥', '💧'];
 
@@ -78,41 +78,42 @@ export default function SettingsScreen() {
   const [editTone, setEditTone] = useState<any>(user?.preferences?.tone || 'pastoral');
   const [confirmAction, setConfirmAction] = useState<{ type: 'delete' | 'clear' | 'restart', title: string, message: string, buttonText: string, buttonStyle: string } | null>(null);
 
-  const [availableVoices, setAvailableVoices] = useState<any[]>([]);
-  const [selectedVoiceIdx, setSelectedVoiceIdx] = useState<number | undefined>(undefined);
-  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [selectedVoiceId, setSelectedVoiceId] = useState<FatherlyVoiceId>(FATHERLY_VOICE_PRESETS[0].id);
+  const [previewingVoiceId, setPreviewingVoiceId] = useState<FatherlyVoiceId | null>(null);
 
   React.useEffect(() => {
     async function loadVoices() {
-      const voices = await getCuratedVoices();
-      setAvailableVoices(voices);
-      const pref = await getPreferredVoiceIndex();
-      setSelectedVoiceIdx(pref);
+      const pref = await getPreferredVoiceId();
+      setSelectedVoiceId(pref);
     }
     loadVoices();
     return () => { stopAudio(); };
   }, []);
 
-  const handleVoiceChange = async (idx: number | undefined) => {
-    setSelectedVoiceIdx(idx);
-    await setPreferredVoice(idx);
+  const handleVoiceChange = async (id: FatherlyVoiceId) => {
+    setSelectedVoiceId(id);
+    await setPreferredVoiceId(id);
   };
 
-  const previewVoice = async (voiceIdx: number | undefined) => {
-    if (isPreviewing) {
+  const previewVoice = async (id: FatherlyVoiceId) => {
+    if (previewingVoiceId === id) {
       await stopAudio();
-      setIsPreviewing(false);
+      setPreviewingVoiceId(null);
       return;
     }
-    // Apply the selected voice before previewing
-    if (voiceIdx !== selectedVoiceIdx) {
-      await setPreferredVoice(voiceIdx);
-      setSelectedVoiceIdx(voiceIdx);
+
+    await stopAudio();
+    await handleVoiceChange(id);
+    setPreviewingVoiceId(id);
+
+    try {
+      await playTextToSpeech("I am your spiritual guide. Peace be with you.", () => {
+        setPreviewingVoiceId(null);
+      });
+    } catch (error) {
+      console.error("Voice preview failed", error);
+      setPreviewingVoiceId(null);
     }
-    setIsPreviewing(true);
-    await playTextToSpeech("I am your spiritual guide. Peace be with you.", () => {
-      setIsPreviewing(false);
-    });
   };
 
   const clearData = () => {
@@ -266,23 +267,61 @@ export default function SettingsScreen() {
               }
             />
 
-            <div className="flex items-center justify-between p-4 border-t border-slate-100/50 dark:border-slate-700/50">
-              <div className="flex items-center gap-4">
+            <div className="p-4 border-t border-slate-100/50 dark:border-slate-700/50">
+              <div className="flex items-center gap-4 mb-4">
                 <div className={`p-2.5 rounded-xl ${theme === 'dark' ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
                   <Volume2 size={20} className="stroke-[2]" />
                 </div>
                 <div>
                   <p className="font-medium text-left">Voice</p>
-                  <p className="text-xs opacity-60 mt-0.5 text-left">System text-to-speech voice</p>
+                  <p className="text-xs opacity-60 mt-0.5 text-left">Choose a fatherly male voice</p>
                 </div>
               </div>
-              <button
-                onClick={() => previewVoice(selectedVoiceIdx)}
-                className={`p-2.5 rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center min-w-[2.5rem] ${isPreviewing ? 'bg-amber-500 text-white shadow-amber-500/20' : 'bg-blue-600 text-white shadow-blue-600/20'}`}
-                title="Preview Voice"
-              >
-                {isPreviewing ? <Square size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
-              </button>
+
+              <div className="space-y-2">
+                {FATHERLY_VOICE_PRESETS.map((voice) => {
+                  const selected = selectedVoiceId === voice.id;
+                  const previewing = previewingVoiceId === voice.id;
+
+                  return (
+                    <div
+                      key={voice.id}
+                      className={`flex items-center gap-3 p-2 rounded-2xl border transition-all duration-200 ${
+                        selected
+                          ? (theme === 'dark' ? 'border-blue-500 bg-blue-500/10' : 'border-blue-500 bg-blue-50')
+                          : (theme === 'dark' ? 'border-slate-700 bg-slate-900/30' : 'border-slate-200 bg-slate-50')
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleVoiceChange(voice.id)}
+                        className="flex flex-1 min-w-0 items-center gap-3 p-2 text-left"
+                      >
+                        <span className={`h-4 w-4 flex-shrink-0 rounded-full border flex items-center justify-center ${
+                          selected ? 'border-blue-600 bg-blue-600' : 'border-slate-300 dark:border-slate-500'
+                        }`}>
+                          {selected && <Check size={12} className="text-white" />}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-semibold">{voice.label}</span>
+                          <span className="block truncate text-xs opacity-60">{voice.description}</span>
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => previewVoice(voice.id)}
+                        className={`h-10 w-10 flex-shrink-0 rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center ${
+                          previewing ? 'bg-amber-500 text-white shadow-amber-500/20' : 'bg-blue-600 text-white shadow-blue-600/20'
+                        }`}
+                        title={`Preview ${voice.label}`}
+                      >
+                        {previewing ? <Square size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
           </div>

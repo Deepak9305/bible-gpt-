@@ -2,35 +2,141 @@ import { Capacitor } from '@capacitor/core';
 import { TextToSpeech, QueueStrategy } from '@capacitor-community/text-to-speech';
 import { StorageService } from './storageService';
 
-const PREFERRED_VOICE_KEY = 'preferred_tts_voice';
+const PREFERRED_VOICE_KEY = 'preferred_tts_voice_preset';
+const LEGACY_PREFERRED_VOICE_KEY = 'preferred_tts_voice';
 
-const MALE_TARGETS = [
-  'Google UK English Male',
-  'Google US English',
-  'en-US-Neural2-J',
-  'en-GB-Neural2-B',
-  'en-us-x-tpf-local',
-  'en-us-x-tpf-network',
-  'Microsoft David Desktop',
-  'Microsoft David',
-  'Daniel',
-  'Arthur',
-  'Aaron',
+export type FatherlyVoiceId = 'father-david' | 'father-thomas' | 'father-matthew';
+
+export interface FatherlyVoicePreset {
+  id: FatherlyVoiceId;
+  label: string;
+  description: string;
+  rate: number;
+  pitch: number;
+  webTargets: string[];
+  nativeTargets: string[];
+  fallbackOffset: number;
+}
+
+export const FATHERLY_VOICE_PRESETS: FatherlyVoicePreset[] = [
+  {
+    id: 'father-david',
+    label: 'Father David',
+    description: 'Warm, deep, and steady',
+    rate: 0.86,
+    pitch: 0.84,
+    webTargets: [
+      'Microsoft David',
+      'Google UK English Male',
+      'Daniel',
+      'Arthur',
+      'Aaron',
+      'Alex',
+    ],
+    nativeTargets: [
+      'en-us-x-tpf-network',
+      'en-us-x-tpf-local',
+      'siri_male_en-us',
+      'siri_male_en-gb',
+      'david',
+      'daniel',
+      'arthur',
+    ],
+    fallbackOffset: 0,
+  },
+  {
+    id: 'father-thomas',
+    label: 'Father Thomas',
+    description: 'Gentle, calm, and pastoral',
+    rate: 0.82,
+    pitch: 0.9,
+    webTargets: [
+      'Microsoft Mark',
+      'Google US English',
+      'en-US-Neural2-J',
+      'Fred',
+      'Tom',
+      'Ralph',
+    ],
+    nativeTargets: [
+      'en-us-x-tpd-network',
+      'en-us-x-tpd-local',
+      'en-gb-x-gbd-network',
+      'en-gb-x-gbd-local',
+      'aaron',
+      'fred',
+      'tom',
+      'ralph',
+    ],
+    fallbackOffset: 1,
+  },
+  {
+    id: 'father-matthew',
+    label: 'Father Matthew',
+    description: 'Clear, confident, and uplifting',
+    rate: 0.9,
+    pitch: 0.95,
+    webTargets: [
+      'Microsoft Guy',
+      'Microsoft George',
+      'Google UK English Male',
+      'en-GB-Neural2-B',
+      'Arthur',
+      'Reed',
+    ],
+    nativeTargets: [
+      'en-us-x-tpc-network',
+      'en-us-x-tpc-local',
+      'en-au-x-aud-network',
+      'en-au-x-aud-local',
+      'george',
+      'guy',
+      'reed',
+      'bruce',
+    ],
+    fallbackOffset: 2,
+  },
 ];
 
-const FEMALE_TARGETS = [
-  'Google UK English Female',
-  'en-US-Neural2-F',
-  'en-GB-Neural2-A',
-  'en-us-x-sfg-local',
-  'en-us-x-sfg-network',
-  'Microsoft Zira Desktop',
-  'Microsoft Zira',
-  'Samantha',
-  'Martha',
+const DEFAULT_VOICE_ID: FatherlyVoiceId = FATHERLY_VOICE_PRESETS[0].id;
+
+const FEMALE_KEYWORDS = [
+  'female',
+  'woman',
+  'girl',
+  'zira',
+  'samantha',
+  'victoria',
+  'karen',
+  'moira',
+  'tessa',
+  'martha',
+  'susan',
+  'ava',
+  'allison',
+  'sfg',
 ];
 
-const FEMALE_KEYWORDS = ['female', 'woman', 'girl', 'zira', 'samantha', 'victoria', 'karen', 'moira', 'tessa', 'martha'];
+const MALE_KEYWORDS = [
+  'male',
+  'man',
+  'david',
+  'daniel',
+  'arthur',
+  'aaron',
+  'fred',
+  'tom',
+  'ralph',
+  'alex',
+  'reed',
+  'bruce',
+  'george',
+  'guy',
+  'tpf',
+  'tpd',
+  'tpc',
+  'gbd',
+];
 
 const cleanText = (text: string) =>
   text
@@ -42,9 +148,34 @@ const cleanText = (text: string) =>
     .replace(/\s+([.,])/g, '$1')
     .trim();
 
-// ─── Web Speech helpers ───────────────────────────────────────────────────────
+const isFatherlyVoiceId = (value: string | null): value is FatherlyVoiceId =>
+  FATHERLY_VOICE_PRESETS.some(preset => preset.id === value);
 
-const loadVoices = (): Promise<SpeechSynthesisVoice[]> =>
+const getVoiceText = (voice: SpeechSynthesisVoice) =>
+  `${voice.name ?? ''} ${voice.voiceURI ?? ''} ${voice.lang ?? ''}`.toLowerCase();
+
+const isEnglishVoice = (voice: SpeechSynthesisVoice) =>
+  voice.lang?.toLowerCase().startsWith('en');
+
+const isLikelyFemaleVoice = (voice: SpeechSynthesisVoice) => {
+  const text = getVoiceText(voice);
+  return FEMALE_KEYWORDS.some(keyword => text.includes(keyword));
+};
+
+const hasMaleSignal = (voice: SpeechSynthesisVoice) => {
+  const text = getVoiceText(voice);
+  return MALE_KEYWORDS.some(keyword => text.includes(keyword));
+};
+
+const voiceMatchesTarget = (voice: SpeechSynthesisVoice, target: string) => {
+  const text = getVoiceText(voice);
+  return text.includes(target.toLowerCase());
+};
+
+const getPresetById = (id: FatherlyVoiceId) =>
+  FATHERLY_VOICE_PRESETS.find(preset => preset.id === id) ?? FATHERLY_VOICE_PRESETS[0];
+
+const loadWebVoices = (): Promise<SpeechSynthesisVoice[]> =>
   new Promise(resolve => {
     const immediate = window.speechSynthesis?.getVoices() ?? [];
     if (immediate.length > 0) return resolve(immediate);
@@ -53,6 +184,7 @@ const loadVoices = (): Promise<SpeechSynthesisVoice[]> =>
       window.speechSynthesis.removeEventListener('voiceschanged', handler);
       resolve(window.speechSynthesis.getVoices());
     };
+
     window.speechSynthesis?.addEventListener('voiceschanged', handler);
     setTimeout(() => {
       window.speechSynthesis?.removeEventListener('voiceschanged', handler);
@@ -60,111 +192,69 @@ const loadVoices = (): Promise<SpeechSynthesisVoice[]> =>
     }, 3000);
   });
 
-const pickBest = (voices: SpeechSynthesisVoice[], targets: string[]): SpeechSynthesisVoice | null => {
-  for (const t of targets) {
-    const tl = t.toLowerCase();
-    const hit = voices.find(v => v.name.toLowerCase() === tl || v.name.toLowerCase().includes(tl));
+const chooseVoice = (voices: SpeechSynthesisVoice[], preset: FatherlyVoicePreset, targets: string[]) => {
+  const englishVoices = voices.filter(isEnglishVoice);
+  const candidateVoices = englishVoices.length > 0 ? englishVoices : voices;
+
+  for (const target of targets) {
+    const hit = candidateVoices.find(voice => voiceMatchesTarget(voice, target) && !isLikelyFemaleVoice(voice));
     if (hit) return hit;
   }
-  return null;
+
+  const maleVoices = candidateVoices.filter(voice => hasMaleSignal(voice) && !isLikelyFemaleVoice(voice));
+  const neutralVoices = candidateVoices.filter(voice => !isLikelyFemaleVoice(voice));
+  const pool = maleVoices.length > 0 ? maleVoices : neutralVoices.length > 0 ? neutralVoices : candidateVoices;
+  return pool[preset.fallbackOffset % pool.length] ?? null;
 };
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+const nativeVoiceIndexes: Partial<Record<FatherlyVoiceId, number | undefined>> = {};
+let nativeVoices: SpeechSynthesisVoice[] | null = null;
 
-export const getCuratedVoices = async () => {
-  // Voice picker is only meaningful on web; native uses the system TTS voice.
-  if (Capacitor.isNativePlatform()) return [];
-
-  const all = await loadVoices();
-  const en = all.filter(v => v.lang.toLowerCase().startsWith('en'));
-  if (en.length === 0) return [];
-
-  const male =
-    pickBest(en, MALE_TARGETS) ??
-    en.find(v => !FEMALE_KEYWORDS.some(k => v.name.toLowerCase().includes(k))) ??
-    en[0];
-
-  const female =
-    pickBest(en, FEMALE_TARGETS) ??
-    en.find(v => v !== male);
-
-  const curated: { label: string; index: number; voice: SpeechSynthesisVoice; pitch: number; rate: number }[] = [];
-  if (male) curated.push({ label: "Father's Voice", index: all.indexOf(male), voice: male, pitch: 0.88, rate: 0.82 });
-  if (female && female !== male) curated.push({ label: "Mother's Voice", index: all.indexOf(female), voice: female, pitch: 1.05, rate: 0.82 });
-
-  return curated;
+const loadNativeVoices = async () => {
+  if (nativeVoices) return nativeVoices;
+  const result = await TextToSpeech.getSupportedVoices();
+  nativeVoices = result.voices;
+  return nativeVoices;
 };
 
-export const getPreferredVoiceIndex = async (): Promise<number | undefined> => {
-  const stored = await StorageService.get(PREFERRED_VOICE_KEY);
-  if (!stored) return undefined;
-  const n = parseInt(stored, 10);
-  return isNaN(n) ? undefined : n;
-};
+const resolveNativeVoiceIndex = async (preset: FatherlyVoicePreset): Promise<number | undefined> => {
+  if (preset.id in nativeVoiceIndexes) return nativeVoiceIndexes[preset.id];
 
-export const setPreferredVoice = async (index: number | undefined) => {
-  if (index === undefined) {
-    await StorageService.remove(PREFERRED_VOICE_KEY);
-  } else {
-    await StorageService.set(PREFERRED_VOICE_KEY, String(index));
-  }
-};
-
-// Tracks whether native speech is still "owned" by the current speak call.
-// Set to false by stopAudio() so the onEnded callback is suppressed after a manual stop.
-// Priority-ordered voice name fragments for picking the best male English voice.
-// Android Google TTS network voices are neural quality; local voices are cached neural.
-const NATIVE_MALE_VOICE_PRIORITY = [
-  'en-us-x-tpf-network',  // Google US English (neural, network)
-  'en-us-x-tpd-network',
-  'en-us-x-tpc-network',
-  'en-us-x-tpf-local',    // Google US English (neural, local/cached)
-  'en-us-x-tpd-local',
-  'en-gb-x-gbd-network',  // Google UK English Male (neural, network)
-  'en-gb-x-gbd-local',
-  // iOS Siri / premium voices
-  'siri_male_en-us',
-  'siri_male_en-gb',
-  'aaron',
-  'daniel',
-  'arthur',
-  'fred',
-];
-
-let nativeBestVoiceIndex: number | undefined = undefined;
-let nativeVoiceResolved = false;
-
-const resolveNativeVoice = async (): Promise<number | undefined> => {
-  if (nativeVoiceResolved) return nativeBestVoiceIndex;
-  nativeVoiceResolved = true;
   try {
-    const { voices } = await TextToSpeech.getSupportedVoices();
-    for (const fragment of NATIVE_MALE_VOICE_PRIORITY) {
-      const idx = voices.findIndex(v =>
-        v.name.toLowerCase().includes(fragment) ||
-        v.voiceURI.toLowerCase().includes(fragment)
-      );
-      if (idx !== -1) { nativeBestVoiceIndex = idx; return idx; }
-    }
-    // Fallback: any en-US voice, then any English voice
-    const usIdx = voices.findIndex(v => v.lang === 'en-US' || v.lang === 'en_US');
-    if (usIdx !== -1) { nativeBestVoiceIndex = usIdx; return usIdx; }
-    const enIdx = voices.findIndex(v => v.lang.startsWith('en'));
-    if (enIdx !== -1) { nativeBestVoiceIndex = enIdx; return enIdx; }
+    const voices = await loadNativeVoices();
+    const voice = chooseVoice(voices, preset, preset.nativeTargets);
+    const index = voice ? voices.indexOf(voice) : undefined;
+    nativeVoiceIndexes[preset.id] = index;
+    return index;
   } catch (e) {
     console.warn('[TTS] getSupportedVoices failed:', e);
+    nativeVoiceIndexes[preset.id] = undefined;
+    return undefined;
   }
-  return undefined;
+};
+
+export const getPreferredVoiceId = async (): Promise<FatherlyVoiceId> => {
+  const stored = await StorageService.get(PREFERRED_VOICE_KEY);
+  if (isFatherlyVoiceId(stored)) return stored;
+
+  // Drop the old numeric voice-index preference so the app uses the new male presets.
+  await StorageService.remove(LEGACY_PREFERRED_VOICE_KEY);
+  return DEFAULT_VOICE_ID;
+};
+
+export const setPreferredVoiceId = async (id: FatherlyVoiceId) => {
+  await StorageService.set(PREFERRED_VOICE_KEY, id);
+  await StorageService.remove(LEGACY_PREFERRED_VOICE_KEY);
 };
 
 let nativeSpeaking = false;
-
-// Web utterance ref for cancellation
+let nativeSpeechToken = 0;
 let activeUtterance: SpeechSynthesisUtterance | null = null;
 
 export const stopAudio = async (): Promise<void> => {
   if (Capacitor.isNativePlatform()) {
     nativeSpeaking = false;
+    nativeSpeechToken += 1;
     try { await TextToSpeech.stop(); } catch {}
   } else {
     if (!window.speechSynthesis) return;
@@ -177,69 +267,52 @@ export const playTextToSpeech = async (text: string, onEnded?: () => void): Prom
   const clean = cleanText(text);
   if (!clean) { onEnded?.(); return; }
 
-  // ── Native path (Android / iOS) ──────────────────────────────────────────
+  const preset = getPresetById(await getPreferredVoiceId());
+
   if (Capacitor.isNativePlatform()) {
     await stopAudio();
     nativeSpeaking = true;
-    const voiceIndex = await resolveNativeVoice();
+    const speechToken = ++nativeSpeechToken;
+    const voiceIndex = await resolveNativeVoiceIndex(preset);
+
     try {
       await TextToSpeech.speak({
         text: clean,
         lang: 'en-US',
-        rate: 0.9,      // natural pace — not dragging
-        pitch: 0.9,     // slightly warm/deep without sounding synthetic
+        rate: preset.rate,
+        pitch: preset.pitch,
         volume: 1.0,
         category: 'playback',
         queueStrategy: QueueStrategy.Flush,
         ...(voiceIndex !== undefined ? { voice: voiceIndex } : {}),
       });
-      // Only fire the callback if stopAudio() wasn't called while we were speaking
-      if (nativeSpeaking) onEnded?.();
+
+      if (nativeSpeaking && nativeSpeechToken === speechToken) onEnded?.();
     } catch (e: any) {
-      // 'interrupted' fires when stop() is called — that's expected, not an error
       if (e?.message !== 'interrupted') {
         console.error('[TTS] native error:', e);
       }
-      if (nativeSpeaking) onEnded?.();
+      if (nativeSpeaking && nativeSpeechToken === speechToken) onEnded?.();
     } finally {
-      nativeSpeaking = false;
+      if (nativeSpeechToken === speechToken) nativeSpeaking = false;
     }
     return;
   }
 
-  // ── Web Speech API fallback (browser / dev) ──────────────────────────────
   if (!window.speechSynthesis) { onEnded?.(); return; }
 
-  // Cancel any ongoing speech and let the engine settle before speaking again
   window.speechSynthesis.cancel();
   activeUtterance = null;
-  await new Promise(r => setTimeout(r, 50));
+  await new Promise(resolve => setTimeout(resolve, 50));
 
-  const all = await loadVoices();
-  const preferredIdx = await getPreferredVoiceIndex();
-
-  let voice: SpeechSynthesisVoice | null = null;
-  let pitch = 0.88;
-  let rate = 0.82;
-
-  if (preferredIdx !== undefined && all[preferredIdx]) {
-    voice = all[preferredIdx];
-  } else {
-    const curated = await getCuratedVoices();
-    if (curated.length > 0 && all[curated[0].index]) {
-      voice = all[curated[0].index];
-      pitch = curated[0].pitch;
-      rate = curated[0].rate;
-    } else {
-      voice = all.find(v => v.lang.startsWith('en')) ?? null;
-    }
-  }
-
+  const voices = await loadWebVoices();
+  const voice = chooseVoice(voices, preset, preset.webTargets);
   const utterance = new SpeechSynthesisUtterance(clean);
+
   activeUtterance = utterance;
   if (voice) utterance.voice = voice;
-  utterance.pitch = pitch;
-  utterance.rate = rate;
+  utterance.pitch = preset.pitch;
+  utterance.rate = preset.rate;
   utterance.volume = 1.0;
 
   return new Promise<void>(resolve => {

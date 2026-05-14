@@ -181,13 +181,14 @@ export default function SettingsScreen() {
   // Helper components moved outside to prevent unmounting bugs
 
   return (
-    <div className={`h-full overflow-y-auto pb-24 safe-area-top transition-colors duration-300 ${theme === 'dark' ? 'bg-[#0f172a] text-gray-100' : 'bg-slate-50 text-gray-900'}`}>
+    <div className={`h-full flex flex-col safe-area-top transition-colors duration-300 ${theme === 'dark' ? 'bg-[#0f172a] text-gray-100' : 'bg-slate-50 text-gray-900'}`}>
       
-      {/* Sticky Header */}
-      <div className={`sticky top-0 z-10 px-6 py-4 backdrop-blur-xl border-b transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
+      {/* Fixed Header */}
+      <div className={`flex-shrink-0 px-6 py-4 backdrop-blur-xl border-b transition-colors duration-300 z-10 ${theme === 'dark' ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
         <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Settings</h1>
       </div>
 
+      <div className="flex-1 overflow-y-auto pb-24">
       <motion.div 
         variants={containerVariants}
         initial="hidden"
@@ -361,6 +362,8 @@ export default function SettingsScreen() {
         {/* Footer spacing */}
         <div className="h-8" />
       </motion.div>
+
+      </div>{/* end scrollable wrapper */}
 
       {/* Edit Profile Modal */}
       <AnimatePresence>

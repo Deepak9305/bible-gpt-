@@ -11,6 +11,7 @@ export interface FatherlyVoicePreset {
   id: FatherlyVoiceId;
   label: string;
   description: string;
+  lang: string;
   rate: number;
   pitch: number;
   webTargets: string[];
@@ -24,9 +25,11 @@ export const FATHERLY_VOICE_PRESETS: FatherlyVoicePreset[] = [
     id: 'father-gabriel',
     label: 'Father Gabriel',
     description: 'Rich, warm, and reassuring',
-    rate: 0.84,
-    pitch: 0.88,
+    lang: 'en-GB',
+    rate: 0.87,
+    pitch: 0.92,
     webTargets: [
+      'Google UK English Male',
       'Microsoft George',
       'Microsoft Richard',
       'Daniel',
@@ -56,25 +59,29 @@ export const FATHERLY_VOICE_PRESETS: FatherlyVoicePreset[] = [
     id: 'father-thomas',
     label: 'Father Thomas',
     description: 'Gentle, calm, and pastoral',
-    rate: 0.82,
-    pitch: 0.9,
+    lang: 'en-US',
+    rate: 0.86,
+    pitch: 0.93,
     webTargets: [
-      'Microsoft Mark',
-      'Google US English',
       'en-US-Neural2-J',
+      'Google US English',
+      'Microsoft Mark',
+      'Microsoft David',
+      'Alex',
       'Fred',
       'Tom',
-      'Ralph',
     ],
     nativeTargets: [
       'en-us-x-tpd-network',
       'en-us-x-tpd-local',
+      'en-us-x-tpf-network',
+      'en-us-x-tpf-local',
       'en-gb-x-gbd-network',
       'en-gb-x-gbd-local',
       'aaron',
+      'alex',
       'fred',
       'tom',
-      'ralph',
     ],
     fallbackOffset: 1,
   },
@@ -82,12 +89,15 @@ export const FATHERLY_VOICE_PRESETS: FatherlyVoicePreset[] = [
     id: 'father-matthew',
     label: 'Father Matthew',
     description: 'Clear, confident, and uplifting',
-    rate: 0.9,
-    pitch: 0.95,
+    lang: 'en-US',
+    rate: 0.91,
+    pitch: 0.98,
     webTargets: [
+      'en-US-Neural2-D',
+      'en-US-Neural2-I',
       'Microsoft Guy',
       'Microsoft George',
-      'Google UK English Male',
+      'Google US English',
       'en-GB-Neural2-B',
       'Arthur',
       'Reed',
@@ -95,6 +105,8 @@ export const FATHERLY_VOICE_PRESETS: FatherlyVoicePreset[] = [
     nativeTargets: [
       'en-us-x-tpc-network',
       'en-us-x-tpc-local',
+      'en-us-x-tpd-network',
+      'en-us-x-tpd-local',
       'en-au-x-aud-network',
       'en-au-x-aud-local',
       'george',
@@ -150,6 +162,7 @@ const MALE_KEYWORDS = [
 const cleanText = (text: string) =>
   text
     .replace(/[*_>#`]/g, '')
+    .replace(/\{[^}]*\}/g, '')
     .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
     .replace(/\|/g, ',')
     .replace(/\[|\]/g, ' ')
@@ -293,7 +306,7 @@ export const playTextToSpeech = async (text: string, onEnded?: () => void): Prom
     try {
       await TextToSpeech.speak({
         text: clean,
-        lang: 'en-US',
+        lang: preset.lang,
         rate: preset.rate,
         pitch: preset.pitch,
         volume: 1.0,
@@ -326,6 +339,7 @@ export const playTextToSpeech = async (text: string, onEnded?: () => void): Prom
 
   activeUtterance = utterance;
   if (voice) utterance.voice = voice;
+  utterance.lang = preset.lang;
   utterance.pitch = preset.pitch;
   utterance.rate = preset.rate;
   utterance.volume = 1.0;

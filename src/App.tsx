@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { ProfileProvider, useProfile } from './context/ProfileContext';
 import Layout from './components/Layout';
 
 import SplashScreen from './components/SplashScreen';
@@ -32,7 +32,7 @@ function LoadingFallback() {
 
 function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
-  const { user, isLoading } = useAuth();
+  const { profile, isLoading } = useProfile();
   const [isInitializing, setIsInitializing] = useState(true);
   const [isAppReady, setIsAppReady] = useState(false);
 
@@ -48,11 +48,11 @@ function AppContent() {
   }, []);
 
   // Always render splash first — never return null which would show white
-  // The splash only exits once BOTH auth and native init are done
+  // The splash only exits once BOTH local profile and native init are done
   const splashReady = !isLoading && !isInitializing;
 
   // STABLE reference — must not change on every render or SplashScreen's
-  // 2-second timer will be cleared & restarted on each auth/init state update.
+  // 2-second timer will be cleared & restarted on each profile/init state update.
   const handleSplashComplete = useCallback(() => {
     setShowSplash(false);
     setIsAppReady(true);
@@ -69,8 +69,7 @@ function AppContent() {
       ) : (
         <Suspense key="main-app" fallback={<LoadingFallback />}>
           <Routes>
-            {/* Auth Guarded Routes */}
-            {!user ? (
+            {!profile ? (
               <>
                 <Route path="/onboarding" element={<OnboardingScreen />} />
                 <Route path="*" element={<Navigate to="/onboarding" replace />} />
@@ -99,11 +98,11 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
+      <ProfileProvider>
         <Router>
           <AppContent />
         </Router>
-      </AuthProvider>
+      </ProfileProvider>
     </ThemeProvider>
   );
 }

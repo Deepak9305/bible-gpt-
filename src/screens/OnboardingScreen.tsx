@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useAuth } from '../context/AuthContext';
+import { useProfile } from '../context/ProfileContext';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, ArrowRight, Loader2, Heart } from 'lucide-react';
 
 export default function OnboardingScreen() {
   const navigate = useNavigate();
-  const { completeOnboarding } = useAuth();
+  const { completeOnboarding } = useProfile();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +24,7 @@ export default function OnboardingScreen() {
     // Add a slight artificial delay for the "spiritual" feel
     await new Promise(resolve => setTimeout(resolve, 800));
     await completeOnboarding(name);
-    // After completeOnboarding, AuthContext updates `user`, 
+    // After completeOnboarding, ProfileContext updates `profile`,
     // which automatically redirects to '/' via App.tsx routing
   };
 

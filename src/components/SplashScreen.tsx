@@ -5,7 +5,7 @@ import { BookOpen } from 'lucide-react';
 interface SplashScreenProps {
   onComplete: () => void;
   key?: string;
-  /** When true the splash has permission to exit. Prevents early close while auth/native init is pending. */
+  /** When true the splash has permission to exit. Prevents early close while profile/native init is pending. */
   isReady?: boolean;
 }
 

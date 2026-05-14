@@ -1,32 +1,24 @@
-# Bible Nova Hybrid Architecture
+# Bible Nova Architecture
 
-Bible Nova is designed with a **"Hybrid-Hybrid"** approach to ensure a seamless spiritual experience whether you are online or offline. This document outlines how the application manages local data and web-related functions.
+Bible Nova is currently a local-first app with one serverless AI endpoint.
 
-## 🏛️ Design Philosophy: "Local for Wisdom, Web for Guidance"
+## Local App
 
-The application bifurcates its logic into two primary layers:
+- The user profile is stored locally.
+- Bookmarks, prayer journal entries, settings, usage counters, and reading progress are stored on the device.
+- The bundled KJV Bible supports offline reading and fallback behavior.
+- Search runs against the local Bible data after it is loaded.
 
-### 1. Local Wisdom (Offline Capable)
-To ensure the Word of God is always accessible, the core Bible reading experience is entirely local.
-*   **Bible Storage**: The full King James Version (KJV) is stored in a compressed JSON format within the app bundle.
-*   **Bible Reading**: Browsing books, chapters, and verses does not require an internet connection.
-*   **Search**: A high-performance, localized search engine allows you to find scriptures offline.
-*   **Bookmarks & Journal**: Your saved verses and prayer logs are stored securely on your device.
-*   **Daily Verse Fallback**: If the internet is unavailable, the app automatically selects a random seed of wisdom from the local Bible.
+## Online Features
 
-### 2. Web Guidance (Online Enhanced)
-Features that require dynamic processing or AI wisdom utilize secure web services.
-*   **Onboarding**: The initial setup process is handled locally within the application.
-*   **Father AI Chat**: Spiritual guidance, counseling, and deep theological explanations are powered by our AI proxy.
-*   **Verse Reflections**: Every daily verse receives a unique, AI-generated reflection to help you apply the Word to your life.
-*   **Audio (TTS)**: While the logic is local, the high-quality synthesis of "Father's Voice" often requires system-level web-connected voice modules.
+- Father AI chat calls `/api/chat`, which uses the server-side `GROQ_API_KEY`.
+- Daily verse and chapter loading can use `bible-api.com` when online, with local KJV fallback.
+- AdMob, notifications, speech recognition, text-to-speech, and sharing are native integrations.
 
-## 🔌 Technical Details
+## Not Included Yet
 
-*   **Framework**: Built with React, Vite, and Capacitor.
-*   **Data Format**: JSON-based Bible dataset optimized for mobile memory.
-*   **AI Engine**: Powered by Groq/LLaMA 3.1 for high-speed, compassionate responses.
-*   **Storage**: Capacitor Preferences and IndexedDB for persistent local history.
-
----
-*Bible Nova: Your sanctuary, always with you.*
+- Premium subscriptions
+- Real user authentication
+- Cloud sync
+- Supabase database or edge functions
+- Server-side usage quota enforcement

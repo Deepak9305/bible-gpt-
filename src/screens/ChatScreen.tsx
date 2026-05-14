@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
+import { useProfile } from '../context/ProfileContext';
 import { sendMessageStream } from '../services/aiService';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
 import { checkDailyLimit, incrementDailyUsage } from '../services/statsService';
@@ -90,7 +90,7 @@ const MessageItem = React.memo(({
 
 export default function ChatScreen() {
   const { theme } = useTheme();
-  const { user } = useAuth();
+  const { profile } = useProfile();
   const location = useLocation();
   const [messages, setMessages] = useState<Message[]>([
     { id: '1', role: 'assistant', content: 'Peace be with you, my child. How may I guide you today?' }
@@ -194,7 +194,7 @@ export default function ChatScreen() {
       await sendMessageStream(
         cleanText,
         history,
-        user?.preferences,
+        profile?.preferences,
         (chunk) => {
           fullContent += chunk;
           if (rafId !== null) cancelAnimationFrame(rafId);

@@ -20,46 +20,40 @@ export default function PrivacyPolicyScreen() {
           <h2>Privacy Policy</h2>
           <p className="text-sm opacity-70">Last updated: {new Date().toLocaleDateString()}</p>
 
-          <h3>1. Data Storage</h3>
+          <h3>1. Local Data</h3>
           <p>
-            <strong>Your data belongs to you.</strong> Bible Nova operates on a "local-first" basis.
-            All your bookmarks, prayer journals, settings, and reading history are stored <strong>locally on your device</strong>.
-            We do not have access to your personal data, and it is never uploaded to our servers.
+            Bible Nova stores your profile, bookmarks, prayer journal, settings, and reading progress locally on your device.
+            The app does not currently provide user accounts or cloud sync.
           </p>
 
           <h3>2. AI Interactions</h3>
           <p>
-            When you chat with Father AI, your messages are processed by Google's Gemini API to generate responses.
-            These interactions are ephemeral and are not used by us to build personal profiles or for advertising purposes.
+            When you chat with Father AI, your message and recent conversation context are sent to our AI endpoint so a response can be generated through Groq.
+            Do not include passwords, financial information, or other sensitive personal details in chat messages.
           </p>
 
           <h3>3. Third-Party Services</h3>
-          <p>
-            We use the following trusted third-party services to provide functionality:
-          </p>
+          <p>We use third-party services to provide core app features:</p>
           <ul>
-            <li><strong>Google Gemini API:</strong> For generating spiritual guidance and chat responses.</li>
-            <li><strong>Bible API:</strong> For retrieving scripture verses (King James Version).</li>
+            <li><strong>Groq:</strong> Generates Father AI chat responses.</li>
+            <li><strong>Bible API:</strong> Retrieves some scripture content when online; bundled KJV content is used for offline fallback.</li>
+            <li><strong>Google AdMob:</strong> Shows ads in the mobile app.</li>
+            <li><strong>Device services:</strong> Enable optional features such as speech recognition, text-to-speech, sharing, and notifications.</li>
           </ul>
 
           <h3>4. No Account Required</h3>
           <p>
-            You do not need to create an account to use Bible Nova. Your "profile" (name and avatar) is stored only on your device.
-            If you delete the app or clear your browser data, this information will be lost as we do not keep backups.
+            You do not need to create an account to use Bible Nova. If you delete the app or clear app data, local information may be lost.
           </p>
 
           <h3>5. Spiritual Guidance Disclaimer</h3>
           <p>
-            Father AI is designed for <strong>spiritual guidance and reflective conversation only</strong>.
-            It is not a substitute for professional medical, psychological, or mental health services.
-            If you are experiencing a mental health crisis or medical emergency, please seek help from
-            a qualified professional or emergency services immediately.
+            Father AI is designed for spiritual guidance and reflective conversation only.
+            It is not a substitute for professional medical, psychological, legal, financial, or emergency services.
           </p>
 
           <h3>6. Contact</h3>
-          <p>
-            If you have questions about this policy, please contact us through the app support channels.
-          </p>
+          <p>If you have questions about this policy, please contact us through the app support channels.</p>
         </div>
       </div>
     </div>

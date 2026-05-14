@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { getBooks, getChapter, Verse, loadFullBible, isBibleReady } from '../services/bibleService';
+import { getChapter, Verse, loadFullBible, isBibleReady } from '../services/bibleService';
 import { BIBLE_BOOKS } from '../data/books';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
-import { ChevronRight, ArrowLeft, Bookmark, Volume2, VolumeX, Loader2, Crown, Sparkles, Search, PlayCircle, PauseCircle, DownloadCloud, Share2 } from 'lucide-react';
-import { incrementVersesRead, getStats } from '../services/statsService';
+import { ArrowLeft, Bookmark, Volume2, VolumeX, Loader2, Search, PlayCircle, PauseCircle, Share2 } from 'lucide-react';
+import { incrementVersesRead } from '../services/statsService';
 import { motion, AnimatePresence } from 'motion/react';
 
 import { Share } from '@capacitor/share';

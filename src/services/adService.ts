@@ -1,4 +1,4 @@
-import { AdMob, BannerAdPosition, BannerAdSize, BannerAdPluginEvents, AdMobBannerSize } from '@capacitor-community/admob';
+import { AdMob, BannerAdPosition, BannerAdSize } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
 
 const AD_UNITS = {
@@ -9,7 +9,6 @@ const AD_UNITS = {
 class AdService {
     private static instance: AdService;
     private isBannerVisible = false;
-    private intendedBannerState = false;
 
     private constructor() {}
 
@@ -21,12 +20,10 @@ class AdService {
     }
 
     public async showBanner() {
-        this.intendedBannerState = true;
         await this.showBannerInternal();
     }
 
     public async hideBanner() {
-        this.intendedBannerState = false;
         await this.hideBannerInternal();
     }
 

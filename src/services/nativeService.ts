@@ -1,30 +1,19 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { StatusBar } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
-import { initPurchases } from './IAPService';
 import { AppTrackingTransparency } from '@capgo/capacitor-app-tracking-transparency';
 import { AdMob } from '@capacitor-community/admob';
 
 export const initializeNativeServices = async () => {
   try {
-    // NOTE: initStats() is intentionally NOT called here.
-    // AuthContext calls setUserIdForStats(userId) after auth resolves,
-    // which internally calls initStats() with the correct scoped user ID.
-
-    // 1.1 Initialize AdMob only on native to avoid web bridge errors
     if (Capacitor.isNativePlatform()) {
       await AdMob.initialize({ initializeForTesting: false });
       await AdMob.removeBanner().catch(() => { });
     }
 
-    // Initialize in-app purchases AFTER AdMob.
-    await initPurchases();
-
     if (Capacitor.isNativePlatform()) {
-      // 0. Hide Status Bar (Immersive Mode)
       await StatusBar.hide().catch(() => { });
 
-      // 1.5 Request App Tracking Transparency (iOS)
       if (Capacitor.getPlatform() === 'ios') {
         try {
           const attStatus = await AppTrackingTransparency.getStatus();
@@ -36,7 +25,6 @@ export const initializeNativeServices = async () => {
         }
       }
 
-      // 3. Request Notification Permissions & Schedule
       try {
         const permStatus = await LocalNotifications.requestPermissions();
         if (permStatus.display === 'granted') {
@@ -62,7 +50,6 @@ export const initializeNativeServices = async () => {
 
 
 const scheduleDailyDevotional = async () => {
-  // Clear existing to avoid duplicates in the 1-7 range
   const idsToCancel = [1, 2, 3, 4, 5, 6, 7];
   await LocalNotifications.cancel({ notifications: idsToCancel.map(id => ({ id })) });
 
@@ -82,9 +69,7 @@ const scheduleDailyDevotional = async () => {
       id: msg.id,
       title: msg.title,
       body: msg.body,
-      // 'on' scheduling fires at the given weekday/time each week when repeats: true
       schedule: { on: { weekday: msg.weekday, hour: 8, minute: 0 }, repeats: true },
-      // ic_stat_notify is the conventional small notification icon name in Android projects
       smallIcon: 'ic_stat_notify',
       channelId: 'devotional_channel',
     }))

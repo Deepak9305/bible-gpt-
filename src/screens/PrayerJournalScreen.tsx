@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { Plus, Trash2, CheckCircle2, Circle, Calendar, Tag, Filter, Share2 } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Circle, Calendar, Tag, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { incrementPrayers } from '../services/statsService';
 import { StorageService } from '../services/storageService';

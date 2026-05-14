@@ -1,20 +1,27 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Bible Nova
 
-# Run and deploy your AI Studio app
+Bible Nova is a local-first Bible companion built with React, Vite, and Capacitor.
 
-This contains everything you need to run your app locally.
+## Current Scope
 
-View your app in AI Studio: https://ai.studio/apps/c800991c-d03a-4c84-9239-c17ee755e9fe
+- Local onboarding profile
+- Offline-capable KJV Bible reading and search
+- Local bookmarks, prayer journal, and usage stats
+- Father AI chat through the `/api/chat` serverless route
+- Native text-to-speech, speech recognition, sharing, notifications, and AdMob
+
+There is currently no premium subscription, no real authentication, and no Supabase/cloud-sync backend.
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
-
 1. Install dependencies:
    `npm install`
-2. Set the `GROQ_API_KEY` in .env.local to your Groq API key
+2. Set `GROQ_API_KEY` in `.env` or your hosting environment.
 3. Run the app:
    `npm run dev`
+
+## Useful Commands
+
+- `npm run dev`
+- `npm run lint`
+- `npm run build`

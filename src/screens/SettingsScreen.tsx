@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
-import { getStats } from '../services/statsService';
-import { Moon, Sun, Trash2, ChevronRight, LogOut, Edit2, X, Check, UserX, Sparkles, Volume2, Play, Square, Shield, FileText } from 'lucide-react';
+import { useProfile } from '../context/ProfileContext';
+import { Moon, Sun, Trash2, ChevronRight, LogOut, Edit2, X, Check, Sparkles, Volume2, Play, Square, Shield, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { StorageService } from '../services/storageService';
@@ -62,21 +61,16 @@ const CustomToggle = ({ checked, onChange, activeColor = 'bg-blue-500' }: any) =
 
 export default function SettingsScreen() {
   const { theme, toggleTheme, highContrastNav, toggleHighContrastNav } = useTheme();
-  const { user, updateProfile, deleteAccount } = useAuth();
-  const [stats, setStats] = useState(getStats());
-
-  React.useEffect(() => {
-    setStats(getStats());
-  }, []);
+  const { profile, updateProfile, resetProfile } = useProfile();
 
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
-  const [editName, setEditName] = useState(user?.name || '');
-  const [editAvatar, setEditAvatar] = useState(user?.avatar || '👤');
-  const [isPersonalizationEnabled, setIsPersonalizationEnabled] = useState(user?.preferences?.isPersonalizationEnabled ?? true);
-  const [editLifeStage, setEditLifeStage] = useState(user?.preferences?.lifeStage || '');
-  const [editSpiritualFocus, setEditSpiritualFocus] = useState(user?.preferences?.spiritualFocus || '');
-  const [editTone, setEditTone] = useState<any>(user?.preferences?.tone || 'pastoral');
-  const [confirmAction, setConfirmAction] = useState<{ type: 'delete' | 'clear' | 'restart', title: string, message: string, buttonText: string, buttonStyle: string } | null>(null);
+  const [editName, setEditName] = useState(profile?.name || '');
+  const [editAvatar, setEditAvatar] = useState(profile?.avatar || '👤');
+  const [isPersonalizationEnabled, setIsPersonalizationEnabled] = useState(profile?.preferences?.isPersonalizationEnabled ?? true);
+  const [editLifeStage, setEditLifeStage] = useState(profile?.preferences?.lifeStage || '');
+  const [editSpiritualFocus, setEditSpiritualFocus] = useState(profile?.preferences?.spiritualFocus || '');
+  const [editTone, setEditTone] = useState<any>(profile?.preferences?.tone || 'pastoral');
+  const [confirmAction, setConfirmAction] = useState<{ type: 'clear' | 'restart', title: string, message: string, buttonText: string, buttonStyle: string } | null>(null);
 
   const [selectedVoiceId, setSelectedVoiceId] = useState<FatherlyVoiceId>(FATHERLY_VOICE_PRESETS[0].id);
   const [previewingVoiceId, setPreviewingVoiceId] = useState<FatherlyVoiceId | null>(null);
@@ -126,27 +120,14 @@ export default function SettingsScreen() {
     });
   };
 
-  const handleDeleteAccount = () => {
-    setConfirmAction({
-      type: 'delete',
-      title: 'Delete Account',
-      message: 'Are you sure you want to completely delete your account? This will permanently remove all your data from our servers.',
-      buttonText: 'Delete Account',
-      buttonStyle: 'bg-red-600 hover:bg-red-700 text-white'
-    });
-  };
-
   const executeConfirmAction = async () => {
-    if (confirmAction?.type === 'delete') {
-      await deleteAccount();
-    } else if (confirmAction?.type === 'clear') {
+    if (confirmAction?.type === 'clear') {
       // Clear local data only — does NOT delete the account
       await StorageService.clear();
       window.location.reload();
     } else if (confirmAction?.type === 'restart') {
       // Restart journey: wipe local storage and return to onboarding
-      await StorageService.clear();
-      await deleteAccount();
+      await resetProfile();
     }
     setConfirmAction(null);
   };
@@ -162,8 +143,8 @@ export default function SettingsScreen() {
   };
 
   const openEditProfile = () => {
-    setEditName(user?.name || '');
-    setEditAvatar(user?.avatar || '👤');
+    setEditName(profile?.name || '');
+    setEditAvatar(profile?.avatar || '👤');
     setIsEditProfileOpen(true);
   };
 
@@ -203,14 +184,14 @@ export default function SettingsScreen() {
           <div className={`relative p-6 rounded-3xl backdrop-blur-sm border shadow-lg flex items-center justify-between ${theme === 'dark' ? 'bg-slate-800/90 border-slate-700/50' : 'bg-white/90 border-white shadow-blue-900/5'}`}>
             <div className="flex items-center gap-5">
               <div className={`w-20 h-20 rounded-full flex items-center justify-center text-4xl shadow-inner border-4 ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-slate-100 border-white'}`}>
-                {user?.avatar?.startsWith('http') ? (
-                  <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover rounded-full" />
+                {profile?.avatar?.startsWith('http') ? (
+                  <img src={profile.avatar} alt="Avatar" className="w-full h-full object-cover rounded-full" />
                 ) : (
-                  user?.avatar || '👤'
+                  profile?.avatar || '👤'
                 )}
               </div>
               <div>
-                <h2 className="text-2xl font-bold">{user?.name || 'Beloved'}</h2>
+                <h2 className="text-2xl font-bold">{profile?.name || 'Beloved'}</h2>
                 <p className="text-sm opacity-60 mt-1">Faithful Voyager</p>
               </div>
             </div>
@@ -251,13 +232,13 @@ export default function SettingsScreen() {
               subtitle="Tailored spiritual guidance"
               rightElement={
                 <CustomToggle 
-                  checked={user?.preferences?.isPersonalizationEnabled ?? true} 
+                  checked={profile?.preferences?.isPersonalizationEnabled ?? true} 
                   onChange={() => {
-                    const currentPrefs = user?.preferences || { isPersonalizationEnabled: true };
+                    const currentPrefs = profile?.preferences || { isPersonalizationEnabled: true };
                     const newVal = !(currentPrefs.isPersonalizationEnabled ?? true);
                     // Keep local modal state in sync with the quick-toggle
                     setIsPersonalizationEnabled(newVal);
-                    updateProfile(user?.name || 'Beloved', user?.avatar, {
+                    updateProfile(profile?.name || 'Beloved', profile?.avatar, {
                       ...currentPrefs,
                       isPersonalizationEnabled: newVal
                     });
@@ -327,16 +308,16 @@ export default function SettingsScreen() {
           </div>
         </motion.div>
 
-        {/* Account & Data Section */}
+        {/* Profile & Data Section */}
         <motion.div variants={itemVariants}>
-          <h3 className="text-sm font-bold uppercase tracking-widest opacity-50 mb-3 px-4">Account & Data</h3>
+          <h3 className="text-sm font-bold uppercase tracking-widest opacity-50 mb-3 px-4">Profile & Data</h3>
           <div className={`rounded-3xl overflow-hidden shadow-sm border ${theme === 'dark' ? 'bg-slate-800/80 border-slate-700/50' : 'bg-white border-slate-200'}`}>
             
             <SettingItem
               icon={LogOut}
               iconColor={theme === 'dark' ? 'bg-orange-500/20 text-orange-400' : 'bg-orange-100 text-orange-600'}
               title="Restart Journey"
-              subtitle="Log out and return to onboarding"
+              subtitle="Reset your local profile"
               onClick={handleLogout}
             />
 
@@ -348,16 +329,6 @@ export default function SettingsScreen() {
               onClick={clearData}
               destructive
             />
-
-            <SettingItem
-              icon={UserX}
-              iconColor={theme === 'dark' ? 'bg-rose-500/20 text-rose-400' : 'bg-rose-100 text-rose-700'}
-              title="Delete Account"
-              subtitle="Permanently erase your account"
-              onClick={handleDeleteAccount}
-              destructive
-            />
-
           </div>
         </motion.div>
 
@@ -549,13 +520,11 @@ export default function SettingsScreen() {
               className={`relative w-full max-w-sm p-6 rounded-3xl shadow-2xl text-center ${theme === 'dark' ? 'bg-slate-800 border border-slate-700' : 'bg-white'}`}
             >
               <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
-                confirmAction.type === 'delete'
-                  ? 'bg-red-100 text-red-500 dark:bg-red-900/30 dark:text-red-400'
-                  : confirmAction.type === 'clear'
+                confirmAction.type === 'clear'
                   ? 'bg-red-100 text-red-400 dark:bg-red-900/30 dark:text-red-300'
                   : 'bg-orange-100 text-orange-500 dark:bg-orange-900/30 dark:text-orange-400'
               }`}>
-                {confirmAction.type === 'delete' ? <UserX size={32} /> : confirmAction.type === 'restart' ? <LogOut size={32} /> : <Trash2 size={32} />}
+                {confirmAction.type === 'restart' ? <LogOut size={32} /> : <Trash2 size={32} />}
               </div>
               <h3 className="text-xl font-bold mb-2">{confirmAction.title}</h3>
               <p className={`mb-8 text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>{confirmAction.message}</p>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
+import { useProfile } from '../context/ProfileContext';
 import { MessageSquare, BookOpen, Bookmark, Volume2, VolumeX, Loader2, Heart, Shield, Sun, Lightbulb, PenLine, Share2, Flame, Trophy, Rocket } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { POPULAR_VERSES } from '../data/popularVerses';
@@ -23,7 +23,7 @@ const MOODS = [
 
 export default function HomeScreen() {
   const { theme } = useTheme();
-  const { user } = useAuth();
+  const { profile } = useProfile();
   const navigate = useNavigate();
   const [dailyVerse, setDailyVerse] = useState<{ text: string; reference: string } | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -195,7 +195,7 @@ export default function HomeScreen() {
       >
         <motion.header variants={itemVariants} className="mb-8 flex justify-between items-end">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Welcome, {user?.name || 'Beloved'}</h1>
+            <h1 className="text-3xl font-bold mb-2">Welcome, {profile?.name || 'Beloved'}</h1>
             <p className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
               Your spiritual companion is ready.
             </p>

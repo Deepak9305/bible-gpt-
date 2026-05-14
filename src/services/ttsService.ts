@@ -23,7 +23,7 @@ export interface FatherlyVoicePreset {
 export const FATHERLY_VOICE_PRESETS: FatherlyVoicePreset[] = [
   {
     id: 'father-gabriel',
-    label: 'Father Gabriel',
+    label: 'Voice 1',
     description: 'Rich, warm, and reassuring',
     lang: 'en-GB',
     rate: 0.87,
@@ -57,7 +57,7 @@ export const FATHERLY_VOICE_PRESETS: FatherlyVoicePreset[] = [
   },
   {
     id: 'father-thomas',
-    label: 'Father Thomas',
+    label: 'Voice 2',
     description: 'Gentle, calm, and pastoral',
     lang: 'en-US',
     rate: 0.86,
@@ -87,7 +87,7 @@ export const FATHERLY_VOICE_PRESETS: FatherlyVoicePreset[] = [
   },
   {
     id: 'father-matthew',
-    label: 'Father Matthew',
+    label: 'Voice 3',
     description: 'Clear, confident, and uplifting',
     lang: 'en-US',
     rate: 0.91,

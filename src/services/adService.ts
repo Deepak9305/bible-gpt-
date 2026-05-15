@@ -19,7 +19,8 @@ const AD_UNITS = {
     android: import.meta.env.VITE_ADMOB_ANDROID_BANNER_ID || DEFAULT_BANNER_AD_UNITS.android,
 };
 
-export const BANNER_BOTTOM_MARGIN = 70;
+export const COMPACT_BANNER_HEIGHT = 50;
+export const BANNER_BOTTOM_MARGIN = 64;
 
 const LOAD_TIMEOUT_MS = 20_000;
 const INITIAL_RETRY_DELAY_MS = 15_000;
@@ -192,7 +193,7 @@ class AdService {
 
             await AdMob.showBanner({
                 adId,
-                adSize: BannerAdSize.ADAPTIVE_BANNER,
+                adSize: BannerAdSize.BANNER,
                 position: BannerAdPosition.BOTTOM_CENTER,
                 margin: BANNER_BOTTOM_MARGIN,
                 isTesting: SHOULD_USE_TEST_ADS,

@@ -1,19 +1,32 @@
 import React, { useEffect } from 'react';
 import { adService } from '../services/adService';
 import { Capacitor } from '@capacitor/core';
+import type { AdMobBannerSize } from '@capacitor-community/admob';
 
-export const BannerAd: React.FC<{ shouldShow?: boolean }> = ({ shouldShow = true }) => {
+interface BannerAdProps {
+  shouldShow?: boolean;
+  onSizeChange?: (size: AdMobBannerSize) => void;
+}
+
+export const BannerAd: React.FC<BannerAdProps> = ({ shouldShow = true, onSizeChange }) => {
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform() || !onSizeChange) return;
+
+    return adService.onBannerSizeChange(onSizeChange);
+  }, [onSizeChange]);
+
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
+
     if (shouldShow) {
-      adService.showBanner();
+      void adService.showBanner();
     } else {
-      adService.hideBanner();
+      void adService.hideBanner();
     }
   }, [shouldShow]);
 
   useEffect(() => {
-    return () => { adService.hideBanner(); };
+    return () => { void adService.hideBanner(); };
   }, []);
 
   return null;

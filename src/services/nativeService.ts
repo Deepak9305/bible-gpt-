@@ -2,49 +2,44 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { StatusBar } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
 import { AppTrackingTransparency } from '@capgo/capacitor-app-tracking-transparency';
-import { AdMob } from '@capacitor-community/admob';
+import { adService } from './adService';
 
 export const initializeNativeServices = async () => {
+  if (!Capacitor.isNativePlatform()) return;
+
+  await StatusBar.hide().catch(() => { });
+
+  if (Capacitor.getPlatform() === 'ios') {
+    try {
+      const attStatus = await AppTrackingTransparency.getStatus();
+      if (attStatus.status === 'notDetermined') {
+        await AppTrackingTransparency.requestPermission();
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  await adService.initialize().catch((error) => {
+    console.error('AdMob setup failed:', error);
+  });
+
   try {
-    if (Capacitor.isNativePlatform()) {
-      await AdMob.initialize({ initializeForTesting: false });
-      await AdMob.removeBanner().catch(() => { });
-    }
-
-    if (Capacitor.isNativePlatform()) {
-      await StatusBar.hide().catch(() => { });
-
-      if (Capacitor.getPlatform() === 'ios') {
-        try {
-          const attStatus = await AppTrackingTransparency.getStatus();
-          if (attStatus.status === 'notDetermined') {
-            await AppTrackingTransparency.requestPermission();
-          }
-        } catch (e) {
-          // Ignore
-        }
+    const permStatus = await LocalNotifications.requestPermissions();
+    if (permStatus.display === 'granted') {
+      if (Capacitor.getPlatform() === 'android') {
+        await LocalNotifications.createChannel({
+          id: 'devotional_channel',
+          name: 'Daily Devotionals',
+          description: 'Reminders for daily devotionals',
+          importance: 4,
+          visibility: 1
+        });
       }
-
-      try {
-        const permStatus = await LocalNotifications.requestPermissions();
-        if (permStatus.display === 'granted') {
-          if (Capacitor.getPlatform() === 'android') {
-            await LocalNotifications.createChannel({
-              id: 'devotional_channel',
-              name: 'Daily Devotionals',
-              description: 'Reminders for daily devotionals',
-              importance: 4,
-              visibility: 1
-            });
-          }
-          await scheduleDailyDevotional();
-        }
-      } catch (e) {
-        console.error('Notification setup failed:', e);
-      }
+      await scheduleDailyDevotional();
     }
-  } catch (globalErr) {
-    // Ignore
+  } catch (e) {
+    console.error('Notification setup failed:', e);
   }
 };
 

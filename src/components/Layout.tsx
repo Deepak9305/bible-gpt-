@@ -4,6 +4,7 @@ import { Home, MessageSquare, BookOpen, Settings, Loader2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { motion } from 'motion/react';
 import BannerAd from './BannerAd';
+import { BANNER_BOTTOM_MARGIN } from '../services/adService';
 import { Keyboard } from '@capacitor/keyboard';
 import { Capacitor } from '@capacitor/core';
 
@@ -11,13 +12,22 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
   const { theme, highContrastNav } = useTheme();
   const { pathname } = useLocation();
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [bannerHeight, setBannerHeight] = useState(0);
 
   const showAd = pathname !== '/chat' && !isKeyboardVisible && isAppReady;
   const showBannerPadding = showAd;
   const showNavPadding = !isKeyboardVisible;
 
-  // 70px margin (adService) + 50px banner height = 120px → pb-[7.5rem]
-  const paddingClass = showBannerPadding ? 'pb-[7.5rem]' : (showNavPadding ? 'pb-[calc(4rem+env(safe-area-inset-bottom))]' : 'pb-0');
+  const adPadding = BANNER_BOTTOM_MARGIN + Math.max(bannerHeight, 50);
+  const mainStyle = showBannerPadding
+    ? { paddingBottom: `calc(${adPadding}px + env(safe-area-inset-bottom))` }
+    : undefined;
+  const paddingClass = showBannerPadding
+    ? ''
+    : (showNavPadding ? 'pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0' : 'pb-0');
+  const handleBannerSizeChange = React.useCallback((size: { height: number }) => {
+    setBannerHeight(size.height);
+  }, []);
 
   React.useEffect(() => {
     let showListener: any;
@@ -57,7 +67,10 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
   return (
     <div className={`h-screen flex flex-col overflow-hidden ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
 
-      <main className={`flex-1 min-h-0 overflow-hidden flex flex-col ${paddingClass} md:pb-0 md:pl-64`}>
+      <main
+        className={`flex-1 min-h-0 overflow-hidden flex flex-col ${paddingClass} md:pl-64`}
+        style={mainStyle}
+      >
         <Suspense fallback={
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="animate-spin text-blue-400 dark:text-blue-300" size={28} />
@@ -68,7 +81,7 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
       </main>
 
       {/* Banner Ad Component (triggers native ad) */}
-      <BannerAd shouldShow={showAd} />
+      <BannerAd shouldShow={showAd} onSizeChange={handleBannerSizeChange} />
 
       {/* Mobile Bottom Nav */}
       {!isKeyboardVisible && (

@@ -193,11 +193,20 @@ class AdService {
 
             await AdMob.showBanner({
                 adId,
-                adSize: BannerAdSize.BANNER,
+                adSize: BannerAdSize.ADAPTIVE_BANNER,
                 position: BannerAdPosition.BOTTOM_CENTER,
                 margin: BANNER_BOTTOM_MARGIN,
                 isTesting: SHOULD_USE_TEST_ADS,
             });
+
+            this.clearLoadTimeout();
+            this.isBannerLoading = false;
+            this.hasBannerView = true;
+            this.isBannerVisible = this.shouldShowBanner;
+
+            if (!this.shouldShowBanner) {
+                await this.hideBannerInternal();
+            }
         } catch (error) {
             this.handleBannerLoadFailure(error);
         }

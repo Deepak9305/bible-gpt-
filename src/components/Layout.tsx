@@ -15,8 +15,8 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
   const [bannerHeight, setBannerHeight] = useState(0);
   const isNativePlatform = Capacitor.isNativePlatform();
 
-  const showAd = isNativePlatform && pathname !== '/chat' && !isKeyboardVisible && isAppReady;
-  const showBannerPadding = showAd;
+  const showAd = pathname !== '/chat' && !isKeyboardVisible && isAppReady;
+  const showBannerPadding = isNativePlatform && showAd;
   const showNavPadding = !isKeyboardVisible;
 
   const adPadding = BANNER_BOTTOM_MARGIN + Math.max(bannerHeight, COMPACT_BANNER_HEIGHT);

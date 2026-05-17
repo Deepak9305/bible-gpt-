@@ -193,7 +193,7 @@ class AdService {
 
             await AdMob.showBanner({
                 adId,
-                adSize: BannerAdSize.ADAPTIVE_BANNER,
+                adSize: BannerAdSize.BANNER,
                 position: BannerAdPosition.BOTTOM_CENTER,
                 margin: BANNER_BOTTOM_MARGIN,
                 isTesting: SHOULD_USE_TEST_ADS,

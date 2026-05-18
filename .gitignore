@@ -8,3 +8,6 @@ coverage/
 !.env.example
 url_full.txt
 url_ascii.txt
+
+# Android Studio
+.idea/

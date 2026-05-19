@@ -60,13 +60,25 @@ const scheduleDailyDevotional = async () => {
   ];
 
   await LocalNotifications.schedule({
-    notifications: weeklyMessages.map(msg => ({
-      id: msg.id,
-      title: msg.title,
-      body: msg.body,
-      schedule: { on: { weekday: msg.weekday, hour: 8, minute: 0 }, repeats: true },
-      smallIcon: 'ic_stat_notify',
-      channelId: 'devotional_channel',
-    }))
+    notifications: weeklyMessages.map(msg => {
+      const bodyLines = msg.body
+        .split('\n')
+        .map(line => line.trim())
+        .filter(Boolean);
+
+      return {
+        id: msg.id,
+        title: msg.title,
+        body: msg.body,
+        // Android uses these fields to render expanded notifications with
+        // the full multi-line body instead of truncating to a single line.
+        largeBody: msg.body,
+        summaryText: msg.title,
+        ...(bodyLines.length > 1 ? { inboxList: bodyLines.slice(0, 5) } : {}),
+        schedule: { on: { weekday: msg.weekday, hour: 8, minute: 0 }, repeats: true },
+        smallIcon: 'ic_stat_notify',
+        channelId: 'devotional_channel',
+      };
+    })
   });
 };

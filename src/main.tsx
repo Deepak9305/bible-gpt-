@@ -14,12 +14,12 @@ import { Capacitor } from '@capacitor/core';
 //
 // The fix: always load cordova.js from the Capacitor native LOCAL server, which is
 // the only place the file actually exists.
-//   Android: http://localhost/cordova.js
+//   Android: https://localhost/cordova.js
 //   iOS:     capacitor://localhost/cordova.js
 if (Capacitor.isNativePlatform()) {
   const localOrigin = Capacitor.getPlatform() === 'ios'
     ? 'capacitor://localhost'
-    : 'http://localhost';
+    : 'https://localhost';
   const script = document.createElement('script');
   script.src = `${localOrigin}/cordova.js`;
   document.head.appendChild(script);

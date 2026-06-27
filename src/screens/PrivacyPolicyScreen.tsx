@@ -37,7 +37,6 @@ export default function PrivacyPolicyScreen() {
           <ul>
             <li><strong>Groq:</strong> Generates Father AI chat responses.</li>
             <li><strong>Bible API:</strong> Retrieves some scripture content when online; bundled KJV content is used for offline fallback.</li>
-            <li><strong>Google AdMob:</strong> Shows ads in the mobile app.</li>
             <li><strong>Device services:</strong> Enable optional features such as speech recognition, text-to-speech, sharing, and notifications.</li>
           </ul>
 

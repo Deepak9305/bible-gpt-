@@ -3,8 +3,6 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Home, MessageSquare, BookOpen, Settings, Loader2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { motion } from 'motion/react';
-import BannerAd from './BannerAd';
-import { BANNER_BOTTOM_MARGIN, COMPACT_BANNER_HEIGHT } from '../services/adService';
 import { Keyboard } from '@capacitor/keyboard';
 import { Capacitor } from '@capacitor/core';
 
@@ -12,23 +10,10 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
   const { theme, highContrastNav } = useTheme();
   const { pathname } = useLocation();
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-  const [bannerHeight, setBannerHeight] = useState(0);
   const isNativePlatform = Capacitor.isNativePlatform();
 
-  const showAd = pathname !== '/chat' && !isKeyboardVisible && isAppReady;
-  const showBannerPadding = isNativePlatform && showAd;
   const showNavPadding = !isKeyboardVisible;
-
-  const adPadding = BANNER_BOTTOM_MARGIN + Math.max(bannerHeight, COMPACT_BANNER_HEIGHT);
-  const mainStyle = showBannerPadding
-    ? { paddingBottom: `calc(${adPadding}px + env(safe-area-inset-bottom))` }
-    : undefined;
-  const paddingClass = showBannerPadding
-    ? ''
-    : (showNavPadding ? 'pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0' : 'pb-0');
-  const handleBannerSizeChange = React.useCallback((size: { height: number }) => {
-    setBannerHeight(size.height);
-  }, []);
+  const paddingClass = showNavPadding ? 'pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0' : 'pb-0';
 
   React.useEffect(() => {
     let showListener: any;
@@ -70,7 +55,6 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
 
       <main
         className={`flex-1 min-h-0 overflow-hidden flex flex-col ${paddingClass} md:pl-64`}
-        style={mainStyle}
       >
         <Suspense fallback={
           <div className="flex-1 flex items-center justify-center">
@@ -80,9 +64,6 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
           <Outlet />
         </Suspense>
       </main>
-
-      {/* Banner Ad Component (triggers native ad) */}
-      <BannerAd shouldShow={showAd} onSizeChange={handleBannerSizeChange} />
 
       {/* Mobile Bottom Nav */}
       {!isKeyboardVisible && (

@@ -2,8 +2,6 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { StatusBar } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
 import { AppTrackingTransparency } from '@capgo/capacitor-app-tracking-transparency';
-import { adService } from './adService';
-
 export const initializeNativeServices = async () => {
   if (!Capacitor.isNativePlatform()) return;
 
@@ -20,9 +18,6 @@ export const initializeNativeServices = async () => {
     }
   }
 
-  await adService.initialize().catch((error) => {
-    console.error('AdMob setup failed:', error);
-  });
 
   try {
     const permStatus = await LocalNotifications.requestPermissions();

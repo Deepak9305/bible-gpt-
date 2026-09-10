@@ -11,6 +11,15 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [confirmationSent, setConfirmationSent] = useState(false);
+  const [premiumNotice] = useState(() => {
+    try {
+      const notice = sessionStorage.getItem('premium_login_notice') || '';
+      sessionStorage.removeItem('premium_login_notice');
+      return notice;
+    } catch {
+      return '';
+    }
+  });
   const isMounted = useRef(true);
 
   useEffect(() => () => {
@@ -96,6 +105,13 @@ export default function LoginScreen() {
               <h1 className="text-3xl font-serif font-medium text-slate-800 dark:text-slate-100 mb-2 tracking-tight">Welcome Back</h1>
               <p className="text-slate-500 dark:text-slate-400 text-sm">Continue your journey of faith</p>
             </div>
+
+            {premiumNotice && (
+              <div role="alert" className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-center shadow-sm dark:border-amber-500/40 dark:bg-amber-900/20">
+                <p className="font-bold text-amber-900 dark:text-amber-200">Log in to buy premium</p>
+                <p className="mt-1 text-sm text-amber-800/80 dark:text-amber-100/75">Sign in or create an account to continue to Bible Nova Plus.</p>
+              </div>
+            )}
 
             <button
               type="button"

@@ -11,9 +11,9 @@ import { usePremium } from '../context/PremiumContext';
 import { Send, Bot, Volume2, VolumeX, Mic, MicOff, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useLocation } from 'react-router-dom';
-import { SpeechRecognition } from '@capgo/capacitor-speech-recognition';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
+import { transcribeAudio } from '../services/transcriptionService';
 
 interface Message {
   id: string;
@@ -28,6 +28,21 @@ const SUGGESTED_PROMPTS = [
   "How to pray?",
   "Comfort in sorrow"
 ];
+
+const MAX_RECORDING_MS = 60_000;
+
+const getRecordingMimeType = () => {
+  if (typeof MediaRecorder === 'undefined') return '';
+
+  const candidates = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/mp4',
+    'audio/ogg;codecs=opus',
+  ];
+
+  return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || '';
+};
 
 const MessageItem = React.memo(({
   message,
@@ -103,11 +118,18 @@ export default function ChatScreen() {
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSpeechSupported, setIsSpeechSupported] = useState(true);
+  const [speechError, setSpeechError] = useState<string | null>(null);
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+  const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
+  const recordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isRecordingRef = useRef(false);
 
   const isSendingRef = useRef(false);
   const initialPromptHandled = useRef(false);
@@ -168,9 +190,11 @@ export default function ChatScreen() {
     const cleanText = typeof text === 'string' ? text.trim() : '';
     if (!cleanText || isLoading || isSendingRef.current) return;
 
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
+    setRateLimitMessage(null);
+
+    if (isRecordingRef.current) {
+      await stopRecording();
+      return;
     }
 
     if (!isPremium && checkDailyLimit()) {
@@ -221,9 +245,15 @@ export default function ChatScreen() {
 
     } catch (error) {
       console.error('Chat error:', error);
-      setMessages(prev => prev.map(msg =>
-        msg.id === aiMsgId ? { ...msg, content: 'I apologize, but I am having trouble connecting right now. Please try again.' } : msg
-      ));
+      const requestError = error as Error & { status?: number };
+      if (requestError.status === 429) {
+        setMessages(prev => prev.filter(msg => msg.id !== userMsg.id && msg.id !== aiMsgId));
+        setRateLimitMessage(requestError.message);
+      } else {
+        setMessages(prev => prev.map(msg =>
+          msg.id === aiMsgId ? { ...msg, content: 'I apologize, but I am having trouble connecting right now. Please try again.' } : msg
+        ));
+      }
     } finally {
       setIsLoading(false);
       isSendingRef.current = false;
@@ -246,81 +276,119 @@ export default function ChatScreen() {
   }, [location]);
 
   useEffect(() => {
-    const initSpeech = async () => {
-      if (Capacitor.isNativePlatform()) {
-        try {
-          const { available } = await SpeechRecognition.available();
-          setIsSpeechSupported(available);
-          if (available) {
-            await SpeechRecognition.requestPermissions();
-          }
-        } catch (e) {
-          console.error("Speech recognition init failed", e);
-          setIsSpeechSupported(false);
-        }
-      } else {
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-          const WebSpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-          recognitionRef.current = new WebSpeechRecognition();
-          recognitionRef.current.continuous = false;
-          recognitionRef.current.interimResults = false;
-          recognitionRef.current.lang = 'en-US';
+    const supported = typeof window !== 'undefined'
+      && 'MediaRecorder' in window
+      && Boolean(navigator.mediaDevices?.getUserMedia);
+    setIsSpeechSupported(supported);
 
-          recognitionRef.current.onresult = (event: any) => {
-            const transcript = event.results[0][0].transcript;
-            setInput(transcript);
-            handleSendRef.current?.(transcript);
-          };
-
-          recognitionRef.current.onend = () => {
-            setIsListening(false);
-          };
-
-          recognitionRef.current.onerror = (event: any) => {
-            console.error('Speech recognition error', event.error);
-            setIsListening(false);
-          };
-        } else {
-          setIsSpeechSupported(false);
-        }
-      }
+    return () => {
+      if (recordingTimeoutRef.current) clearTimeout(recordingTimeoutRef.current);
+      if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current?.stop();
+      isRecordingRef.current = false;
+      mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
     };
-    initSpeech();
   }, []);
 
-  const toggleListening = async () => {
-    if (!isSpeechSupported) return;
+  const stopRecording = async () => {
+    if (recordingTimeoutRef.current) {
+      clearTimeout(recordingTimeoutRef.current);
+      recordingTimeoutRef.current = null;
+    }
 
-    if (isListening) {
-      if (Capacitor.isNativePlatform()) {
-        await SpeechRecognition.stop();
-      } else {
-        recognitionRef.current?.stop();
-      }
-      setIsListening(false);
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.stop();
     } else {
-      setIsListening(true);
-      if (Capacitor.isNativePlatform()) {
-        try {
-          const { matches } = await SpeechRecognition.start({
-            language: 'en-US',
-            maxResults: 1,
-            prompt: 'Speak now',
-            partialResults: false,
-            popup: true,
-          });
-          if (matches && matches.length > 0) {
-            setInput(matches[0]);
-            handleSendRef.current?.(matches[0]);
-          }
-        } catch (e) {
-          console.error("Speech recognition failed", e);
-        } finally {
-          setIsListening(false);
+      isRecordingRef.current = false;
+      setIsListening(false);
+    }
+  };
+
+  const startRecording = async () => {
+    if (!isSpeechSupported || isTranscribing || mediaRecorderRef.current) return;
+
+    setSpeechError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      const mimeType = getRecordingMimeType();
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+
+      mediaStreamRef.current = stream;
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+
+      recorder.onerror = () => {
+        setSpeechError('Microphone recording failed. Please try again.');
+      };
+
+      recorder.onstop = async () => {
+        if (recordingTimeoutRef.current) {
+          clearTimeout(recordingTimeoutRef.current);
+          recordingTimeoutRef.current = null;
         }
-      } else {
-        recognitionRef.current?.start();
-      }
+
+        const chunks = audioChunksRef.current;
+        audioChunksRef.current = [];
+        if (mediaRecorderRef.current === recorder) mediaRecorderRef.current = null;
+        if (mediaStreamRef.current === stream) mediaStreamRef.current = null;
+        isRecordingRef.current = false;
+        stream.getTracks().forEach((track) => track.stop());
+        setIsListening(false);
+
+        if (chunks.length === 0) {
+          setSpeechError('No audio was recorded. Please try again.');
+          return;
+        }
+
+        setIsTranscribing(true);
+        try {
+          const audio = new Blob(chunks, { type: recorder.mimeType || mimeType || 'audio/webm' });
+          const transcript = await transcribeAudio(audio);
+          setInput(transcript);
+          handleSendRef.current?.(transcript);
+        } catch (error) {
+          console.error('Groq transcription failed', error);
+          setSpeechError(error instanceof Error ? error.message : 'Voice transcription failed. Please try again.');
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
+
+      recorder.start(250);
+      isRecordingRef.current = true;
+      setIsListening(true);
+      recordingTimeoutRef.current = setTimeout(() => {
+        if (mediaRecorderRef.current === recorder && recorder.state !== 'inactive') recorder.stop();
+      }, MAX_RECORDING_MS);
+    } catch (error) {
+      mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+      mediaRecorderRef.current = null;
+      isRecordingRef.current = false;
+      setIsListening(false);
+      setSpeechError(error instanceof Error && error.name === 'NotAllowedError'
+        ? 'Microphone permission is required for voice input.'
+        : 'Could not access the microphone. Please try again.');
+    }
+  };
+
+  const toggleListening = async () => {
+    if (!isSpeechSupported || isTranscribing) return;
+    if (isListening) {
+      await stopRecording();
+    } else {
+      await startRecording();
     }
   };
 
@@ -392,16 +460,28 @@ export default function ChatScreen() {
 
       {/* Input */}
       <div className={`p-4 border-t ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+        {speechError && (
+          <div role="alert" className="mb-3 rounded-xl border border-rose-300/50 bg-rose-50 px-3 py-2 text-center text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-900/20 dark:text-rose-200">
+            {speechError}
+          </div>
+        )}
+        {rateLimitMessage && (
+          <div role="status" className="mb-3 rounded-xl border border-amber-300/50 bg-amber-50 px-3 py-2 text-center text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-900/20 dark:text-amber-200">
+            {rateLimitMessage}
+          </div>
+        )}
         <div className="flex gap-2">
           <button
             onClick={toggleListening}
-            className={`p-3 rounded-xl transition-colors duration-200 ${isListening
+            disabled={!isSpeechSupported || isTranscribing}
+            className={`p-3 rounded-xl transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${isListening
               ? 'bg-red-500 text-white'
               : (theme === 'dark' ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
               }`}
-            title="Speak"
+            title={!isSpeechSupported ? 'Voice input is unavailable' : isTranscribing ? 'Transcribing voice' : isListening ? 'Stop recording' : 'Voice input'}
+            aria-label={!isSpeechSupported ? 'Voice input is unavailable' : isTranscribing ? 'Transcribing voice' : isListening ? 'Stop recording' : 'Voice input'}
           >
-            {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+            {isTranscribing ? <Loader2 size={20} className="animate-spin" /> : isListening ? <MicOff size={20} /> : <Mic size={20} />}
           </button>
 
           <input
@@ -409,7 +489,7 @@ export default function ChatScreen() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder={isListening ? "Listening..." : "Ask for guidance..."}
+            placeholder={isTranscribing ? "Transcribing..." : isListening ? "Listening..." : "Ask for guidance..."}
             className={`flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 text-base ${theme === 'dark'
               ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
               : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'

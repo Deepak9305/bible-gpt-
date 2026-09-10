@@ -286,11 +286,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const deleteAccount = async () => {
     if (isSupabaseConfigured && session) {
-      try {
-        await supabase.rpc('delete_user');
-      } catch (error) {
-        console.warn('Account deletion RPC unavailable:', error);
+      const { error } = await supabase.rpc('delete_user');
+      if (error) {
+        throw new Error('We could not delete your account. Your account is still active. Please try again.');
       }
+
       await supabase.auth.signOut().catch(() => {});
     }
 

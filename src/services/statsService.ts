@@ -11,6 +11,8 @@ export interface UserStats {
   lastUsageDate: string;
 }
 
+export const FREE_DAILY_CHAT_LIMIT = 3;
+
 const INITIAL_STATS: UserStats = {
   streak: 0,
   lastVisit: '',
@@ -55,7 +57,7 @@ export const checkDailyLimit = (): boolean => {
 
   if (stats.lastUsageDate !== today) return false;
 
-  return stats.dailyUsageCount >= 5;
+  return stats.dailyUsageCount >= FREE_DAILY_CHAT_LIMIT;
 };
 
 export const incrementDailyUsage = () => {

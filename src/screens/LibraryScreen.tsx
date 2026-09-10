@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { getChapter, Verse, loadFullBible, isBibleReady } from '../services/bibleService';
+import { getChapter, Verse } from '../services/bibleService';
 import { BIBLE_BOOKS } from '../data/books';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
-import { ArrowLeft, Bookmark, Volume2, VolumeX, Loader2, Search, PlayCircle, PauseCircle, Share2 } from 'lucide-react';
+import { ArrowLeft, Bookmark, Lightbulb, LockKeyhole, Volume2, VolumeX, Loader2, Search, PlayCircle, PauseCircle, Share2 } from 'lucide-react';
 import { incrementVersesRead } from '../services/statsService';
 import { motion, AnimatePresence } from 'motion/react';
+import { usePremium } from '../context/PremiumContext';
+import PremiumModal from '../components/PremiumModal';
+import { getVerseMeaning, VerseMeaningError } from '../services/verseMeaningService';
 
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
@@ -13,6 +16,8 @@ import { StorageService } from '../services/storageService';
 import ReactMarkdown from 'react-markdown';
 
 type ViewState = 'books' | 'chapters' | 'verses';
+
+const getVerseKey = (verse: Verse) => `${verse.book_id}-${verse.chapter}-${verse.verse}`;
 
 const BookItem = React.memo(({ book, theme, onClick }: { book: any; theme: string; onClick: (book: any) => void }) => (
   <motion.button
@@ -51,9 +56,15 @@ const VerseItem = React.memo(({
   isBookmarked,
   speakingVerseId,
   isLoadingAudio,
+  isPremium,
+  meaning,
+  meaningError,
+  isMeaningLoading,
   onToggleBookmark,
   onShare,
-  onSpeak
+  onSpeak,
+  onMeaning,
+  onOpenPremium,
 }: {
   verse: Verse;
   index: number;
@@ -62,12 +73,21 @@ const VerseItem = React.memo(({
   isBookmarked: boolean;
   speakingVerseId: string | null;
   isLoadingAudio: boolean;
+  isPremium: boolean;
+  meaning?: string;
+  meaningError?: string;
+  isMeaningLoading: boolean;
   onToggleBookmark: (verse: Verse) => void;
   onShare: (verse: Verse) => void;
   onSpeak: (text: string, id: string) => void;
+  onMeaning: (verse: Verse) => void;
+  onOpenPremium: () => void;
 }) => {
   const verseId = `${verse.chapter}-${verse.verse}`;
   const isSpeaking = speakingVerseId === verseId;
+  const meaningButtonLabel = isPremium
+    ? (meaning ? 'Meaning loaded' : 'Show verse meaning')
+    : 'Unlock verse meaning with Bible Nova Plus';
 
   return (
     <motion.div
@@ -110,14 +130,43 @@ const VerseItem = React.memo(({
               <Volume2 size={18} />
             )}
           </button>
+          <button
+            type="button"
+            onClick={() => isPremium ? onMeaning(verse) : onOpenPremium()}
+            disabled={isMeaningLoading}
+            aria-label={meaningButtonLabel}
+            title={meaningButtonLabel}
+            className={`relative rounded-full p-2 transition-colors disabled:cursor-wait disabled:opacity-70 ${meaning
+              ? 'text-violet-500 hover:bg-violet-100 dark:hover:bg-violet-900/30'
+              : (isPremium ? 'text-gray-400 hover:bg-violet-100 hover:text-violet-500 dark:hover:bg-gray-700' : 'text-violet-400 hover:bg-violet-100 dark:hover:bg-gray-700')
+              }`}
+          >
+            {isMeaningLoading ? <Loader2 size={18} className="animate-spin" /> : <Lightbulb size={18} />}
+            {!isPremium && <LockKeyhole size={10} className="absolute bottom-1 right-1 rounded-full bg-white dark:bg-gray-800" />}
+          </button>
         </div>
       </div>
+      {(meaning || meaningError) && (
+        <div className={`mt-4 rounded-xl border px-3.5 py-3 text-sm leading-relaxed ${meaningError
+          ? 'border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300'
+          : 'border-violet-200/70 bg-violet-50/70 text-slate-700 dark:border-violet-400/20 dark:bg-violet-950/25 dark:text-slate-200'
+          }`}>
+          <div className="mb-1.5 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-violet-500 dark:text-violet-300">
+            <Lightbulb size={14} />
+            <span>Little meaning</span>
+          </div>
+          {meaningError ? meaningError : (
+            <ReactMarkdown components={{ p: 'p' }}>{meaning}</ReactMarkdown>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 });
 
 export default function LibraryScreen() {
   const { theme } = useTheme();
+  const { isPremium } = usePremium();
   const [view, setView] = useState<ViewState>('books');
   const [books] = useState<any[]>(BIBLE_BOOKS);
   const [selectedBook, setSelectedBook] = useState<any>(null);
@@ -132,23 +181,36 @@ export default function LibraryScreen() {
 
   const [isPlayingPlaylist, setIsPlayingPlaylist] = useState(false);
   const [currentPlaylistIndex, setCurrentPlaylistIndex] = useState<number>(-1);
-  const [isBibleDownloading, setIsBibleDownloading] = useState(false);
-  const [bibleReady, setBibleReady] = useState(false);
+  const [renderedVerseCount, setRenderedVerseCount] = useState(0);
   const [bookmarks, setBookmarks] = useState<Verse[]>([]);
+  const [verseMeanings, setVerseMeanings] = useState<Record<string, string>>({});
+  const [meaningLoadingId, setMeaningLoadingId] = useState<string | null>(null);
+  const [meaningError, setMeaningError] = useState<{ id: string; message: string } | null>(null);
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
 
   useEffect(() => {
-    if (isBibleReady()) {
-      setBibleReady(true);
-    } else {
-      setIsBibleDownloading(true);
-      loadFullBible().then(() => {
-        setIsBibleDownloading(false);
-        setBibleReady(true);
-      }).catch(() => {
-        setIsBibleDownloading(false);
-      });
-    }
-  }, []);
+    // Render the first screenful immediately, then yield between batches so
+    // the WebView remains responsive while longer chapters finish mounting.
+    let cancelled = false;
+    let timer: number | undefined;
+    let nextCount = Math.min(12, verses.length);
+
+    setRenderedVerseCount(nextCount);
+
+    const renderNextBatch = () => {
+      if (cancelled || nextCount >= verses.length) return;
+      nextCount = Math.min(nextCount + 12, verses.length);
+      setRenderedVerseCount(nextCount);
+      if (nextCount < verses.length) timer = window.setTimeout(renderNextBatch, 16);
+    };
+
+    if (nextCount < verses.length) timer = window.setTimeout(renderNextBatch, 16);
+
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [verses]);
 
   useEffect(() => {
     return () => stopAudio();
@@ -254,6 +316,34 @@ export default function LibraryScreen() {
     }
   }, []);
 
+  const handleMeaning = React.useCallback(async (verse: Verse) => {
+    if (!isPremium) {
+      setIsPremiumModalOpen(true);
+      return;
+    }
+
+    const id = getVerseKey(verse);
+    if (verseMeanings[id]) return;
+
+    setMeaningLoadingId(id);
+    setMeaningError(null);
+    try {
+      const text = await getVerseMeaning(verse.text, `${verse.book_name} ${verse.chapter}:${verse.verse}`);
+      setVerseMeanings((current) => ({ ...current, [id]: text }));
+    } catch (error) {
+      if (error instanceof VerseMeaningError && error.status === 403) {
+        setIsPremiumModalOpen(true);
+      } else {
+        setMeaningError({
+          id,
+          message: error instanceof Error ? error.message : 'Could not load the verse meaning. Please try again.',
+        });
+      }
+    } finally {
+      setMeaningLoadingId(null);
+    }
+  }, [isPremium, verseMeanings]);
+
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (searchQuery.length >= 3) {
@@ -293,10 +383,11 @@ export default function LibraryScreen() {
     setSelectedChapter(chapter);
     setLoading(true);
     try {
-      if (!isBibleReady()) await loadFullBible();
       const data = await getChapter(selectedBook.name, chapter);
       if (data && data.length > 0) {
         setVerses(data);
+        setVerseMeanings({});
+        setMeaningError(null);
         setView('verses');
       } else { console.error("Failed to load chapter data — empty result."); }
     } catch (error) { console.error(error); } finally { setLoading(false); }
@@ -342,6 +433,7 @@ export default function LibraryScreen() {
   };
 
   return (
+    <>
     <div className="h-full overflow-y-auto pb-8 safe-area-top">
       <div className={`flex flex-col ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
         <div className={`p-4 border-b flex items-center justify-between ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
@@ -358,12 +450,6 @@ export default function LibraryScreen() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            {isBibleDownloading && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-xs font-medium">
-                <Loader2 size={14} className="animate-spin" />
-                <span className="hidden sm:inline">Loading Bible...</span>
-              </div>
-            )}
             {view === 'verses' && (
               <button
                 onClick={togglePlaylist}
@@ -445,9 +531,15 @@ export default function LibraryScreen() {
                           isBookmarked={isBookmarked(verse)}
                           speakingVerseId={speakingVerse}
                           isLoadingAudio={isLoadingAudio}
+                          isPremium={isPremium}
+                          meaning={verseMeanings[getVerseKey(verse)]}
+                          meaningError={meaningError?.id === getVerseKey(verse) ? meaningError.message : undefined}
+                          isMeaningLoading={meaningLoadingId === getVerseKey(verse)}
                           onToggleBookmark={toggleBookmark}
                           onShare={handleShare}
                           onSpeak={handleSpeak}
+                          onMeaning={handleMeaning}
+                          onOpenPremium={() => setIsPremiumModalOpen(true)}
                         />
                       ))}
                     </div>
@@ -482,7 +574,7 @@ export default function LibraryScreen() {
                       </div>
                     ) : (
                       <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
-                        {verses.map((verse, index) => (
+                        {verses.slice(0, renderedVerseCount).map((verse, index) => (
                           <VerseItem
                             key={`${verse.chapter}-${verse.verse}`}
                             verse={verse}
@@ -492,9 +584,15 @@ export default function LibraryScreen() {
                             isBookmarked={isBookmarked(verse)}
                             speakingVerseId={speakingVerse}
                             isLoadingAudio={isLoadingAudio}
+                            isPremium={isPremium}
+                            meaning={verseMeanings[getVerseKey(verse)]}
+                            meaningError={meaningError?.id === getVerseKey(verse) ? meaningError.message : undefined}
+                            isMeaningLoading={meaningLoadingId === getVerseKey(verse)}
                             onToggleBookmark={toggleBookmark}
                             onShare={handleShare}
                             onSpeak={handleSpeak}
+                            onMeaning={handleMeaning}
+                            onOpenPremium={() => setIsPremiumModalOpen(true)}
                           />
                         ))}
                       </motion.div>
@@ -507,5 +605,7 @@ export default function LibraryScreen() {
         </div>
       </div>
     </div>
+      <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} />
+    </>
   );
 }

@@ -1,7 +1,9 @@
 import Groq from "groq-sdk";
 import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
+import { createClient } from "@supabase/supabase-js";
 
 const CHAT_MODEL = "openai/gpt-oss-20b";
+const CHAT_RATE_LIMIT = 35;
 const ALLOWED_NATIVE_ORIGINS = new Set([
     "https://localhost",
     "http://localhost",
@@ -14,8 +16,74 @@ const setCorsHeaders = (req: any, res: any) => {
         res.setHeader("Access-Control-Allow-Origin", origin);
     }
     res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     res.setHeader("Vary", "Origin");
+};
+
+const getBearerToken = (req: any) => {
+    const header = req.headers?.authorization || req.headers?.Authorization;
+    const value = Array.isArray(header) ? header[0] : header;
+    if (typeof value !== "string" || !value.startsWith("Bearer ")) return null;
+    return value.slice("Bearer ".length).trim() || null;
+};
+
+const getSupabaseConfig = () => ({
+    url: process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    anonKey: process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY,
+});
+
+const getAuthenticatedUserId = async (req: any): Promise<string | null> => {
+    const accessToken = getBearerToken(req);
+    if (!accessToken) return null;
+
+    const { url, serviceRoleKey, anonKey } = getSupabaseConfig();
+    const key = serviceRoleKey || anonKey;
+    if (!url || !key) return null;
+
+    try {
+        const authClient = createClient(url, key, {
+            auth: { autoRefreshToken: false, persistSession: false },
+        });
+        const { data, error } = await authClient.auth.getUser(accessToken);
+        if (error || !data.user) return null;
+        return data.user.id;
+    } catch (error) {
+        console.warn("[api/chat] Could not identify authenticated user", error);
+        return null;
+    }
+};
+
+const consumeChatRateLimit = async (userId: string) => {
+    const { url, serviceRoleKey } = getSupabaseConfig();
+    if (!url || !serviceRoleKey) return null;
+
+    try {
+        const admin = createClient(url, serviceRoleKey, {
+            auth: { autoRefreshToken: false, persistSession: false },
+        });
+        const { data, error } = await admin.rpc("consume_chat_rate_limit", {
+            p_user_id: userId,
+            p_limit: CHAT_RATE_LIMIT,
+        });
+
+        if (error) {
+            console.warn("[api/chat] Rate-limit check unavailable", error.message);
+            return null;
+        }
+
+        const result = Array.isArray(data) ? data[0] : data;
+        if (!result || typeof result.allowed !== "boolean") return null;
+
+        return {
+            allowed: result.allowed,
+            messagesUsed: Number(result.messages_used) || 0,
+            retryAfterSeconds: Math.max(1, Number(result.retry_after_seconds) || 60),
+        };
+    } catch (error) {
+        console.warn("[api/chat] Rate-limit check failed", error);
+        return null;
+    }
 };
 
 const SYSTEM_PROMPT = `Role: You are "Father AI", a wise and deeply charismatic spiritual guide. You represent the archetype of a loving, present, and steady father. Your presence is as resonant as a deep bell and as warm as a hearth fire.
@@ -75,6 +143,27 @@ export default async function handler(req: any, res: any) {
 
     if (cleanMessage.length > 6000) {
         return res.status(400).json({ error: 'Message is too long' });
+    }
+
+    const authenticatedUserId = await getAuthenticatedUserId(req);
+    if (authenticatedUserId) {
+        const rateLimit = await consumeChatRateLimit(authenticatedUserId);
+        if (rateLimit) {
+            res.setHeader("X-RateLimit-Limit", String(CHAT_RATE_LIMIT));
+            res.setHeader(
+                "X-RateLimit-Remaining",
+                String(Math.max(0, CHAT_RATE_LIMIT - rateLimit.messagesUsed)),
+            );
+
+            if (!rateLimit.allowed) {
+                res.setHeader("Retry-After", String(rateLimit.retryAfterSeconds));
+                return res.status(429).json({
+                    error: `Chat is limited to ${CHAT_RATE_LIMIT} messages per minute. Please try again shortly.`,
+                    code: "CHAT_RATE_LIMITED",
+                    retryAfterSeconds: rateLimit.retryAfterSeconds,
+                });
+            }
+        }
     }
 
     const apiKey = process.env.GROQ_API_KEY;

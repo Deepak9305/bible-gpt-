@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useProfile } from '../context/ProfileContext';
 import { useAuth } from '../context/AuthContext';
-import { Accessibility, ChevronDown, ChevronRight, Check, Database, FileText, Info, LogOut, Moon, Pencil, Play, Shield, SlidersHorizontal, Sparkles, Square, Sun, Trash2, Volume2, X } from 'lucide-react';
+import { Accessibility, ChevronDown, ChevronRight, Check, Database, FileText, Info, LogOut, Moon, Pencil, Play, RotateCcw, Shield, SlidersHorizontal, Sparkles, Square, Sun, Trash2, Volume2, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { StorageService } from '../services/storageService';
-import { FATHERLY_VOICE_PRESETS, getPreferredVoiceId, setPreferredVoiceId, playTextToSpeech, stopAudio, type FatherlyVoiceId } from '../services/ttsService';
+import { FATHERLY_VOICE_PRESETS, getPreferredVoiceId, setPreferredVoiceId, playTextToSpeech, stopAudio, getVoiceCustomization, setVoiceCustomization, resetVoiceCustomization, type FatherlyVoiceId, type VoiceCustomization } from '../services/ttsService';
 import { usePremium } from '../context/PremiumContext';
 import PremiumModal from '../components/PremiumModal';
 
@@ -94,8 +93,8 @@ const CustomToggle = ({ checked, onChange, activeColor = 'bg-blue-500' }: any) =
 
 export default function SettingsScreen() {
   const { theme, toggleTheme, highContrastNav, toggleHighContrastNav } = useTheme();
-  const { profile, updateProfile, resetProfile } = useProfile();
-  const { logout } = useAuth();
+  const { profile, updateProfile } = useProfile();
+  const { logout, deleteAccount } = useAuth();
   const { isPremium } = usePremium();
 
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
@@ -105,11 +104,18 @@ export default function SettingsScreen() {
   const [editLifeStage, setEditLifeStage] = useState(profile?.preferences?.lifeStage || '');
   const [editSpiritualFocus, setEditSpiritualFocus] = useState(profile?.preferences?.spiritualFocus || '');
   const [editTone, setEditTone] = useState<any>(profile?.preferences?.tone || 'pastoral');
-  const [confirmAction, setConfirmAction] = useState<{ type: 'clear' | 'restart', title: string, message: string, buttonText: string, buttonStyle: string } | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ title: string, message: string, buttonText: string, buttonStyle: string } | null>(null);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const [selectedVoiceId, setSelectedVoiceId] = useState<FatherlyVoiceId>(FATHERLY_VOICE_PRESETS[0].id);
   const [previewingVoiceId, setPreviewingVoiceId] = useState<FatherlyVoiceId | null>(null);
   const [isVoiceExpanded, setIsVoiceExpanded] = useState(false);
+  const [editingVoiceId, setEditingVoiceId] = useState<FatherlyVoiceId | null>(null);
+  const [voiceDraft, setVoiceDraft] = useState<VoiceCustomization | null>(null);
+  const [isVoiceEditorLoading, setIsVoiceEditorLoading] = useState(false);
+  const [isVoiceEditorSaving, setIsVoiceEditorSaving] = useState(false);
+  const [voiceEditorError, setVoiceEditorError] = useState<string | null>(null);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
 
   React.useEffect(() => {
@@ -147,35 +153,90 @@ export default function SettingsScreen() {
     }
   };
 
-  const clearData = () => {
-    setConfirmAction({
-      type: 'clear',
-      title: 'Clear All Data',
-      message: 'Are you sure you want to clear all bookmarks, journal entries, and settings? This cannot be undone.',
-      buttonText: 'Clear Data',
-      buttonStyle: 'bg-red-500 hover:bg-red-600 text-white'
-    });
+  const openVoiceEditor = async (id: FatherlyVoiceId) => {
+    await stopAudio();
+    setPreviewingVoiceId(null);
+    setEditingVoiceId(id);
+    setVoiceDraft(null);
+    setVoiceEditorError(null);
+    setIsVoiceEditorLoading(true);
+    try {
+      setVoiceDraft(await getVoiceCustomization(id));
+    } catch (error) {
+      setVoiceEditorError(error instanceof Error ? error.message : 'Could not load voice settings.');
+    } finally {
+      setIsVoiceEditorLoading(false);
+    }
+  };
+
+  const closeVoiceEditor = () => {
+    void stopAudio();
+    setPreviewingVoiceId(null);
+    setEditingVoiceId(null);
+    setVoiceDraft(null);
+    setVoiceEditorError(null);
+  };
+
+  const saveVoiceEditor = async () => {
+    if (!editingVoiceId || !voiceDraft || isVoiceEditorSaving) return;
+    setIsVoiceEditorSaving(true);
+    setVoiceEditorError(null);
+    try {
+      await setVoiceCustomization(editingVoiceId, voiceDraft);
+      closeVoiceEditor();
+    } catch (error) {
+      setVoiceEditorError(error instanceof Error ? error.message : 'Could not save voice settings.');
+    } finally {
+      setIsVoiceEditorSaving(false);
+    }
+  };
+
+  const resetVoiceEditor = async () => {
+    if (!editingVoiceId || isVoiceEditorSaving) return;
+    setVoiceEditorError(null);
+    try {
+      setVoiceDraft(await resetVoiceCustomization(editingVoiceId));
+    } catch (error) {
+      setVoiceEditorError(error instanceof Error ? error.message : 'Could not reset voice settings.');
+    }
+  };
+
+  const previewEditedVoice = async () => {
+    if (!editingVoiceId || !voiceDraft || isVoiceEditorSaving) return;
+    await stopAudio();
+    setPreviewingVoiceId(editingVoiceId);
+    try {
+      await playTextToSpeech('I am your spiritual guide. Peace be with you.', () => {
+        setPreviewingVoiceId(null);
+      }, { voiceId: editingVoiceId, customization: voiceDraft });
+    } catch (error) {
+      console.error('Edited voice preview failed', error);
+      setPreviewingVoiceId(null);
+    }
   };
 
   const executeConfirmAction = async () => {
-    if (confirmAction?.type === 'clear') {
-      // Clear local data only — does NOT delete the account
-      await StorageService.clear();
-      window.location.reload();
-    } else if (confirmAction?.type === 'restart') {
-      // Restart journey: wipe local storage and return to onboarding
-      await resetProfile();
+    if (!confirmAction || isDeletingAccount) return;
+
+    setIsDeletingAccount(true);
+    setDeleteError(null);
+    try {
+      await deleteAccount();
+      setConfirmAction(null);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : 'We could not delete your account. Please try again.');
+    } finally {
+      setIsDeletingAccount(false);
     }
-    setConfirmAction(null);
   };
 
-  const handleLogout = async () => {
+  const handleDeleteAccount = () => {
+    setDeleteError(null);
     setConfirmAction({
-      type: 'restart',
-      title: 'Restart Journey',
-      message: 'This will reset your local profile and take you back to onboarding. You will lose unsaved local progress.',
-      buttonText: 'Restart',
-      buttonStyle: 'bg-orange-500 hover:bg-orange-600 text-white'
+      title: 'Delete Account?',
+      message: 'This permanently deletes your account, premium access, profile, and saved data. This cannot be undone.',
+      buttonText: 'Delete Account',
+      buttonStyle: 'bg-rose-500 hover:bg-rose-600 text-white'
     });
   };
 
@@ -202,6 +263,7 @@ export default function SettingsScreen() {
   };
 
   const selectedVoice = FATHERLY_VOICE_PRESETS.find((voice) => voice.id === selectedVoiceId) ?? FATHERLY_VOICE_PRESETS[0];
+  const editingVoice = editingVoiceId ? FATHERLY_VOICE_PRESETS.find((voice) => voice.id === editingVoiceId) : null;
 
   return (
     <div className={`relative h-full overflow-hidden safe-area-top transition-colors duration-300 ${theme === 'dark' ? 'bg-[#020b20] text-white' : 'bg-slate-50 text-slate-900'}`}>
@@ -364,8 +426,17 @@ export default function SettingsScreen() {
                             <span className={`block truncate text-xs ${theme === 'dark' ? 'text-blue-100/60' : 'text-slate-500'}`}>{voice.description}</span>
                           </span>
                         </button>
-                        <button type="button" onClick={() => previewVoice(voice.id)} className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-white shadow-lg transition-all active:scale-95 ${previewing ? 'bg-amber-500 shadow-amber-500/20' : 'bg-blue-600 shadow-blue-600/20'}`} title={`Preview ${voice.label}`}>
+                        <button type="button" onClick={() => previewVoice(voice.id)} className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-white shadow-lg transition-all active:scale-95 ${previewing ? 'bg-amber-500 shadow-amber-500/20' : 'bg-blue-600 shadow-blue-600/20'}`} title={`Preview ${voice.label}`} aria-label={`Preview ${voice.label}`}>
                           {previewing ? <Square size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void openVoiceEditor(voice.id)}
+                          className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border transition-all active:scale-95 ${theme === 'dark' ? 'border-blue-300/25 bg-blue-500/10 text-blue-200 hover:bg-blue-500/25' : 'border-blue-200 bg-white text-blue-600 hover:bg-blue-50'}`}
+                          title={`Edit ${voice.label}`}
+                          aria-label={`Edit ${voice.label}`}
+                        >
+                          <Pencil size={16} />
                         </button>
                       </div>
                     );
@@ -387,8 +458,7 @@ export default function SettingsScreen() {
               onClick={() => setIsPremiumModalOpen(true)}
             />
             <SettingItem icon={LogOut} iconColor={theme === 'dark' ? 'bg-rose-500/35 text-rose-300' : 'bg-red-100 text-red-600'} title="Log out" subtitle="Return to the sign-in screen" onClick={handleAccountLogout} destructive />
-            <SettingItem icon={Trash2} iconColor={theme === 'dark' ? 'bg-amber-500/35 text-amber-200' : 'bg-orange-100 text-orange-600'} title="Restart Journey" subtitle="Reset your local profile" onClick={handleLogout} />
-            <SettingItem icon={Trash2} iconColor={theme === 'dark' ? 'bg-rose-500/35 text-rose-300' : 'bg-red-100 text-red-600'} title="Clear Local Data" subtitle="Remove saved bookmarks and settings" onClick={clearData} destructive />
+            <SettingItem icon={Trash2} iconColor={theme === 'dark' ? 'bg-rose-500/35 text-rose-300' : 'bg-red-100 text-red-600'} title="Delete Account" subtitle="Permanently remove your account and data" onClick={handleDeleteAccount} destructive />
           </div>
         </motion.section>
 
@@ -552,6 +622,105 @@ export default function SettingsScreen() {
         )}
       </AnimatePresence>
 
+      {/* Free voice editor */}
+      <AnimatePresence>
+        {editingVoice && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+              onClick={closeVoiceEditor}
+            />
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="voice-editor-title"
+              initial={{ opacity: 0, y: '100%' }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className={`relative w-full max-w-md overflow-hidden rounded-t-3xl shadow-2xl sm:rounded-3xl ${theme === 'dark' ? 'border border-slate-700 bg-slate-800' : 'bg-white'}`}
+            >
+              <div className={`flex items-center justify-between border-b p-5 ${theme === 'dark' ? 'border-slate-700' : 'border-slate-100'}`}>
+                <div>
+                  <h3 id="voice-editor-title" className="text-xl font-bold">Edit {editingVoice.label}</h3>
+                  <p className={`mt-1 text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Free voice controls for your listening comfort</p>
+                </div>
+                <button type="button" onClick={closeVoiceEditor} disabled={isVoiceEditorSaving} aria-label="Close voice editor" className="rounded-full p-2 transition-colors hover:bg-slate-100 disabled:opacity-50 dark:hover:bg-slate-700">
+                  <X size={20} />
+                </button>
+              </div>
+
+              {isVoiceEditorLoading || !voiceDraft ? (
+                <div className="flex min-h-52 items-center justify-center">
+                  <Volume2 size={26} className="animate-pulse text-blue-500" />
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-7 p-6">
+                    <div>
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <label htmlFor="voice-speed" className="font-semibold">Speed</label>
+                        <span className="rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-500">{voiceDraft.rate.toFixed(2)}x</span>
+                      </div>
+                      <input
+                        id="voice-speed"
+                        type="range"
+                        min="0.6"
+                        max="1.3"
+                        step="0.01"
+                        value={voiceDraft.rate}
+                        onChange={(event) => setVoiceDraft((current) => current ? { ...current, rate: Number(event.target.value) } : current)}
+                        className="h-2 w-full cursor-pointer accent-blue-600"
+                      />
+                      <div className={`mt-1 flex justify-between text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}><span>Slower</span><span>Faster</span></div>
+                    </div>
+
+                    <div>
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <label htmlFor="voice-pitch" className="font-semibold">Pitch / depth</label>
+                        <span className="rounded-full bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-500">{voiceDraft.pitch.toFixed(2)}</span>
+                      </div>
+                      <input
+                        id="voice-pitch"
+                        type="range"
+                        min="0.6"
+                        max="1.4"
+                        step="0.01"
+                        value={voiceDraft.pitch}
+                        onChange={(event) => setVoiceDraft((current) => current ? { ...current, pitch: Number(event.target.value) } : current)}
+                        className="h-2 w-full cursor-pointer accent-violet-600"
+                      />
+                      <div className={`mt-1 flex justify-between text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}><span>Deeper</span><span>Brighter</span></div>
+                      <p className={`mt-3 text-xs leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>The TTS engine uses pitch to control perceived depth, so these are the two controls instead of duplicate pitch and deepness sliders.</p>
+                    </div>
+
+                    {voiceEditorError && <p role="alert" className="text-sm font-medium text-rose-500">{voiceEditorError}</p>}
+                  </div>
+
+                  <div className={`flex flex-wrap gap-3 border-t p-4 ${theme === 'dark' ? 'border-slate-700' : 'border-slate-100'}`}>
+                    <button type="button" onClick={() => void resetVoiceEditor()} disabled={isVoiceEditorSaving || previewingVoiceId !== null} className={`flex items-center gap-2 rounded-xl px-3.5 py-3 text-sm font-semibold transition disabled:opacity-50 ${theme === 'dark' ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
+                      <RotateCcw size={16} />
+                      Reset
+                    </button>
+                    <button type="button" onClick={() => void previewEditedVoice()} disabled={isVoiceEditorSaving || previewingVoiceId !== null} className="flex items-center gap-2 rounded-xl bg-blue-600 px-3.5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:opacity-50">
+                      {previewingVoiceId === editingVoiceId ? <Square size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
+                      Preview
+                    </button>
+                    <button type="button" onClick={() => void saveVoiceEditor()} disabled={isVoiceEditorSaving} className="ml-auto flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:brightness-110 disabled:cursor-wait disabled:opacity-60">
+                      <Check size={17} />
+                      {isVoiceEditorSaving ? 'Saving…' : 'Save voice'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Confirmation Modal */}
       <AnimatePresence>
         {confirmAction && (
@@ -561,7 +730,7 @@ export default function SettingsScreen() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-              onClick={() => setConfirmAction(null)}
+              onClick={() => { if (!isDeletingAccount) setConfirmAction(null); }}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -569,27 +738,26 @@ export default function SettingsScreen() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className={`relative w-full max-w-sm p-6 rounded-3xl shadow-2xl text-center ${theme === 'dark' ? 'bg-slate-800 border border-slate-700' : 'bg-white'}`}
             >
-              <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
-                confirmAction.type === 'clear'
-                  ? 'bg-red-100 text-red-400 dark:bg-red-900/30 dark:text-red-300'
-                  : 'bg-orange-100 text-orange-500 dark:bg-orange-900/30 dark:text-orange-400'
-              }`}>
-                {confirmAction.type === 'restart' ? <LogOut size={32} /> : <Trash2 size={32} />}
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center bg-red-100 text-red-400 dark:bg-red-900/30 dark:text-red-300">
+                <Trash2 size={32} />
               </div>
               <h3 className="text-xl font-bold mb-2">{confirmAction.title}</h3>
-              <p className={`mb-8 text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>{confirmAction.message}</p>
+              <p className={`mb-3 text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>{confirmAction.message}</p>
+              {deleteError && <p role="alert" className="mb-5 text-sm font-medium text-rose-500">{deleteError}</p>}
               <div className="flex gap-3">
                 <button
                   onClick={() => setConfirmAction(null)}
-                  className={`flex-1 py-3.5 rounded-xl font-bold transition-all active:scale-95 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-900'}`}
+                  disabled={isDeletingAccount}
+                  className={`flex-1 py-3.5 rounded-xl font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-900'}`}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={executeConfirmAction}
-                  className={`flex-1 py-3.5 rounded-xl font-bold transition-all shadow-lg active:scale-95 ${confirmAction.buttonStyle}`}
+                  disabled={isDeletingAccount}
+                  className={`flex-1 py-3.5 rounded-xl font-bold transition-all shadow-lg active:scale-95 disabled:cursor-wait disabled:opacity-60 ${confirmAction.buttonStyle}`}
                 >
-                  {confirmAction.buttonText}
+                  {isDeletingAccount ? 'Deleting…' : confirmAction.buttonText}
                 </button>
               </div>
             </motion.div>

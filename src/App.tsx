@@ -22,6 +22,7 @@ const OnboardingScreen = lazy(() => import('./screens/OnboardingScreen'));
 const LoginScreen = lazy(() => import('./screens/LoginScreen'));
 const PrivacyPolicyScreen = lazy(() => import('./screens/PrivacyPolicyScreen'));
 const TermsOfServiceScreen = lazy(() => import('./screens/TermsOfServiceScreen'));
+const InsightsScreen = lazy(() => import('./screens/InsightsScreen'));
 
 function LoadingFallback() {
   return (
@@ -91,6 +92,7 @@ function AppContent() {
                 <Route path="bookmarks" element={<BookmarksScreen />} />
                 <Route path="journal" element={<PrayerJournalScreen />} />
                 <Route path="settings" element={<SettingsScreen />} />
+                <Route path="insights" element={<InsightsScreen />} />
                 <Route path="privacy" element={<PrivacyPolicyScreen />} />
                 <Route path="terms" element={<TermsOfServiceScreen />} />
 

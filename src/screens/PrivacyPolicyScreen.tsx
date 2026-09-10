@@ -23,36 +23,42 @@ export default function PrivacyPolicyScreen() {
           <h3>1. Local Data</h3>
           <p>
             Bible Nova stores your profile, bookmarks, prayer journal, settings, and reading progress locally on your device.
-            The app does not currently provide user accounts or cloud sync.
+            It also stores your time spent across app pages locally so the private Insights page can show your personal rhythm.
+            If you sign in, account authentication and premium entitlement records are handled by the configured Supabase service; your local reading data remains on your device unless a feature explicitly sends it for processing.
           </p>
 
           <h3>2. AI Interactions</h3>
           <p>
-            When you chat with Father AI, your message and recent conversation context are sent to our AI endpoint so a response can be generated through Groq.
+            When you chat with Father AI, your message and recent conversation context are sent to our AI endpoint so a response can be generated through Groq. When you use voice input, the recorded audio is sent to our transcription endpoint so Groq can convert it to text.
             Do not include passwords, financial information, or other sensitive personal details in chat messages.
           </p>
 
           <h3>3. Third-Party Services</h3>
           <p>We use third-party services to provide core app features:</p>
           <ul>
-            <li><strong>Groq:</strong> Generates Father AI chat responses.</li>
+            <li><strong>Groq:</strong> Generates Father AI chat responses and transcribes voice input when you use the microphone.</li>
             <li><strong>Bible API:</strong> Retrieves some scripture content when online; bundled KJV content is used for offline fallback.</li>
             <li><strong>Device services:</strong> Enable optional features such as speech recognition, text-to-speech, sharing, and notifications.</li>
             <li><strong>Google Play:</strong> Processes Bible Nova Plus subscriptions and provides purchase and subscription status to the app. Bible Nova does not receive or store your payment card details.</li>
           </ul>
 
-          <h3>4. No Account Required</h3>
+          <h3>4. Share Cards</h3>
+          <p>
+            Premium Insights share cards are generated on your device. Bible Nova does not upload your time summary or the generated image; it is passed to your device share sheet only when you choose to share it.
+          </p>
+
+          <h3>5. No Account Required</h3>
           <p>
             You do not need to create an account to use Bible Nova as a guest. If you use email or Google sign-in, authentication and account session data are handled by the configured Supabase service. If you delete the app or clear app data, local information may be lost.
           </p>
 
-          <h3>5. Spiritual Guidance Disclaimer</h3>
+          <h3>6. Spiritual Guidance Disclaimer</h3>
           <p>
             Father AI is designed for spiritual guidance and reflective conversation only.
             It is not a substitute for professional medical, psychological, legal, financial, or emergency services.
           </p>
 
-          <h3>6. Contact</h3>
+          <h3>7. Contact</h3>
           <p>If you have questions about this policy, please contact us through the app support channels.</p>
         </div>
       </div>

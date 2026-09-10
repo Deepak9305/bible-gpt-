@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useProfile } from '../context/ProfileContext';
-import { MessageSquare, BookOpen, Bookmark, Volume2, VolumeX, Loader2, Heart, Shield, Sun, Lightbulb, PenLine, Share2, Flame, Trophy, Rocket } from 'lucide-react';
+import { MessageSquare, BookOpen, Bookmark, Volume2, VolumeX, Loader2, Heart, Shield, Sun, Lightbulb, PenLine, Share2, Flame, Trophy, BarChart3, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { POPULAR_VERSES } from '../data/popularVerses';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
@@ -362,18 +362,21 @@ export default function HomeScreen() {
             </p>
           </Link>
 
-          <div className={`p-6 rounded-3xl border opacity-50 cursor-not-allowed ${theme === 'dark'
-            ? 'bg-gray-800/30 border-gray-800'
-            : 'bg-gray-50 border-gray-100'
+          <Link to="/insights" className={`relative p-6 rounded-3xl border transition-colors transition-shadow transition-transform duration-200 active:scale-95 hover:shadow-xl ${theme === 'dark'
+            ? 'bg-gradient-to-br from-[#152c5b] to-[#261849] border-blue-300/20 hover:border-cyan-300/40'
+            : 'bg-gradient-to-br from-cyan-50 to-violet-50 border-cyan-100 hover:border-cyan-200'
             }`}>
-            <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-700 text-gray-400 flex items-center justify-center shadow-sm mb-4">
-              <Rocket size={24} />
+            <span className="absolute right-4 top-4 flex items-center gap-1 rounded-full bg-violet-500/15 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-violet-400">
+              <Sparkles size={11} /> Plus
+            </span>
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-600 shadow-sm dark:bg-cyan-400/15 dark:text-cyan-300">
+              <BarChart3 size={24} />
             </div>
-            <h3 className="font-bold text-lg mb-1">Coming Soon</h3>
-            <p className="text-xs opacity-50">
-              More spiritual tools
+            <h3 className="mb-1 text-lg font-bold">Insights</h3>
+            <p className={`text-xs ${theme === 'dark' ? 'text-blue-100/65' : 'text-slate-500'}`}>
+              See your time with God
             </p>
-          </div>
+          </Link>
         </motion.div>
       </motion.div>
     </div>

@@ -4,6 +4,7 @@ import { StorageService } from './storageService';
 
 const PREFERRED_VOICE_KEY = 'preferred_tts_voice_preset';
 const LEGACY_PREFERRED_VOICE_KEY = 'preferred_tts_voice';
+const VOICE_CUSTOMIZATION_KEY_PREFIX = 'tts_voice_customization_';
 
 export type FatherlyVoiceId = 'father-gabriel' | 'father-thomas' | 'father-matthew';
 
@@ -18,6 +19,11 @@ export interface FatherlyVoicePreset {
   nativeTargets: string[];
   avoidTargets?: string[];
   fallbackOffset: number;
+}
+
+export interface VoiceCustomization {
+  rate: number;
+  pitch: number;
 }
 
 export const FATHERLY_VOICE_PRESETS: FatherlyVoicePreset[] = [
@@ -198,6 +204,55 @@ const voiceMatchesTarget = (voice: SpeechSynthesisVoice, target: string) => {
 const getPresetById = (id: FatherlyVoiceId) =>
   FATHERLY_VOICE_PRESETS.find(preset => preset.id === id) ?? FATHERLY_VOICE_PRESETS[0];
 
+const clampVoiceRate = (value: number) => Math.min(1.3, Math.max(0.6, value));
+const clampVoicePitch = (value: number) => Math.min(1.4, Math.max(0.6, value));
+
+const normalizeVoiceCustomization = (id: FatherlyVoiceId, value?: Partial<VoiceCustomization>): VoiceCustomization => {
+  const preset = getPresetById(id);
+  return {
+    rate: clampVoiceRate(Number.isFinite(value?.rate) ? Number(value?.rate) : preset.rate),
+    pitch: clampVoicePitch(Number.isFinite(value?.pitch) ? Number(value?.pitch) : preset.pitch),
+  };
+};
+
+const voiceCustomizationCache: Partial<Record<FatherlyVoiceId, VoiceCustomization>> = {};
+
+export const getVoiceCustomization = async (id: FatherlyVoiceId): Promise<VoiceCustomization> => {
+  const cached = voiceCustomizationCache[id];
+  if (cached) return cached;
+
+  const fallback = normalizeVoiceCustomization(id);
+  const stored = await StorageService.get(`${VOICE_CUSTOMIZATION_KEY_PREFIX}${id}`);
+  if (!stored) {
+    voiceCustomizationCache[id] = fallback;
+    return fallback;
+  }
+
+  try {
+    const parsed = JSON.parse(stored) as Partial<VoiceCustomization>;
+    const customization = normalizeVoiceCustomization(id, parsed);
+    voiceCustomizationCache[id] = customization;
+    return customization;
+  } catch {
+    voiceCustomizationCache[id] = fallback;
+    return fallback;
+  }
+};
+
+export const setVoiceCustomization = async (id: FatherlyVoiceId, value: Partial<VoiceCustomization>) => {
+  const customization = normalizeVoiceCustomization(id, value);
+  voiceCustomizationCache[id] = customization;
+  await StorageService.set(`${VOICE_CUSTOMIZATION_KEY_PREFIX}${id}`, JSON.stringify(customization));
+  return customization;
+};
+
+export const resetVoiceCustomization = async (id: FatherlyVoiceId) => {
+  const fallback = normalizeVoiceCustomization(id);
+  delete voiceCustomizationCache[id];
+  await StorageService.remove(`${VOICE_CUSTOMIZATION_KEY_PREFIX}${id}`);
+  return fallback;
+};
+
 const loadWebVoices = (): Promise<SpeechSynthesisVoice[]> =>
   new Promise(resolve => {
     const immediate = window.speechSynthesis?.getVoices() ?? [];
@@ -280,6 +335,11 @@ let nativeSpeaking = false;
 let nativeSpeechToken = 0;
 let activeUtterance: SpeechSynthesisUtterance | null = null;
 
+export interface TextToSpeechOptions {
+  voiceId?: FatherlyVoiceId;
+  customization?: VoiceCustomization;
+}
+
 export const stopAudio = async (): Promise<void> => {
   if (Capacitor.isNativePlatform()) {
     nativeSpeaking = false;
@@ -292,11 +352,13 @@ export const stopAudio = async (): Promise<void> => {
   }
 };
 
-export const playTextToSpeech = async (text: string, onEnded?: () => void): Promise<void> => {
+export const playTextToSpeech = async (text: string, onEnded?: () => void, options?: TextToSpeechOptions): Promise<void> => {
   const clean = cleanText(text);
   if (!clean) { onEnded?.(); return; }
 
-  const preset = getPresetById(await getPreferredVoiceId());
+  const voiceId = options?.voiceId ?? await getPreferredVoiceId();
+  const preset = getPresetById(voiceId);
+  const customization = options?.customization ?? await getVoiceCustomization(voiceId);
 
   if (Capacitor.isNativePlatform()) {
     await stopAudio();
@@ -308,8 +370,8 @@ export const playTextToSpeech = async (text: string, onEnded?: () => void): Prom
       await TextToSpeech.speak({
         text: clean,
         lang: preset.lang,
-        rate: preset.rate,
-        pitch: preset.pitch,
+        rate: customization.rate,
+        pitch: customization.pitch,
         volume: 1.0,
         category: 'playback',
         queueStrategy: QueueStrategy.Flush,
@@ -341,8 +403,8 @@ export const playTextToSpeech = async (text: string, onEnded?: () => void): Prom
   activeUtterance = utterance;
   if (voice) utterance.voice = voice;
   utterance.lang = preset.lang;
-  utterance.pitch = preset.pitch;
-  utterance.rate = preset.rate;
+  utterance.pitch = customization.pitch;
+  utterance.rate = customization.rate;
   utterance.volume = 1.0;
 
   return new Promise<void>(resolve => {

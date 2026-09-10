@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Heart } from 'lucide-react';
+import { FREE_DAILY_CHAT_LIMIT } from '../services/statsService';
 
 interface LimitModalProps {
   isOpen: boolean;
@@ -45,7 +46,7 @@ export default function LimitModal({ isOpen, onClose, onUpgrade }: LimitModalPro
               </div>
               <h2 className="text-xl font-bold text-white mb-1 tracking-tight">Daily Limit Reached</h2>
               <p className="text-amber-100 text-xs leading-relaxed max-w-[240px] mx-auto">
-                To keep this service sustainable for everyone, we limit conversations to 5 messages per day.
+                To keep this service sustainable for everyone, we limit conversations to {FREE_DAILY_CHAT_LIMIT} messages per day.
               </p>
             </div>
 

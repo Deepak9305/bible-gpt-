@@ -2,7 +2,9 @@ import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Check, Crown, ExternalLink, Loader2, RotateCcw, X } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { usePremium, type PremiumPlan } from '../context/PremiumContext';
+import { useNavigate } from 'react-router-dom';
 
 interface PremiumModalProps {
   isOpen: boolean;
@@ -13,10 +15,13 @@ const BENEFITS = [
   'Unlimited Father AI conversations',
   'Deeper personalized Bible guidance',
   'Premium journeys and prayer support',
+  'Weekly spiritual insights and share cards',
 ];
 
 export default function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
   const { theme } = useTheme();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const {
     isPremium,
     isReady,
@@ -36,8 +41,32 @@ export default function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
   const yearly = planDetails('yearly');
   const monthly = planDetails('monthly');
   const isBusy = isPurchasing || isRestoring;
+  const isGuest = user?.isGuest === true;
+  const [isRedirectingToLogin, setIsRedirectingToLogin] = React.useState(false);
+
+  const handleLoginToBuy = async () => {
+    if (isRedirectingToLogin) return;
+    setIsRedirectingToLogin(true);
+    try {
+      try {
+        sessionStorage.setItem('premium_login_notice', 'Log in to buy Bible Nova Plus. Your guest progress will remain on this device.');
+      } catch {
+        // Continue even if session storage is unavailable.
+      }
+      onClose();
+      await logout();
+    } finally {
+      navigate('/login', { replace: true });
+      setIsRedirectingToLogin(false);
+    }
+  };
 
   const handlePurchase = async (plan: PremiumPlan) => {
+    if (isGuest) {
+      await handleLoginToBuy();
+      return;
+    }
+
     try {
       await purchase(plan);
     } catch {
@@ -118,7 +147,21 @@ export default function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
                 ))}
               </div>
 
-              {!isSupported ? (
+              {isGuest ? (
+                <div role="alert" className={`rounded-2xl border p-4 ${theme === 'dark' ? 'border-amber-300/30 bg-amber-500/10 text-amber-100' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
+                  <p className="font-bold">Log in to buy premium</p>
+                  <p className="mt-1 text-sm opacity-80">Premium subscriptions must be connected to a Bible Nova account.</p>
+                  <button
+                    type="button"
+                    onClick={() => void handleLoginToBuy()}
+                    disabled={isRedirectingToLogin}
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-wait disabled:opacity-60"
+                  >
+                    {isRedirectingToLogin && <Loader2 size={16} className="animate-spin" />}
+                    Log in to buy premium
+                  </button>
+                </div>
+              ) : !isSupported ? (
                 <div className={`rounded-2xl border p-4 text-sm leading-relaxed ${theme === 'dark' ? 'border-blue-300/20 bg-blue-950/50 text-blue-100/80' : 'border-blue-100 bg-blue-50 text-blue-800'}`}>
                   Subscriptions are available in the Android app through Google Play.
                 </div>
@@ -170,7 +213,7 @@ export default function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
                 </div>
               )}
 
-              {isSupported && !isPremium && (
+              {isSupported && !isPremium && !isGuest && (
                 <button
                   type="button"
                   onClick={() => void handleRestore()}

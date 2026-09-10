@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { isSupabaseConfigured, supabase } from './supabaseClient';
 import {
   Platform,
   ProductType,
@@ -47,6 +48,7 @@ const GOOGLE_PLAY_SIGNATURE_ALGORITHM: RsaHashedImportParams = {
 interface GooglePlayNativePurchase {
   receipt?: string;
   signature?: string;
+  purchaseToken?: string;
 }
 
 type GooglePlayTransaction = Transaction & {
@@ -114,6 +116,15 @@ const publish = (next: Partial<PremiumSnapshot>) => {
 
 const getRegisteredProduct = (): Product | undefined =>
   store.get(PREMIUM_PRODUCT_ID, ANDROID_PLATFORM);
+
+const getPremiumVerificationUrl = () => {
+  const baseUrl = (
+    import.meta.env.VITE_SITE_URL ||
+    import.meta.env.VITE_APP_URL ||
+    'https://biblenova.vercel.app'
+  ).replace(/\/$/, '');
+  return `${baseUrl}/api/premium/verify`;
+};
 
 const getPlanOffer = (product: Product, plan: PremiumPlan): Offer | undefined => {
   const basePlanId = PREMIUM_BASE_PLANS[plan];
@@ -187,6 +198,37 @@ const verifyGooglePlayTransaction = async (transaction: Transaction) => {
   }
 };
 
+const syncPurchaseWithServer = async (transaction: Transaction) => {
+  if (!isSupabaseConfigured) return;
+
+  const purchaseToken = (transaction as GooglePlayTransaction).nativePurchase?.purchaseToken;
+  if (!purchaseToken) return;
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) return;
+
+  try {
+    const response = await fetch(getPremiumVerificationUrl(), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        productId: PREMIUM_PRODUCT_ID,
+        purchaseToken,
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null) as { error?: string } | null;
+      console.warn('Premium server sync unavailable:', body?.error || response.statusText);
+    }
+  } catch (error) {
+    console.warn('Premium server sync failed:', error);
+  }
+};
+
 const hasVerifiedActivePremiumPurchase = async () => {
   const owned = store.owned({ id: PREMIUM_PRODUCT_ID, platform: ANDROID_PLATFORM });
   if (!owned) return false;
@@ -202,7 +244,10 @@ const hasVerifiedActivePremiumPurchase = async () => {
       transaction.state !== 'cancelled' &&
       (!transaction.expirationDate || transaction.expirationDate.getTime() > Date.now());
 
-    if (isActive && await verifyGooglePlayTransaction(transaction)) return true;
+    if (isActive && await verifyGooglePlayTransaction(transaction)) {
+      void syncPurchaseWithServer(transaction);
+      return true;
+    }
   }
 
   return false;
@@ -243,6 +288,7 @@ const handleApprovedTransaction = async (transaction: Transaction) => {
   }
 
   pendingPurchaseEntitlement = true;
+  void syncPurchaseWithServer(transaction);
   await refreshSnapshot();
 
   try {

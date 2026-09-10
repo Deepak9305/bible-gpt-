@@ -38,10 +38,10 @@ export default function SplashScreen({ onComplete, isReady = true }: SplashScree
   return (
     <motion.div
       className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-950"
-      initial={{ opacity: 1 }}
+      initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.6 }}
+      transition={{ duration: 0.8, ease: 'easeOut' }}
     >
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}

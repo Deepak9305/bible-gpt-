@@ -8,9 +8,10 @@ Bible Nova is a local-first Bible companion built with React, Vite, and Capacito
 - Offline-capable KJV Bible reading and search
 - Local bookmarks, prayer journal, and usage stats
 - Father AI chat through the `/api/chat` serverless route
+- Google Play premium subscription with monthly and yearly base plans
 - Native text-to-speech, speech recognition, sharing, notifications, and AdMob
 
-There is currently no premium subscription, no real authentication, and no Supabase/cloud-sync backend.
+Premium billing is connected to the Google Play product `biblenova` and its active `monthly` and `yearly` base plans. Play purchase testing requires an Android build installed through an internal, closed, or open Play testing track with a licensed tester account. Server-side receipt validation is not configured yet.
 
 ## Run Locally
 

@@ -31,3 +31,6 @@ project(':capgo-capacitor-app-tracking-transparency').projectDir = new File('../
 
 include ':capgo-capacitor-speech-recognition'
 project(':capgo-capacitor-speech-recognition').projectDir = new File('../node_modules/@capgo/capacitor-speech-recognition/android')
+
+include ':capacitor-plugin-cdv-purchase'
+project(':capacitor-plugin-cdv-purchase').projectDir = new File('../node_modules/capacitor-plugin-cdv-purchase/android')

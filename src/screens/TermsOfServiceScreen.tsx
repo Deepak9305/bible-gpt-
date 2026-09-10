@@ -41,15 +41,20 @@ export default function TermsOfServiceScreen() {
 
           <h3>4. Local Data</h3>
           <p>
-            The app currently uses a local profile rather than a server account. Clearing app data or uninstalling the app may remove your local profile, journal entries, bookmarks, and settings.
+            Bible Nova stores the active profile, journal entries, bookmarks, settings, and reading progress locally on your device. Clearing app data or uninstalling the app may remove this local information.
           </p>
 
-          <h3>5. Disclaimer of Warranties</h3>
+          <h3>5. Premium Subscriptions</h3>
+          <p>
+            Bible Nova Plus subscriptions are purchased and managed through Google Play. The available plans are monthly and yearly auto-renewing subscriptions. The price shown at checkout is provided by Google Play for your account and region. Unless canceled through Google Play, a subscription renews at the end of each billing period. Google Play handles payment, cancellation, refunds, and applicable taxes under its policies.
+          </p>
+
+          <h3>6. Disclaimer of Warranties</h3>
           <p>
             The app is provided as is without warranties of any kind. We do not guarantee that AI-generated responses or scripture search results will always be accurate, complete, or available.
           </p>
 
-          <h3>6. Limitation of Liability</h3>
+          <h3>7. Limitation of Liability</h3>
           <p>
             We shall not be liable for indirect, incidental, or consequential damages arising from your use of the app.
           </p>

@@ -7,6 +7,8 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { StorageService } from '../services/storageService';
 import { FATHERLY_VOICE_PRESETS, getPreferredVoiceId, setPreferredVoiceId, playTextToSpeech, stopAudio, type FatherlyVoiceId } from '../services/ttsService';
+import { usePremium } from '../context/PremiumContext';
+import PremiumModal from '../components/PremiumModal';
 
 const AVATARS = ['✝️', '👤', '🕊️', '📖', '🕯️', '⛪', '🌟', '😇', '🦁', '🐑', '🍞', '🍷', '🔥', '💧'];
 
@@ -94,6 +96,7 @@ export default function SettingsScreen() {
   const { theme, toggleTheme, highContrastNav, toggleHighContrastNav } = useTheme();
   const { profile, updateProfile, resetProfile } = useProfile();
   const { logout } = useAuth();
+  const { isPremium } = usePremium();
 
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editName, setEditName] = useState(profile?.name || '');
@@ -107,6 +110,7 @@ export default function SettingsScreen() {
   const [selectedVoiceId, setSelectedVoiceId] = useState<FatherlyVoiceId>(FATHERLY_VOICE_PRESETS[0].id);
   const [previewingVoiceId, setPreviewingVoiceId] = useState<FatherlyVoiceId | null>(null);
   const [isVoiceExpanded, setIsVoiceExpanded] = useState(false);
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
 
   React.useEffect(() => {
     async function loadVoices() {
@@ -375,6 +379,13 @@ export default function SettingsScreen() {
         <motion.section variants={itemVariants}>
           <SectionHeading icon={Database} title="Account & Data" caption="Manage your app and data" />
           <div className={`mt-3 overflow-hidden rounded-[22px] border shadow-[0_14px_35px_rgba(0,0,0,0.12)] backdrop-blur-xl ${theme === 'dark' ? 'border-blue-300/25 bg-[#0a2457]/60' : 'border-slate-200 bg-white/90'}`}>
+            <SettingItem
+              icon={Sparkles}
+              iconColor={theme === 'dark' ? 'bg-violet-500/35 text-violet-200' : 'bg-violet-100 text-violet-600'}
+              title={isPremium ? 'Bible Nova Plus' : 'Unlock Bible Nova Plus'}
+              subtitle={isPremium ? 'Your premium access is active' : 'Unlimited Father AI and deeper guidance'}
+              onClick={() => setIsPremiumModalOpen(true)}
+            />
             <SettingItem icon={LogOut} iconColor={theme === 'dark' ? 'bg-rose-500/35 text-rose-300' : 'bg-red-100 text-red-600'} title="Log out" subtitle="Return to the sign-in screen" onClick={handleAccountLogout} destructive />
             <SettingItem icon={Trash2} iconColor={theme === 'dark' ? 'bg-amber-500/35 text-amber-200' : 'bg-orange-100 text-orange-600'} title="Restart Journey" subtitle="Reset your local profile" onClick={handleLogout} />
             <SettingItem icon={Trash2} iconColor={theme === 'dark' ? 'bg-rose-500/35 text-rose-300' : 'bg-red-100 text-red-600'} title="Clear Local Data" subtitle="Remove saved bookmarks and settings" onClick={clearData} destructive />
@@ -585,6 +596,8 @@ export default function SettingsScreen() {
           </div>
         )}
       </AnimatePresence>
+
+      <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} />
     </div>
   );
 }

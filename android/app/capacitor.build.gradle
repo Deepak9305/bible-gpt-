@@ -19,6 +19,7 @@ dependencies {
     implementation project(':capacitor-splash-screen')
     implementation project(':capgo-capacitor-app-tracking-transparency')
     implementation project(':capgo-capacitor-speech-recognition')
+    implementation project(':capacitor-plugin-cdv-purchase')
 
 }
 

@@ -3,6 +3,7 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './context/ThemeContext';
 import { ProfileProvider, useProfile } from './context/ProfileContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { PremiumProvider } from './context/PremiumContext';
 import Layout from './components/Layout';
 
 import SplashScreen from './components/SplashScreen';
@@ -108,9 +109,11 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <ProfileProvider>
-          <Router>
-            <AppContent />
-          </Router>
+          <PremiumProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </PremiumProvider>
         </ProfileProvider>
       </AuthProvider>
     </ThemeProvider>

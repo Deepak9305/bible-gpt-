@@ -6,6 +6,8 @@ import { sendMessageStream } from '../services/aiService';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
 import { checkDailyLimit, incrementDailyUsage } from '../services/statsService';
 import LimitModal from '../components/LimitModal';
+import PremiumModal from '../components/PremiumModal';
+import { usePremium } from '../context/PremiumContext';
 import { Send, Bot, Volume2, VolumeX, Mic, MicOff, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useLocation } from 'react-router-dom';
@@ -91,6 +93,7 @@ const MessageItem = React.memo(({
 export default function ChatScreen() {
   const { theme } = useTheme();
   const { profile } = useProfile();
+  const { isPremium } = usePremium();
   const location = useLocation();
   const [messages, setMessages] = useState<Message[]>([
     { id: '1', role: 'assistant', content: 'Peace be with you, my child. How may I guide you today?' }
@@ -102,6 +105,7 @@ export default function ChatScreen() {
   const [isListening, setIsListening] = useState(false);
   const [isSpeechSupported, setIsSpeechSupported] = useState(true);
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
@@ -169,7 +173,7 @@ export default function ChatScreen() {
       setIsListening(false);
     }
 
-    if (checkDailyLimit()) {
+    if (!isPremium && checkDailyLimit()) {
       setIsLimitModalOpen(true);
       return;
     }
@@ -213,7 +217,7 @@ export default function ChatScreen() {
         ));
       }
 
-      incrementDailyUsage();
+      if (!isPremium) incrementDailyUsage();
 
     } catch (error) {
       console.error('Chat error:', error);
@@ -325,7 +329,12 @@ export default function ChatScreen() {
       <LimitModal
         isOpen={isLimitModalOpen}
         onClose={() => setIsLimitModalOpen(false)}
+        onUpgrade={() => {
+          setIsLimitModalOpen(false);
+          setIsPremiumModalOpen(true);
+        }}
       />
+      <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} />
 
       {/* Header */}
       <div className="safe-area-top bg-white dark:bg-gray-800 border-b dark:border-gray-700">

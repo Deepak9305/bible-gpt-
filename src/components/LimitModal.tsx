@@ -5,9 +5,10 @@ import { X, Heart } from 'lucide-react';
 interface LimitModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onUpgrade?: () => void;
 }
 
-export default function LimitModal({ isOpen, onClose }: LimitModalProps) {
+export default function LimitModal({ isOpen, onClose, onUpgrade }: LimitModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -51,8 +52,17 @@ export default function LimitModal({ isOpen, onClose }: LimitModalProps) {
             {/* Content */}
             <div className="px-6 pt-6 pb-6 space-y-4">
               <p className="text-sm text-stone-600 dark:text-stone-300 text-center leading-relaxed">
-                Thank you for understanding! Please return tomorrow for more conversations.
+                Thank you for understanding! Please return tomorrow for more conversations, or unlock unlimited guidance with Bible Nova Plus.
               </p>
+
+              {onUpgrade && (
+                <button
+                  onClick={onUpgrade}
+                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white rounded-2xl font-semibold transition-all"
+                >
+                  Explore Bible Nova Plus
+                </button>
+              )}
 
               <button
                 onClick={onClose}

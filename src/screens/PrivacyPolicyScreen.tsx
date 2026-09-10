@@ -38,11 +38,12 @@ export default function PrivacyPolicyScreen() {
             <li><strong>Groq:</strong> Generates Father AI chat responses.</li>
             <li><strong>Bible API:</strong> Retrieves some scripture content when online; bundled KJV content is used for offline fallback.</li>
             <li><strong>Device services:</strong> Enable optional features such as speech recognition, text-to-speech, sharing, and notifications.</li>
+            <li><strong>Google Play:</strong> Processes Bible Nova Plus subscriptions and provides purchase and subscription status to the app. Bible Nova does not receive or store your payment card details.</li>
           </ul>
 
           <h3>4. No Account Required</h3>
           <p>
-            You do not need to create an account to use Bible Nova. If you delete the app or clear app data, local information may be lost.
+            You do not need to create an account to use Bible Nova as a guest. If you use email or Google sign-in, authentication and account session data are handled by the configured Supabase service. If you delete the app or clear app data, local information may be lost.
           </p>
 
           <h3>5. Spiritual Guidance Disclaimer</h3>

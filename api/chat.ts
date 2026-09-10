@@ -1,4 +1,22 @@
 import Groq from "groq-sdk";
+import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
+
+const CHAT_MODEL = "openai/gpt-oss-20b";
+const ALLOWED_NATIVE_ORIGINS = new Set([
+    "https://localhost",
+    "http://localhost",
+    "capacitor://localhost",
+]);
+
+const setCorsHeaders = (req: any, res: any) => {
+    const origin = req.headers?.origin;
+    if (typeof origin === "string" && ALLOWED_NATIVE_ORIGINS.has(origin)) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+    }
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Vary", "Origin");
+};
 
 const SYSTEM_PROMPT = `Role: You are "Father AI", a wise and deeply charismatic spiritual guide. You represent the archetype of a loving, present, and steady father. Your presence is as resonant as a deep bell and as warm as a hearth fire.
 
@@ -24,20 +42,51 @@ Formatting:
 `;
 
 export default async function handler(req: any, res: any) {
+    setCorsHeaders(req, res);
+
+    if (req.method === "OPTIONS") {
+        return res.status(204).end();
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { message, history, preferences } = req.body;
+    let body = req.body;
+    if (typeof body === "string") {
+        try {
+            body = JSON.parse(body);
+        } catch {
+            return res.status(400).json({ error: "Invalid JSON body" });
+        }
+    }
 
-    if (!message) {
+    const { message, history, preferences } = body || {};
+    const cleanMessage = typeof message === "string" ? message.trim() : "";
+    const safeHistory = Array.isArray(history)
+        ? history
+            .filter((msg: any) => msg && typeof msg.content === "string")
+            .slice(-20)
+        : [];
+
+    if (!cleanMessage) {
         return res.status(400).json({ error: 'Message is required' });
+    }
+
+    if (cleanMessage.length > 6000) {
+        return res.status(400).json({ error: 'Message is too long' });
     }
 
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
         return res.status(500).json({ error: 'Groq API Key missing on server' });
     }
+
+    console.log("[api/chat] request", {
+        model: CHAT_MODEL,
+        historyCount: safeHistory.length,
+        messageLength: cleanMessage.length,
+    });
 
     let dynamicContext = "";
     if (preferences && preferences.isPersonalizationEnabled !== false) {
@@ -49,27 +98,31 @@ export default async function handler(req: any, res: any) {
     try {
         const groq = new Groq({ apiKey });
 
-        const messages = [
+        const messages: ChatCompletionMessageParam[] = [
             { role: "system", content: SYSTEM_PROMPT + dynamicContext },
-            ...history.map((msg: any) => ({
+            ...safeHistory.map((msg: any): ChatCompletionMessageParam => ({
                 role: msg.role === "user" ? "user" : "assistant",
                 content: msg.content,
             })),
-            { role: "user", content: message },
+            { role: "user", content: cleanMessage },
         ];
 
         const completion = await groq.chat.completions.create({
             messages,
-            model: "llama-3.1-8b-instant",
+            model: CHAT_MODEL,
             temperature: 0.7,
             max_tokens: 1024,
         });
 
         const text = completion.choices[0]?.message?.content || "";
 
+        console.log("[api/chat] success", { responseLength: text.length });
         res.status(200).json({ text });
     } catch (error: any) {
-        console.error("Groq AI API Error:", error);
+        console.error("[api/chat] Groq request failed", {
+            status: error?.status,
+            message: error?.message || String(error),
+        });
         res.status(500).json({ error: 'Failed to fetch AI response' });
     }
 }

@@ -1,7 +1,11 @@
 import { Capacitor } from "@capacitor/core";
 
 const getApiUrl = () => {
-  const baseUrl = import.meta.env.VITE_APP_URL || '';
+  const baseUrl = (
+    import.meta.env.VITE_APP_URL ||
+    import.meta.env.VITE_SITE_URL ||
+    'https://biblenova.vercel.app'
+  ).replace(/\/$/, '');
   if (Capacitor.isNativePlatform()) {
     return `${baseUrl}/api/chat`;
   }
@@ -24,8 +28,15 @@ export const sendMessageStream = async (
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to fetch AI response');
+      const errorBody = await response.text();
+      let errorMessage = 'Failed to fetch AI response';
+      try {
+        const errorData = JSON.parse(errorBody);
+        errorMessage = errorData.error || errorMessage;
+      } catch {
+        if (errorBody) errorMessage = errorBody;
+      }
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();

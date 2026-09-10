@@ -249,7 +249,7 @@ export default function SettingsScreen() {
                 )}
                 {!profile?.avatar?.startsWith('http') && (
                   <span className="absolute flex h-12 w-12 items-center justify-center rounded-[13px] bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-[0_0_16px_rgba(124,58,237,0.7)]" aria-label="Cross avatar">
-                    <Cross size={28} strokeWidth={3.1} style={{ transform: 'scaleY(1.45)', transformOrigin: '50% 100%' }} />
+                    <Cross size={30} strokeWidth={3.2} style={{ transform: 'translateY(-2.5px) scaleX(0.68) scaleY(1.4)', transformOrigin: '50% 50%' }} />
                   </span>
                 )}
               </div>

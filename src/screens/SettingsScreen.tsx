@@ -205,7 +205,7 @@ export default function SettingsScreen() {
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 bg-cover bg-top bg-no-repeat opacity-90"
-          style={{ backgroundImage: "url('/settings-background.png')" }}
+          style={{ backgroundImage: "url('/settings-background.webp')" }}
         />
       )}
 
@@ -386,7 +386,7 @@ export default function SettingsScreen() {
           <div className={`mt-3 overflow-hidden rounded-[22px] border shadow-[0_14px_35px_rgba(0,0,0,0.12)] backdrop-blur-xl ${theme === 'dark' ? 'border-blue-300/25 bg-[#0a2457]/60' : 'border-slate-200 bg-white/90'}`}>
             <div className={`flex items-center gap-4 border-b p-4 ${theme === 'dark' ? 'border-white/10' : 'border-slate-200'}`}>
               <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-[20px] bg-gradient-to-br from-blue-500 to-violet-600 shadow-[0_0_22px_rgba(59,130,246,0.45)]">
-                <img src="/logo.png" alt="Bible Nova logo" className="h-[78px] w-[78px] object-contain drop-shadow-[0_4px_8px_rgba(15,23,42,0.35)]" />
+                <img src="/settings-logo.webp" alt="Bible Nova logo" className="h-[78px] w-[78px] object-contain drop-shadow-[0_4px_8px_rgba(15,23,42,0.35)]" />
               </div>
               <div className="min-w-0 flex-1">
                 <h4 className="text-lg font-bold">Bible Nova</h4>

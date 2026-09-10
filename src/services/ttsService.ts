@@ -118,7 +118,8 @@ export const FATHERLY_VOICE_PRESETS: FatherlyVoicePreset[] = [
   },
 ];
 
-const DEFAULT_VOICE_ID: FatherlyVoiceId = FATHERLY_VOICE_PRESETS[0].id;
+// Match the Settings reference: Voice 2 is the calm, pastoral default.
+const DEFAULT_VOICE_ID: FatherlyVoiceId = 'father-thomas';
 
 const FEMALE_KEYWORDS = [
   'female',

@@ -209,8 +209,8 @@ export default function SettingsScreen() {
         />
       )}
 
-      <div className="relative z-10 flex h-full flex-col">
-      
+      <div className="relative z-10 h-full min-h-0">
+      <div className="h-full min-h-0 overflow-y-auto overscroll-contain pb-[calc(6rem+env(safe-area-inset-bottom))]">
       {/* Reference-style header */}
       <header className="flex-shrink-0 px-6 pb-4 pt-5">
         <div className="flex items-start justify-between gap-4">
@@ -229,7 +229,6 @@ export default function SettingsScreen() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto pb-28">
       <motion.div 
         variants={containerVariants}
         initial="hidden"
@@ -242,13 +241,17 @@ export default function SettingsScreen() {
           <div className="absolute -inset-3 rounded-[30px] bg-blue-500/20 blur-2xl" />
           <div className={`relative flex items-center gap-4 overflow-hidden rounded-[24px] border p-4 shadow-[0_16px_45px_rgba(0,0,0,0.18)] backdrop-blur-xl ${theme === 'dark' ? 'border-blue-300/30 bg-[#0a2457]/65' : 'border-white bg-white/90 shadow-blue-900/10'}`}>
             <div className="flex min-w-0 flex-1 items-center gap-4">
-              <div className={`relative flex h-[84px] w-[84px] flex-shrink-0 items-center justify-center rounded-full border-2 text-transparent shadow-[0_0_18px_rgba(96,165,250,0.75)] ${theme === 'dark' ? 'border-blue-300 bg-indigo-700' : 'border-white bg-indigo-100'}`}>
+              <div className={`relative flex h-[84px] w-[84px] flex-shrink-0 items-center justify-center rounded-full border-2 text-transparent shadow-[0_0_18px_rgba(96,165,250,0.75)] ${theme === 'dark' ? 'border-blue-300 bg-indigo-950/70' : 'border-white bg-indigo-100'}`}>
                 {profile?.avatar?.startsWith('http') ? (
-                  <img src={profile.avatar} alt="Avatar" className="w-full h-full object-cover rounded-full" />
+                  <img src={profile.avatar} alt="Avatar" className="h-full w-full rounded-full object-cover" />
                 ) : (
                   profile?.avatar || '👤'
                 )}
-                {!profile?.avatar?.startsWith('http') && <Cross size={38} strokeWidth={2.4} className="text-white" />}
+                {!profile?.avatar?.startsWith('http') && (
+                  <span className="absolute flex h-12 w-12 items-center justify-center rounded-[13px] bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-[0_0_16px_rgba(124,58,237,0.7)]" aria-label="Cross avatar">
+                    <Cross size={34} strokeWidth={2.4} />
+                  </span>
+                )}
               </div>
               <div className="min-w-0">
                 <h2 className="truncate text-[1.55rem] font-bold leading-tight">{profile?.name || 'Beloved'}</h2>

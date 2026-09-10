@@ -11,7 +11,7 @@ Bible Nova is a local-first Bible companion built with React, Vite, and Capacito
 - Google Play premium subscription with monthly and yearly base plans
 - Native text-to-speech, speech recognition, sharing, notifications, and AdMob
 
-Premium billing is connected to the Google Play product `biblenova` and its active `monthly` and `yearly` base plans. Play purchase testing requires an Android build installed through an internal, closed, or open Play testing track with a licensed tester account. Server-side receipt validation is not configured yet.
+Premium billing is connected to the Google Play product `biblenova` and its active `monthly` and `yearly` base plans. The Android client verifies each Play purchase signature locally with the app's public licensing key. Play purchase testing requires an Android build installed through an internal, closed, or open Play testing track with a licensed tester account. Server-side purchase-token validation is not configured yet.
 
 ## Run Locally
 

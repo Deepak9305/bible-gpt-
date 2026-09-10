@@ -6,6 +6,7 @@ import {
   type IError,
   type Offer,
   type Product,
+  type Transaction,
 } from 'capacitor-plugin-cdv-purchase';
 
 export const PREMIUM_PRODUCT_ID = 'biblenova';
@@ -34,6 +35,24 @@ export interface PremiumSnapshot {
 const ANDROID_PLATFORM = Platform.GOOGLE_PLAY;
 const IS_ANDROID_NATIVE = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
 
+// This is the public Google Play licensing key for Bible Nova. It is safe to
+// embed in the app binary; the private signing key must remain in Play Console.
+const GOOGLE_PLAY_BASE64_PUBLIC_KEY =
+  'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA09wkUpHpqHNL5WvGehhonKAz6bQfDqTpDcjtR8/jGPmhJRxb+UlA5ZbqnoWwpwl8P261/79JJbNSNFdF5U85K3YOVoTdFZ7B0sJhJeIzn0ZagpXMA3yyKI6QLNEzxom6px7cFsI7hD0pSvjs7ZfJzwEHokm1m4+olkkMdP0Yfb9x4uiO1lgOpbJNXLC4H3gXNA0AXvoHJcnC+fm0++R5f9eMAQtHrKxpUYAZm9TyTA7d1z+wCHq6i6pp6aCCbaZSDxIro9iAsYitV366B4u796Ppcz2Gh+hFS8tAI+Iy267OHdp9L5fsllxvTgim4QcWZvwqvr4FW+t+XK9RDn1XtwIDAQAB';
+const GOOGLE_PLAY_SIGNATURE_ALGORITHM: RsaHashedImportParams = {
+  name: 'RSASSA-PKCS1-v1_5',
+  hash: 'SHA-1',
+};
+
+interface GooglePlayNativePurchase {
+  receipt?: string;
+  signature?: string;
+}
+
+type GooglePlayTransaction = Transaction & {
+  nativePurchase?: GooglePlayNativePurchase;
+};
+
 const emptyPlans = (): PremiumPlanDetails[] =>
   (Object.keys(PREMIUM_BASE_PLANS) as PremiumPlan[]).map((id) => ({
     id,
@@ -54,6 +73,8 @@ let initializationPromise: Promise<PremiumSnapshot> | null = null;
 const listeners = new Set<(value: PremiumSnapshot) => void>();
 let listenersRegistered = false;
 let pendingPurchaseEntitlement = false;
+let googlePlayPublicKeyPromise: Promise<CryptoKey> | null = null;
+const purchaseVerificationCache = new Map<string, boolean>();
 
 interface PurchaseWaiter {
   resolve: () => void;
@@ -119,13 +140,81 @@ const readPlans = (product: Product | undefined): PremiumPlanDetails[] =>
     };
   });
 
-const refreshSnapshot = () => {
+const base64ToBytes = (value: string) => {
+  const binary = atob(value.replace(/\s+/g, ''));
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+};
+
+const getGooglePlayPublicKey = async (): Promise<CryptoKey> => {
+  if (!googlePlayPublicKeyPromise) {
+    googlePlayPublicKeyPromise = crypto.subtle.importKey(
+      'spki',
+      base64ToBytes(GOOGLE_PLAY_BASE64_PUBLIC_KEY),
+      GOOGLE_PLAY_SIGNATURE_ALGORITHM,
+      false,
+      ['verify'],
+    );
+  }
+
+  return googlePlayPublicKeyPromise;
+};
+
+const verifyGooglePlayTransaction = async (transaction: Transaction) => {
+  const nativePurchase = (transaction as GooglePlayTransaction).nativePurchase;
+  const receipt = nativePurchase?.receipt;
+  const signature = nativePurchase?.signature;
+
+  if (!receipt || !signature) return false;
+
+  const cacheKey = `${transaction.transactionId}:${receipt}:${signature}`;
+  const cachedResult = purchaseVerificationCache.get(cacheKey);
+  if (cachedResult !== undefined) return cachedResult;
+
+  try {
+    const publicKey = await getGooglePlayPublicKey();
+    const verified = await crypto.subtle.verify(
+      GOOGLE_PLAY_SIGNATURE_ALGORITHM,
+      publicKey,
+      base64ToBytes(signature),
+      new TextEncoder().encode(receipt),
+    );
+    purchaseVerificationCache.set(cacheKey, verified);
+    return verified;
+  } catch (error) {
+    console.warn('Google Play purchase signature verification failed.', error);
+    purchaseVerificationCache.set(cacheKey, false);
+    return false;
+  }
+};
+
+const hasVerifiedActivePremiumPurchase = async () => {
+  const owned = store.owned({ id: PREMIUM_PRODUCT_ID, platform: ANDROID_PLATFORM });
+  if (!owned) return false;
+
+  const transactions = store.localTransactions.filter((transaction) =>
+    transaction.products.some((product) => product.id === PREMIUM_PRODUCT_ID),
+  );
+
+  for (const transaction of transactions) {
+    const isActive =
+      !transaction.isPending &&
+      !transaction.isConsumed &&
+      transaction.state !== 'cancelled' &&
+      (!transaction.expirationDate || transaction.expirationDate.getTime() > Date.now());
+
+    if (isActive && await verifyGooglePlayTransaction(transaction)) return true;
+  }
+
+  return false;
+};
+
+const refreshSnapshot = async () => {
   if (!IS_ANDROID_NATIVE) return snapshot;
 
   const product = getRegisteredProduct();
-  const owned = store.owned({ id: PREMIUM_PRODUCT_ID, platform: ANDROID_PLATFORM });
+  const verifiedOwned = await hasVerifiedActivePremiumPurchase();
   publish({
-    isPremium: pendingPurchaseEntitlement || owned,
+    isPremium: pendingPurchaseEntitlement || verifiedOwned,
     isReady: store.isReady,
     isAvailable: Boolean(product),
     plans: readPlans(product),
@@ -140,6 +229,30 @@ const rejectPurchaseWaiters = (error: Error) => {
     waiter.reject(error);
     purchaseWaiters.delete(waiter);
   });
+};
+
+const handleApprovedTransaction = async (transaction: Transaction) => {
+  if (!transaction.products.some((product) => product.id === PREMIUM_PRODUCT_ID)) return;
+
+  const verified = await verifyGooglePlayTransaction(transaction);
+  if (!verified) {
+    const error = new Error('Google Play purchase signature could not be verified.');
+    publish({ error: error.message });
+    rejectPurchaseWaiters(error);
+    return;
+  }
+
+  pendingPurchaseEntitlement = true;
+  await refreshSnapshot();
+
+  try {
+    await transaction.finish();
+  } catch (error) {
+    publish({ error: readableError(error, 'The subscription could not be acknowledged.').message });
+  } finally {
+    pendingPurchaseEntitlement = false;
+    await refreshSnapshot();
+  }
 };
 
 const waitForPremium = () => {
@@ -160,23 +273,11 @@ const registerStoreListeners = () => {
   listenersRegistered = true;
 
   store.when()
-    .productUpdated(() => refreshSnapshot(), 'bibleNovaPremiumProductUpdated')
-    .receiptUpdated(() => refreshSnapshot(), 'bibleNovaPremiumReceiptUpdated')
-    .receiptsReady(() => refreshSnapshot(), 'bibleNovaPremiumReceiptsReady')
-    .finished(() => refreshSnapshot(), 'bibleNovaPremiumFinished')
-    .approved((transaction) => {
-      if (!transaction.products.some((product) => product.id === PREMIUM_PRODUCT_ID)) return;
-
-      pendingPurchaseEntitlement = true;
-      refreshSnapshot();
-
-      // No server validator is configured in this project yet. Finishing acknowledges
-      // the Play purchase; a server-side validator should be added before protecting
-      // expensive backend resources with this client-only entitlement.
-      void transaction.finish().catch((error) => {
-        publish({ error: readableError(error, 'The subscription could not be acknowledged.').message });
-      });
-    }, 'bibleNovaPremiumApproved')
+    .productUpdated(() => { void refreshSnapshot(); }, 'bibleNovaPremiumProductUpdated')
+    .receiptUpdated(() => { void refreshSnapshot(); }, 'bibleNovaPremiumReceiptUpdated')
+    .receiptsReady(() => { void refreshSnapshot(); }, 'bibleNovaPremiumReceiptsReady')
+    .finished(() => { void refreshSnapshot(); }, 'bibleNovaPremiumFinished')
+    .approved((transaction) => { void handleApprovedTransaction(transaction); }, 'bibleNovaPremiumApproved')
     .pending((transaction) => {
       if (transaction.products.some((product) => product.id === PREMIUM_PRODUCT_ID)) {
         publish({ error: 'The payment is pending in Google Play.' });
@@ -228,7 +329,7 @@ export const initializePurchases = async (): Promise<PremiumSnapshot> => {
         });
       } else {
         publish({ isReady: true, error: null });
-        refreshSnapshot();
+        await refreshSnapshot();
       }
 
       return snapshot;
@@ -282,8 +383,7 @@ export const purchasePremiumPlan = async (plan: PremiumPlan) => {
   }
 
   await completion;
-  pendingPurchaseEntitlement = false;
-  refreshSnapshot();
+  await refreshSnapshot();
 };
 
 export const restorePremiumPurchases = async () => {
@@ -295,7 +395,7 @@ export const restorePremiumPurchases = async () => {
   const error = await store.restorePurchases();
   if (error) throw new Error(errorMessage(error, 'Google Play could not restore purchases.'));
   await store.update();
-  const next = refreshSnapshot();
+  const next = await refreshSnapshot();
   if (!next.isPremium) throw new Error('No active Bible Nova subscription was found for this Google Play account.');
 };
 

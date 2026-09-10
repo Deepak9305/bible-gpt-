@@ -67,11 +67,11 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
 
       {/* Mobile Bottom Nav */}
       {!isKeyboardVisible && (
-        <nav className={`fixed bottom-0 left-0 right-0 border-t md:hidden backdrop-blur-lg ${theme === 'dark'
-          ? 'bg-gray-900/90 border-gray-800'
-          : 'bg-white/90 border-gray-200'
-          } z-50 pb-[env(safe-area-inset-bottom)]`}>
-          <div className="flex justify-around items-center h-16 px-2">
+        <nav className={`fixed bottom-0 left-0 right-0 z-50 overflow-hidden rounded-t-[34px] border border-b-0 md:hidden backdrop-blur-xl pb-[env(safe-area-inset-bottom)] ${theme === 'dark'
+          ? 'border-blue-400/25 bg-[#071a3a]/90 shadow-[0_-8px_30px_rgba(3,14,38,0.45)]'
+          : 'border-slate-200 bg-white/90 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]'
+          }`}>
+          <div className="flex h-16 items-center justify-around px-3">
             {navItems.map(({ to, icon: Icon, label }) => (
               <NavLink
                 key={to}

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useProfile } from '../context/ProfileContext';
 import { useAuth } from '../context/AuthContext';
-import { Accessibility, ChevronDown, ChevronRight, Check, Cross, Database, FileText, Info, LogOut, Moon, Pencil, Play, Shield, SlidersHorizontal, Sparkles, Square, Sun, Trash2, Volume2, X } from 'lucide-react';
+import { Accessibility, ChevronDown, ChevronRight, Check, Database, FileText, Info, LogOut, Moon, Pencil, Play, Shield, SlidersHorizontal, Sparkles, Square, Sun, Trash2, Volume2, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { StorageService } from '../services/storageService';
@@ -249,7 +249,7 @@ export default function SettingsScreen() {
                 )}
                 {!profile?.avatar?.startsWith('http') && (
                   <span className="absolute flex h-12 w-12 items-center justify-center rounded-[13px] bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-[0_0_16px_rgba(124,58,237,0.7)]" aria-label="Cross avatar">
-                    <Cross size={30} strokeWidth={3.2} style={{ transform: 'translateY(-2.5px) scaleX(0.68) scaleY(1.4)', transformOrigin: '50% 50%' }} />
+                    <img src="/cross.svg" alt="" aria-hidden="true" className="h-9 w-7 object-contain" />
                   </span>
                 )}
               </div>

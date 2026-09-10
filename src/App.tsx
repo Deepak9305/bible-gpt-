@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { ProfileProvider, useProfile } from './context/ProfileContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 
 import SplashScreen from './components/SplashScreen';
@@ -17,6 +18,7 @@ const BookmarksScreen = lazy(() => import('./screens/BookmarksScreen'));
 const SettingsScreen = lazy(() => import('./screens/SettingsScreen'));
 const PrayerJournalScreen = lazy(() => import('./screens/PrayerJournalScreen'));
 const OnboardingScreen = lazy(() => import('./screens/OnboardingScreen'));
+const LoginScreen = lazy(() => import('./screens/LoginScreen'));
 const PrivacyPolicyScreen = lazy(() => import('./screens/PrivacyPolicyScreen'));
 const TermsOfServiceScreen = lazy(() => import('./screens/TermsOfServiceScreen'));
 
@@ -32,7 +34,8 @@ function LoadingFallback() {
 
 function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
-  const { profile, isLoading } = useProfile();
+  const { profile, isLoading: profileLoading } = useProfile();
+  const { user, isLoading: authLoading } = useAuth();
   const [isInitializing, setIsInitializing] = useState(true);
   const [isAppReady, setIsAppReady] = useState(false);
 
@@ -48,8 +51,8 @@ function AppContent() {
   }, []);
 
   // Always render splash first — never return null which would show white
-  // The splash only exits once BOTH local profile and native init are done
-  const splashReady = !isLoading && !isInitializing;
+  // The splash only exits once auth, local profile, and native init are done.
+  const splashReady = !profileLoading && !authLoading && !isInitializing;
 
   // STABLE reference — must not change on every render or SplashScreen's
   // 2-second timer will be cleared & restarted on each profile/init state update.
@@ -69,7 +72,12 @@ function AppContent() {
       ) : (
         <Suspense key="main-app" fallback={<LoadingFallback />}>
           <Routes>
-            {!profile ? (
+            {!user ? (
+              <>
+                <Route path="/login" element={<LoginScreen />} />
+                <Route path="*" element={<Navigate to="/login" replace />} />
+              </>
+            ) : !profile ? (
               <>
                 <Route path="/onboarding" element={<OnboardingScreen />} />
                 <Route path="*" element={<Navigate to="/onboarding" replace />} />
@@ -98,11 +106,13 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <ProfileProvider>
-        <Router>
-          <AppContent />
-        </Router>
-      </ProfileProvider>
+      <AuthProvider>
+        <ProfileProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </ProfileProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

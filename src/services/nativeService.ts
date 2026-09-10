@@ -1,11 +1,10 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { StatusBar } from '@capacitor/status-bar';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, SystemBarType, SystemBars } from '@capacitor/core';
 import { AppTrackingTransparency } from '@capgo/capacitor-app-tracking-transparency';
 export const initializeNativeServices = async () => {
   if (!Capacitor.isNativePlatform()) return;
 
-  await StatusBar.hide().catch(() => { });
+  await SystemBars.hide({ bar: SystemBarType.StatusBar }).catch(() => { });
 
   if (Capacitor.getPlatform() === 'ios') {
     try {

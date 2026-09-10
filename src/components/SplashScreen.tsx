@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { BookOpen } from 'lucide-react';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -50,12 +49,17 @@ export default function SplashScreen({ onComplete, isReady = true }: SplashScree
         className="relative"
       >
         <motion.div
-          className="absolute inset-0 bg-blue-400 blur-3xl rounded-full will-change-[opacity]"
+          className="absolute -inset-4 rounded-full bg-blue-400 blur-3xl will-change-[opacity]"
           initial={{ opacity: 0.1 }}
           animate={{ opacity: [0.1, 0.3, 0.1] }}
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         />
-        <BookOpen size={80} className="text-blue-600 dark:text-blue-300 relative z-10" strokeWidth={1.5} />
+        <img
+          src="/logo.png"
+          alt=""
+          aria-hidden="true"
+          className="relative z-10 h-24 w-24 object-contain"
+        />
       </motion.div>
 
       <motion.h1

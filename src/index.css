@@ -49,10 +49,10 @@
 
 @layer utilities {
   .safe-area-bottom {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 1rem) !important;
+    padding-bottom: calc(var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) + 1rem) !important;
   }
 
   .safe-area-top {
-    padding-top: env(safe-area-inset-top) !important;
+    padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) !important;
   }
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useProfile } from '../context/ProfileContext';
+import { useAuth } from '../context/AuthContext';
 import { Moon, Sun, Trash2, ChevronRight, LogOut, Edit2, X, Check, Sparkles, Volume2, Play, Square, Shield, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -62,6 +63,7 @@ const CustomToggle = ({ checked, onChange, activeColor = 'bg-blue-500' }: any) =
 export default function SettingsScreen() {
   const { theme, toggleTheme, highContrastNav, toggleHighContrastNav } = useTheme();
   const { profile, updateProfile, resetProfile } = useProfile();
+  const { logout } = useAuth();
 
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editName, setEditName] = useState(profile?.name || '');
@@ -142,6 +144,10 @@ export default function SettingsScreen() {
     });
   };
 
+  const handleAccountLogout = async () => {
+    await logout();
+  };
+
   const openEditProfile = () => {
     setEditName(profile?.name || '');
     setEditAvatar(profile?.avatar || '👤');
@@ -208,7 +214,7 @@ export default function SettingsScreen() {
         <motion.div variants={itemVariants}>
           <h3 className="text-sm font-bold uppercase tracking-widest opacity-50 mb-3 px-4">Experience</h3>
           <div className={`rounded-3xl overflow-hidden shadow-sm border ${theme === 'dark' ? 'bg-slate-800/80 border-slate-700/50' : 'bg-white border-slate-200'}`}>
-            
+
             <SettingItem
               icon={theme === 'dark' ? Moon : Sun}
               iconColor={theme === 'dark' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-amber-100 text-amber-600'}
@@ -312,9 +318,16 @@ export default function SettingsScreen() {
         <motion.div variants={itemVariants}>
           <h3 className="text-sm font-bold uppercase tracking-widest opacity-50 mb-3 px-4">Profile & Data</h3>
           <div className={`rounded-3xl overflow-hidden shadow-sm border ${theme === 'dark' ? 'bg-slate-800/80 border-slate-700/50' : 'bg-white border-slate-200'}`}>
-            
             <SettingItem
               icon={LogOut}
+              iconColor={theme === 'dark' ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-600'}
+              title="Log out"
+              subtitle="Return to the sign-in screen"
+              onClick={handleAccountLogout}
+              destructive
+            />
+            <SettingItem
+              icon={Trash2}
               iconColor={theme === 'dark' ? 'bg-orange-500/20 text-orange-400' : 'bg-orange-100 text-orange-600'}
               title="Restart Journey"
               subtitle="Reset your local profile"

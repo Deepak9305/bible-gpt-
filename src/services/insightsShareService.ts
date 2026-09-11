@@ -213,7 +213,7 @@ const createShareCard = (data: InsightsData): Promise<Blob> => new Promise((reso
   canvas.toBlob((blob) => {
     if (blob) resolve(blob);
     else reject(new Error('Your device could not export the share card.'));
-  }, 'image/jpeg', 0.9);
+  }, 'image/jpeg', 0.84);
 });
 
 export async function shareInsightsCard(data: InsightsData) {

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { getChapter, Verse } from '../services/bibleService';
+import { getChapter, loadFullBible, Verse } from '../services/bibleService';
 import { BIBLE_BOOKS } from '../data/books';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
 import { ArrowLeft, Bookmark, Lightbulb, LockKeyhole, Volume2, VolumeX, Loader2, Search, PlayCircle, PauseCircle, Share2 } from 'lucide-react';
@@ -20,8 +20,7 @@ type ViewState = 'books' | 'chapters' | 'verses';
 const getVerseKey = (verse: Verse) => `${verse.book_id}-${verse.chapter}-${verse.verse}`;
 
 const BookItem = React.memo(({ book, theme, onClick }: { book: any; theme: string; onClick: (book: any) => void }) => (
-  <motion.button
-    variants={{ hidden: { opacity: 0, scale: 0.95 }, visible: { opacity: 1, scale: 1 } }}
+  <button
     onClick={() => onClick(book)}
     className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-colors transition-transform duration-200 active:scale-95 ${theme === 'dark'
       ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
@@ -32,12 +31,11 @@ const BookItem = React.memo(({ book, theme, onClick }: { book: any; theme: strin
     <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
       {book.name}
     </span>
-  </motion.button>
+  </button>
 ));
 
 const ChapterItem = React.memo(({ chapter, theme, onClick }: { chapter: number; theme: string; onClick: (chapter: number) => void }) => (
-  <motion.button
-    variants={{ hidden: { opacity: 0, scale: 0.95 }, visible: { opacity: 1, scale: 1 } }}
+  <button
     onClick={() => onClick(chapter)}
     className={`aspect-square flex items-center justify-center rounded-xl border text-lg font-medium transition-colors transition-shadow duration-200 hover:shadow-md ${theme === 'dark'
       ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
@@ -45,7 +43,7 @@ const ChapterItem = React.memo(({ chapter, theme, onClick }: { chapter: number; 
       }`}
   >
     {chapter}
-  </motion.button>
+  </button>
 ));
 
 const VerseItem = React.memo(({
@@ -90,9 +88,9 @@ const VerseItem = React.memo(({
     : 'Unlock verse meaning with Bible Nova Plus';
 
   return (
-    <motion.div
-      variants={{ hidden: { opacity: 0, scale: 0.95 }, visible: { opacity: 1, scale: 1 } }}
+    <div
       id={`verse-${verseId}`}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '0 140px' }}
       className={`p-4 rounded-xl transition-colors duration-500 will-change-[background-color,border-color,transform] ${isCurrentInPlaylist
         ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 border shadow-md scale-[1.02]'
         : (theme === 'dark' ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900 border-transparent border shadow-sm')
@@ -160,7 +158,7 @@ const VerseItem = React.memo(({
           )}
         </div>
       )}
-    </motion.div>
+    </div>
   );
 });
 
@@ -187,6 +185,14 @@ export default function LibraryScreen() {
   const [meaningLoadingId, setMeaningLoadingId] = useState<string | null>(null);
   const [meaningError, setMeaningError] = useState<{ id: string; message: string } | null>(null);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+  const chapterRequestId = useRef(0);
+
+  useEffect(() => {
+    // Warm the bundled Bible after the first library paint. Once loaded,
+    // chapter taps resolve locally without waiting on the network.
+    const timer = window.setTimeout(() => { void loadFullBible(); }, 500);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     // Render the first screenful immediately, then yield between batches so
@@ -375,25 +381,35 @@ export default function LibraryScreen() {
   };
 
   const handleBookSelect = React.useCallback((book: any) => {
+    chapterRequestId.current += 1;
     setSelectedBook(book);
     setView('chapters');
   }, []);
 
   const handleChapterSelect = React.useCallback(async (chapter: number) => {
+    if (!selectedBook) return;
+    const requestId = ++chapterRequestId.current;
     setSelectedChapter(chapter);
+    setVerses([]);
+    setRenderedVerseCount(0);
+    setVerseMeanings({});
+    setMeaningError(null);
     setLoading(true);
+    // Acknowledge the tap immediately while the chapter data resolves.
+    setView('verses');
     try {
       const data = await getChapter(selectedBook.name, chapter);
+      if (requestId !== chapterRequestId.current) return;
       if (data && data.length > 0) {
         setVerses(data);
-        setVerseMeanings({});
-        setMeaningError(null);
-        setView('verses');
       } else { console.error("Failed to load chapter data — empty result."); }
-    } catch (error) { console.error(error); } finally { setLoading(false); }
+    } catch (error) { console.error(error); } finally {
+      if (requestId === chapterRequestId.current) setLoading(false);
+    }
   }, [selectedBook]);
 
   const handleBack = () => {
+    chapterRequestId.current += 1;
     if (view === 'verses') {
       setView('chapters');
       setVerses([]);
@@ -551,19 +567,19 @@ export default function LibraryScreen() {
             ) : (
               <div key="library">
                 {view === 'books' && (
-                  <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {books.map((book) => (
                       <BookItem key={book.id} book={book} theme={theme} onClick={handleBookSelect} />
                     ))}
-                  </motion.div>
+                  </div>
                 )}
 
                 {view === 'chapters' && (
-                  <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+                  <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
                     {Array.from({ length: selectedBook.chapters }, (_, i) => i + 1).map((chapter) => (
                       <ChapterItem key={chapter} chapter={chapter} theme={theme} onClick={handleChapterSelect} />
                     ))}
-                  </motion.div>
+                  </div>
                 )}
 
                 {view === 'verses' && (
@@ -573,7 +589,7 @@ export default function LibraryScreen() {
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                       </div>
                     ) : (
-                      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
+                      <div className="space-y-4">
                         {verses.slice(0, renderedVerseCount).map((verse, index) => (
                           <VerseItem
                             key={`${verse.chapter}-${verse.verse}`}
@@ -595,7 +611,7 @@ export default function LibraryScreen() {
                             onOpenPremium={() => setIsPremiumModalOpen(true)}
                           />
                         ))}
-                      </motion.div>
+                      </div>
                     )}
                   </div>
                 )}

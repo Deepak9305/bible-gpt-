@@ -115,6 +115,7 @@ export default function SettingsScreen() {
   const [voiceDraft, setVoiceDraft] = useState<VoiceCustomization | null>(null);
   const [isVoiceEditorLoading, setIsVoiceEditorLoading] = useState(false);
   const [isVoiceEditorSaving, setIsVoiceEditorSaving] = useState(false);
+  const [isVoiceEditorSaved, setIsVoiceEditorSaved] = useState(false);
   const [voiceEditorError, setVoiceEditorError] = useState<string | null>(null);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
 
@@ -158,6 +159,7 @@ export default function SettingsScreen() {
     setPreviewingVoiceId(null);
     setEditingVoiceId(id);
     setVoiceDraft(null);
+    setIsVoiceEditorSaved(false);
     setVoiceEditorError(null);
     setIsVoiceEditorLoading(true);
     try {
@@ -174,6 +176,7 @@ export default function SettingsScreen() {
     setPreviewingVoiceId(null);
     setEditingVoiceId(null);
     setVoiceDraft(null);
+    setIsVoiceEditorSaved(false);
     setVoiceEditorError(null);
   };
 
@@ -183,7 +186,7 @@ export default function SettingsScreen() {
     setVoiceEditorError(null);
     try {
       await setVoiceCustomization(editingVoiceId, voiceDraft);
-      closeVoiceEditor();
+      setIsVoiceEditorSaved(true);
     } catch (error) {
       setVoiceEditorError(error instanceof Error ? error.message : 'Could not save voice settings.');
     } finally {
@@ -196,6 +199,7 @@ export default function SettingsScreen() {
     setVoiceEditorError(null);
     try {
       setVoiceDraft(await resetVoiceCustomization(editingVoiceId));
+      setIsVoiceEditorSaved(false);
     } catch (error) {
       setVoiceEditorError(error instanceof Error ? error.message : 'Could not reset voice settings.');
     }
@@ -625,7 +629,7 @@ export default function SettingsScreen() {
       {/* Free voice editor */}
       <AnimatePresence>
         {editingVoice && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
+          <div className="fixed inset-0 z-[70] flex items-end justify-center p-0 sm:items-center sm:p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -641,7 +645,7 @@ export default function SettingsScreen() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={`relative w-full max-w-md overflow-hidden rounded-t-3xl shadow-2xl sm:rounded-3xl ${theme === 'dark' ? 'border border-slate-700 bg-slate-800' : 'bg-white'}`}
+              className={`relative max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl shadow-2xl sm:rounded-3xl ${theme === 'dark' ? 'border border-slate-700 bg-slate-800' : 'bg-white'}`}
             >
               <div className={`flex items-center justify-between border-b p-5 ${theme === 'dark' ? 'border-slate-700' : 'border-slate-100'}`}>
                 <div>
@@ -672,7 +676,7 @@ export default function SettingsScreen() {
                         max="1.3"
                         step="0.01"
                         value={voiceDraft.rate}
-                        onChange={(event) => setVoiceDraft((current) => current ? { ...current, rate: Number(event.target.value) } : current)}
+                        onChange={(event) => { setIsVoiceEditorSaved(false); setVoiceDraft((current) => current ? { ...current, rate: Number(event.target.value) } : current); }}
                         className="h-2 w-full cursor-pointer accent-blue-600"
                       />
                       <div className={`mt-1 flex justify-between text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}><span>Slower</span><span>Faster</span></div>
@@ -690,17 +694,18 @@ export default function SettingsScreen() {
                         max="1.4"
                         step="0.01"
                         value={voiceDraft.pitch}
-                        onChange={(event) => setVoiceDraft((current) => current ? { ...current, pitch: Number(event.target.value) } : current)}
+                        onChange={(event) => { setIsVoiceEditorSaved(false); setVoiceDraft((current) => current ? { ...current, pitch: Number(event.target.value) } : current); }}
                         className="h-2 w-full cursor-pointer accent-violet-600"
                       />
                       <div className={`mt-1 flex justify-between text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}><span>Deeper</span><span>Brighter</span></div>
                       <p className={`mt-3 text-xs leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>The TTS engine uses pitch to control perceived depth, so these are the two controls instead of duplicate pitch and deepness sliders.</p>
                     </div>
 
+                    {isVoiceEditorSaved && <p role="status" className="flex items-center gap-2 text-sm font-semibold text-emerald-500"><Check size={16} /> Saved on this device</p>}
                     {voiceEditorError && <p role="alert" className="text-sm font-medium text-rose-500">{voiceEditorError}</p>}
                   </div>
 
-                  <div className={`flex flex-wrap gap-3 border-t p-4 ${theme === 'dark' ? 'border-slate-700' : 'border-slate-100'}`}>
+                  <div className={`flex flex-wrap gap-3 border-t p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] ${theme === 'dark' ? 'border-slate-700' : 'border-slate-100'}`}>
                     <button type="button" onClick={() => void resetVoiceEditor()} disabled={isVoiceEditorSaving || previewingVoiceId !== null} className={`flex items-center gap-2 rounded-xl px-3.5 py-3 text-sm font-semibold transition disabled:opacity-50 ${theme === 'dark' ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
                       <RotateCcw size={16} />
                       Reset
@@ -711,7 +716,7 @@ export default function SettingsScreen() {
                     </button>
                     <button type="button" onClick={() => void saveVoiceEditor()} disabled={isVoiceEditorSaving} className="ml-auto flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:brightness-110 disabled:cursor-wait disabled:opacity-60">
                       <Check size={17} />
-                      {isVoiceEditorSaving ? 'Saving…' : 'Save voice'}
+                      {isVoiceEditorSaving ? 'Saving…' : isVoiceEditorSaved ? 'Saved' : 'Save voice'}
                     </button>
                   </div>
                 </>

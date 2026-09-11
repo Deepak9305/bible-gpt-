@@ -16,6 +16,7 @@ export interface Verse {
 // Cache for the full Bible in memory after loading
 let fullBibleCache: any[] | null = null;
 let isBibleDownloading = false;
+const chapterCache = new Map<string, Verse[]>();
 
 export const getBooks = async () => {
   return BIBLE_BOOKS;
@@ -73,19 +74,44 @@ export const loadFullBible = async (): Promise<any[]> => {
 };
 
 export const getChapter = async (bookName: string, chapter: number, translation: string = 'kjv'): Promise<Verse[]> => {
-  // 1. Always attempt Web API first for 'Pure Web' experience
+  const cacheKey = `${translation.toLowerCase()}:${bookName}:${chapter}`;
+  const cachedChapter = chapterCache.get(cacheKey);
+  if (cachedChapter) return cachedChapter;
+
+  // Once the bundled KJV is warmed, use it immediately. This keeps chapter
+  // selection responsive on mobile and avoids a network round trip per tap.
+  if (translation.toLowerCase() === 'kjv' && fullBibleCache) {
+    const book = fullBibleCache.find((item: any) => item.name === bookName);
+    const chapterData = book?.chapters?.[chapter - 1];
+    if (Array.isArray(chapterData)) {
+      const localChapter = chapterData.map((text: string, index: number) => ({
+        book_id: book.abbrev || book.name.substring(0, 3).toLowerCase(),
+        book_name: book.name,
+        chapter,
+        verse: index + 1,
+        text,
+      }));
+      chapterCache.set(cacheKey, localChapter);
+      return localChapter;
+    }
+  }
+
+  // If the bundled Bible is not warmed yet, use the web API and retain the
+  // local fallback for offline or unavailable-network sessions.
   try {
     const encodedBook = encodeURIComponent(bookName);
     const response = await fetch(`${API_BASE_URL}/${encodedBook}+${chapter}?translation=${translation}`);
     if (!response.ok) throw new Error('API request failed');
     const data = await response.json();
-    return data.verses.map((v: any) => ({
+    const remoteChapter = data.verses.map((v: any) => ({
       book_id: v.book_id,
       book_name: v.book_name,
       chapter: v.chapter,
       verse: v.verse,
       text: v.text
     }));
+    chapterCache.set(cacheKey, remoteChapter);
+    return remoteChapter;
   } catch (apiError) {
     console.warn('Web API failed, attempting local fallback:', apiError);
 
@@ -101,13 +127,15 @@ export const getChapter = async (bookName: string, chapter: number, translation:
         const chapterData = book.chapters[chapter - 1];
         if (!chapterData) throw new Error('Chapter not found locally');
 
-        return chapterData.map((text: string, index: number) => ({
+        const localChapter = chapterData.map((text: string, index: number) => ({
           book_id: book.abbrev || book.name.substring(0, 3).toLowerCase(),
           book_name: book.name,
           chapter: chapter,
           verse: index + 1,
           text: text
         }));
+        chapterCache.set(cacheKey, localChapter);
+        return localChapter;
       } catch (localError) {
         console.error('Local fallback also failed:', localError);
         return [];
@@ -313,4 +341,3 @@ export const searchVerses = async (keyword: string): Promise<Verse[]> => {
     return [];
   }
 };
-

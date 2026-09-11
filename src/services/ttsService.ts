@@ -242,7 +242,13 @@ export const getVoiceCustomization = async (id: FatherlyVoiceId): Promise<VoiceC
 export const setVoiceCustomization = async (id: FatherlyVoiceId, value: Partial<VoiceCustomization>) => {
   const customization = normalizeVoiceCustomization(id, value);
   voiceCustomizationCache[id] = customization;
-  await StorageService.set(`${VOICE_CUSTOMIZATION_KEY_PREFIX}${id}`, JSON.stringify(customization));
+  const storageKey = `${VOICE_CUSTOMIZATION_KEY_PREFIX}${id}`;
+  const serialized = JSON.stringify(customization);
+  await StorageService.set(storageKey, serialized);
+  const persisted = await StorageService.get(storageKey);
+  if (persisted !== serialized) {
+    throw new Error('Voice settings could not be saved on this device.');
+  }
   return customization;
 };
 

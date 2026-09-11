@@ -33,7 +33,13 @@ interface AuthContextType {
 
 const AUTH_USER_KEY = 'auth_user';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const googleWebClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() || '';
+// OAuth client IDs are public identifiers and are safe to ship in the app.
+// Keep the env override for different environments, but do not let a fresh
+// Android Studio checkout silently disable native Google sign-in when .env is
+// not present because it is intentionally gitignored.
+const googleWebClientId =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ||
+  '1083543499729-3rrelit5mm4jno7jfogpnaceh9inlgu4.apps.googleusercontent.com';
 let nativeGoogleInitialization: Promise<typeof import('@capgo/capacitor-social-login').SocialLogin> | null = null;
 
 const parseStoredUser = (value: string | null): AuthUser | null => {

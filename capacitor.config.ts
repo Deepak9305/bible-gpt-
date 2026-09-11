@@ -7,11 +7,15 @@ const config: CapacitorConfig = {
   appName: 'Bible Nova',
   webDir: 'dist',
   plugins: {
-    // Google Auth configuration has been removed. 
-    // Capgo configures the client IDs via code in nativeService.ts
-    SplashScreen: {
-      launchShowDuration: 0, // We handle our own animated splash in React
-      backgroundColor: '#EFF6FF',
+    // Keep only the native Google provider bundled on Android.
+    SocialLogin: {
+      providers: {
+        google: true,
+        facebook: false,
+        apple: false,
+        twitter: false,
+      },
+      logLevel: 1,
     },
     SystemBars: {
       // Capacitor 8 uses this for reliable safe-area values on modern Android WebViews.

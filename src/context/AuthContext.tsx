@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
-import { App } from '@capacitor/app';
-import { Browser } from '@capacitor/browser';
 import { StorageService } from '../services/storageService';
 import { isSupabaseConfigured, supabase } from '../services/supabaseClient';
 
@@ -35,6 +33,8 @@ interface AuthContextType {
 
 const AUTH_USER_KEY = 'auth_user';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const googleWebClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() || '';
+let nativeGoogleInitialization: Promise<typeof import('@capgo/capacitor-social-login').SocialLogin> | null = null;
 
 const parseStoredUser = (value: string | null): AuthUser | null => {
   if (!value) return null;
@@ -48,10 +48,13 @@ const parseStoredUser = (value: string | null): AuthUser | null => {
   }
 };
 
-const getUrlParam = (url: URL, key: string) => {
-  const queryValue = url.searchParams.get(key);
-  if (queryValue) return queryValue;
-  return new URLSearchParams(url.hash.replace(/^#/, '')).get(key);
+const createGoogleNonce = async () => {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  const rawNonce = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawNonce));
+  const hashedNonce = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return { rawNonce, hashedNonce };
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -160,50 +163,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform() || !isSupabaseConfigured) return;
-
-    const handleAuthUrl = async (urlString: string) => {
-      try {
-        const url = new URL(urlString);
-        const authError = getUrlParam(url, 'error_description') || getUrlParam(url, 'error');
-        if (authError) throw new Error(authError);
-
-        const code = getUrlParam(url, 'code');
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) throw error;
-        } else {
-          const accessToken = getUrlParam(url, 'access_token');
-          const refreshToken = getUrlParam(url, 'refresh_token');
-          if (!accessToken || !refreshToken) return;
-
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-          if (error) throw error;
-        }
-
-        await Browser.close().catch(() => {});
-      } catch (error) {
-        console.error('Native auth callback failed:', error);
-      }
-    };
-
-    const listenerPromise = App.addListener('appUrlOpen', ({ url }) => {
-      void handleAuthUrl(url);
-    });
-
-    void App.getLaunchUrl().then((launch) => {
-      if (launch?.url) void handleAuthUrl(launch.url);
-    });
-
-    return () => {
-      void listenerPromise.then((listener) => listener.remove());
-    };
-  }, []);
-
   const loginGuest = async () => {
     const currentGuest = parseStoredUser(await StorageService.get(AUTH_USER_KEY));
     if (currentGuest?.isGuest) {
@@ -259,22 +218,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Google sign-in is not configured. Use guest access or add the Supabase environment variables.');
     }
 
-    const isNative = Capacitor.isNativePlatform();
-    const redirectTo = isNative
-      ? 'com.biblenova.app://auth/callback'
-      : `${window.location.origin}/auth/callback`;
+    if (Capacitor.isNativePlatform()) {
+      if (!googleWebClientId) {
+        throw new Error('Native Google sign-in needs the Web OAuth client ID in VITE_GOOGLE_CLIENT_ID.');
+      }
 
+      if (!nativeGoogleInitialization) {
+        nativeGoogleInitialization = import('@capgo/capacitor-social-login').then(async ({ SocialLogin }) => {
+          await SocialLogin.initialize({
+            google: {
+              // This is the Web client ID. Android client IDs are registered in
+              // Google Cloud against each signing certificate, not passed here.
+              webClientId: googleWebClientId,
+              mode: 'online',
+            },
+          });
+          return SocialLogin;
+        }).catch((error) => {
+          nativeGoogleInitialization = null;
+          throw error;
+        });
+      }
+
+      const socialLogin = await nativeGoogleInitialization;
+      const { rawNonce, hashedNonce } = await createGoogleNonce();
+      const response = await socialLogin.login({
+        provider: 'google',
+        options: {
+          scopes: ['email', 'profile'],
+          nonce: hashedNonce,
+          style: 'standard',
+          filterByAuthorizedAccounts: false,
+        },
+      });
+
+      const result = response.result;
+      if (result.responseType !== 'online' || !result.idToken) {
+        throw new Error('Google did not return an ID token. Please try again.');
+      }
+
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: result.idToken,
+        nonce: rawNonce,
+      });
+      if (error) throw error;
+      if (!data.session) throw new Error('Google sign-in completed without an active session.');
+      await syncUserFromSession(data.session);
+      return;
+    }
+
+    // Web keeps the normal Supabase OAuth flow. Returning to the site root
+    // lets detectSessionInUrl exchange the PKCE code before HashRouter runs.
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo,
-        skipBrowserRedirect: isNative,
+        redirectTo: `${window.location.origin}/`,
         queryParams: { prompt: 'select_account' },
       },
     });
 
     if (error) throw error;
-    if (isNative && data.url) await Browser.open({ url: data.url });
+    if (!data.url) throw new Error('Google sign-in could not start. Please try again.');
   };
 
   const logout = async () => {

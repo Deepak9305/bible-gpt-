@@ -405,7 +405,7 @@ export default function ChatScreen() {
       <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} />
 
       {/* Header */}
-      <div className="safe-area-top bg-white dark:bg-gray-800 border-b dark:border-gray-700">
+      <div className="safe-area-top bg-white dark:bg-gray-800 border-b border-slate-200/20 dark:border-gray-700/70">
         <div className={`p-4 flex justify-between items-center ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}>
           <h1 className="text-lg font-semibold flex items-center gap-2">
             <Bot className="text-blue-500" /> Father AI

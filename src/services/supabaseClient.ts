@@ -38,7 +38,10 @@ export const supabase = createClient(
       storage: Capacitor.isNativePlatform() ? capacitorStorage : localStorage,
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: !Capacitor.isNativePlatform(),
+      // The AuthProvider explicitly exchanges the browser PKCE callback before
+      // routing. This prevents HashRouter and Supabase initialization from
+      // racing over the one-time OAuth code.
+      detectSessionInUrl: false,
       flowType: 'pkce',
     },
   },

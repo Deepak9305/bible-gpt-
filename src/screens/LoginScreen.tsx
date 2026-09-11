@@ -4,7 +4,7 @@ import { ArrowRight, CheckCircle, Loader2, Lock, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginScreen() {
-  const { loginGuest, loginEmail, signUpEmail, signInWithGoogle, isConfigured } = useAuth();
+  const { loginGuest, loginEmail, signUpEmail, signInWithGoogle, authError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +25,10 @@ export default function LoginScreen() {
   useEffect(() => () => {
     isMounted.current = false;
   }, []);
+
+  useEffect(() => {
+    if (authError) setError(authError);
+  }, [authError]);
 
   const handleEmailSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -116,7 +120,7 @@ export default function LoginScreen() {
             <button
               type="button"
               onClick={handleGoogleLogin}
-              disabled={isLoading || !isConfigured}
+              disabled={isLoading}
               className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium py-3.5 px-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-[0.98] transition-all duration-200 mb-8 text-sm shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isLoading ? <Loader2 size={20} className="animate-spin text-slate-400" /> : (

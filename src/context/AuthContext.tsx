@@ -308,17 +308,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (!nativeGoogleInitialization) {
-          nativeGoogleInitialization = import('@capgo/capacitor-social-login').then(async ({ SocialLogin }) => {
-            await SocialLogin.initialize({
-              google: {
-                // This is the Web client ID. Android client IDs are registered in
-                // Google Cloud against each signing certificate, not passed here.
-                webClientId: googleWebClientId,
-                mode: 'online',
-              },
-            });
-            return SocialLogin;
-          }).catch((error) => {
+          nativeGoogleInitialization = withTimeout(
+            import('@capgo/capacitor-social-login').then(async ({ SocialLogin }) => {
+              await SocialLogin.initialize({
+                google: {
+                  // This is the Web client ID. Android client IDs are registered in
+                  // Google Cloud against each signing certificate, not passed here.
+                  webClientId: googleWebClientId,
+                  mode: 'online',
+                },
+              });
+              return SocialLogin;
+            }),
+            10000,
+            'Google native setup timed out. Check Google Play Services and the Android OAuth configuration.',
+          ).catch((error) => {
             nativeGoogleInitialization = null;
             throw error;
           });
@@ -362,6 +366,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             supabase.auth.signInWithIdToken({
               provider: 'google',
               token: result.idToken,
+              access_token: result.accessToken?.token,
               nonce: rawNonce,
             }),
             15000,

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { StorageService } from '../services/storageService';
-import { isSupabaseConfigured, supabase } from '../services/supabaseClient';
+import { isSupabaseConfigured, supabase, supabaseConfigError } from '../services/supabaseClient';
 
 export interface AuthUser {
   id: string;
@@ -79,6 +79,12 @@ const parseStoredUser = (value: string | null): AuthUser | null => {
   } catch {
     return null;
   }
+};
+
+const readableError = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === 'string' && error.trim()) return error.trim();
+  return fallback;
 };
 
 const createGoogleNonce = async () => {
@@ -268,7 +274,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginEmail = async (email: string, password: string) => {
     if (!isSupabaseConfigured) {
-      throw new Error('Account login is not configured. Use guest access or add the Supabase environment variables.');
+      throw new Error(supabaseConfigError || 'Account login is not configured.');
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -279,7 +285,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUpEmail = async (email: string, password: string) => {
     if (!isSupabaseConfigured) {
-      throw new Error('Account registration is not configured. Use guest access or add the Supabase environment variables.');
+      throw new Error(supabaseConfigError || 'Account registration is not configured.');
     }
 
     const { data, error } = await supabase.auth.signUp({ email, password });
@@ -290,7 +296,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     if (!isSupabaseConfigured) {
-      throw new Error('Google sign-in is not configured. Use guest access or add the Supabase environment variables.');
+      throw new Error(supabaseConfigError || 'Google sign-in is not configured.');
     }
 
     if (Capacitor.isNativePlatform()) {
@@ -318,37 +324,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         }
 
-        const socialLogin = await nativeGoogleInitialization;
+        let socialLogin: typeof import('@capgo/capacitor-social-login').SocialLogin;
+        try {
+          socialLogin = await nativeGoogleInitialization;
+        } catch (error) {
+          throw new Error(`Google native setup failed: ${readableError(error, 'the Google provider could not initialize.')}`);
+        }
         const { rawNonce, hashedNonce } = await createGoogleNonce();
-        const response = await withTimeout(
-          socialLogin.login({
-            provider: 'google',
-            options: {
-              // Supabase needs the ID token; the plugin's default OIDC scopes
-              // are sufficient and avoid a second, unnecessary scope prompt.
-              nonce: hashedNonce,
-              style: 'standard',
-            },
-          }),
-          30000,
-          'Google sign-in timed out. Check that a Google account is on this device and try again.',
-        );
+        let response;
+        try {
+          response = await withTimeout(
+            socialLogin.login({
+              provider: 'google',
+              options: {
+                // Supabase needs the ID token; the plugin's default OIDC scopes
+                // are sufficient and avoid a second, unnecessary scope prompt.
+                nonce: hashedNonce,
+                style: 'standard',
+              },
+            }),
+            30000,
+            'Google sign-in timed out. Check that a Google account is on this device and try again.',
+          );
+        } catch (error) {
+          throw new Error(`Google account sign-in failed: ${readableError(error, 'the account picker did not return a credential.')}`);
+        }
 
         const result = response.result;
         if (result.responseType !== 'online' || !result.idToken) {
-          throw new Error('Google did not return an ID token. Please try again.');
+          throw new Error('Google account sign-in returned no ID token. Check the Android OAuth package name and signing certificate fingerprints.');
         }
 
-        const { data, error } = await withTimeout(
-          supabase.auth.signInWithIdToken({
-            provider: 'google',
-            token: result.idToken,
-            nonce: rawNonce,
-          }),
-          15000,
-          'Google sign-in timed out while connecting to your account. Please try again.',
-        );
-        if (error) throw error;
+        let data;
+        let error;
+        try {
+          ({ data, error } = await withTimeout(
+            supabase.auth.signInWithIdToken({
+              provider: 'google',
+              token: result.idToken,
+              nonce: rawNonce,
+            }),
+            15000,
+            'Google sign-in timed out while connecting to your account. Please try again.',
+          ));
+        } catch (tokenError) {
+          throw new Error(`Supabase token exchange failed: ${readableError(tokenError, 'Supabase did not respond.')}`);
+        }
+        if (error) throw new Error(`Supabase token exchange rejected the Google credential: ${error.message}`);
         if (!data.session) throw new Error('Google sign-in completed without an active session.');
         await syncUserFromSession(data.session);
       })().finally(() => {

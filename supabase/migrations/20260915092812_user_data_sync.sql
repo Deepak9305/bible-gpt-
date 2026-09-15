@@ -46,10 +46,5 @@ create policy "Users can delete their own app data"
   using ((select auth.uid()) = user_id);
 
 -- Existing user_stats intentionally excludes is_premium from client writes.
--- Allow the client to maintain the timestamp alongside its own safe fields.
-grant update (
-  streak, last_visit, total_verses_read, total_prayers, user_name,
-  onboarding_completed, daily_usage_count, last_usage_date, updated_at
-) on table public.user_stats to authenticated;
 
 commit;

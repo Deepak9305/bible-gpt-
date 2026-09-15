@@ -87,7 +87,6 @@ const queueRemoteStatsSave = (stats: UserStats) => {
         onboarding_completed: stats.onboardingCompleted,
         daily_usage_count: stats.dailyUsageCount,
         last_usage_date: stats.lastUsageDate,
-        updated_at: new Date().toISOString(),
       }, { onConflict: 'id' });
 
       if (error) throw error;

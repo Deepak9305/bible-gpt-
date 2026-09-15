@@ -264,7 +264,7 @@ grant insert (
 ) on table public.user_stats to authenticated;
 grant update (
   streak, last_visit, total_verses_read, total_prayers, user_name,
-  onboarding_completed, daily_usage_count, last_usage_date, updated_at
+  onboarding_completed, daily_usage_count, last_usage_date
 ) on table public.user_stats to authenticated;
 
 commit;

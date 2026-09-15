@@ -41,7 +41,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const googleWebClientId =
   import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ||
   '1083543499729-3rrelit5mm4jno7jfogpnaceh9inlgu4.apps.googleusercontent.com';
-let nativeGoogleInitialization: Promise<typeof import('@capgo/capacitor-social-login').SocialLogin> | null = null;
+// Keep the plugin proxy outside the Promise. Capacitor's proxy intentionally
+// exposes every property dynamically, including `then`; returning it from a
+// Promise makes JavaScript treat it as a thenable and call SocialLogin.then().
+let nativeGoogleInitialization: Promise<void> | null = null;
+let nativeGooglePlugin: typeof import('@capgo/capacitor-social-login').SocialLogin | null = null;
 let nativeGoogleLoginInFlight: Promise<void> | null = null;
 
 const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> => {
@@ -318,22 +322,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   mode: 'online',
                 },
               });
-              return SocialLogin;
+              // Do not return SocialLogin from this Promise; see the note
+              // above about Capacitor's dynamic plugin proxy.
+              nativeGooglePlugin = SocialLogin;
             }),
             10000,
             'Google native setup timed out. Check Google Play Services and the Android OAuth configuration.',
           ).catch((error) => {
             nativeGoogleInitialization = null;
+            nativeGooglePlugin = null;
             throw error;
           });
         }
 
-        let socialLogin: typeof import('@capgo/capacitor-social-login').SocialLogin;
         try {
-          socialLogin = await nativeGoogleInitialization;
+          await nativeGoogleInitialization;
         } catch (error) {
           throw new Error(`Google native setup failed: ${readableError(error, 'the Google provider could not initialize.')}`);
         }
+        const socialLogin = nativeGooglePlugin;
+        if (!socialLogin) throw new Error('Google native setup completed without a usable plugin. Please try again.');
         const { rawNonce, hashedNonce } = await createGoogleNonce();
         let response;
         try {

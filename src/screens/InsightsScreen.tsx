@@ -3,6 +3,7 @@ import { ArrowLeft, BarChart3, BookOpen, Bookmark, CalendarDays, Check, Clock3, 
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useProfile } from '../context/ProfileContext';
+import { useAuth } from '../context/AuthContext';
 import { usePremium } from '../context/PremiumContext';
 import PremiumModal from '../components/PremiumModal';
 import { getInsights, getRecentInsightDays, INSIGHT_PAGE_ORDER, type InsightPage, type InsightsData } from '../services/insightsService';
@@ -38,6 +39,7 @@ const getEncouragement = (seconds: number, activeDays: number) => {
 export default function InsightsScreen() {
   const { theme } = useTheme();
   const { profile } = useProfile();
+  const { user } = useAuth();
   const { isPremium } = usePremium();
   const [insights, setInsights] = useState<InsightsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,10 +50,10 @@ export default function InsightsScreen() {
   const loadInsights = useCallback(async () => {
     if (!profile?.id) return;
     setIsLoading(true);
-    const data = await getInsights(profile.id);
+    const data = await getInsights(profile.id, user && !user.isGuest ? user.id : null);
     setInsights(data);
     setIsLoading(false);
-  }, [profile?.id]);
+  }, [profile?.id, user?.id, user?.isGuest]);
 
   useEffect(() => {
     void loadInsights();

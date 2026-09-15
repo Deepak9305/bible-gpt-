@@ -4,27 +4,53 @@ import { Verse } from '../services/bibleService';
 import { Trash2, Volume2, VolumeX, Loader2 } from 'lucide-react';
 import { playTextToSpeech, stopAudio } from '../services/ttsService';
 import { StorageService } from '../services/storageService';
+import { loadCloudUserData, saveCloudUserData } from '../services/userDataService';
+import { useAuth } from '../context/AuthContext';
 import ReactMarkdown from 'react-markdown';
 
 export default function BookmarksScreen() {
   const { theme } = useTheme();
+  const { user } = useAuth();
+  const cloudUserId = user && !user.isGuest ? user.id : null;
   const [bookmarks, setBookmarks] = useState<Verse[]>([]);
   const [speakingVerse, setSpeakingVerse] = useState<string | null>(null);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
 
   useEffect(() => {
+    let active = true;
     const loadBookmarks = async () => {
       const saved = await StorageService.get('bookmarks');
+      let localBookmarks: Verse[] = [];
       if (saved) {
         try {
-          setBookmarks(JSON.parse(saved));
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) localBookmarks = parsed;
         } catch (e) {
           console.error("Failed to parse bookmarks", e);
         }
       }
+
+      let nextBookmarks = localBookmarks;
+      if (cloudUserId) {
+        try {
+          const cloudData = await loadCloudUserData(cloudUserId);
+          if (cloudData && cloudData.bookmarks.length > 0) {
+            nextBookmarks = cloudData.bookmarks as Verse[];
+          } else if (localBookmarks.length > 0) {
+            // A newly created cloud row has an empty default. Preserve an
+            // existing local collection and migrate it once.
+            await saveCloudUserData(cloudUserId, { bookmarks: localBookmarks });
+          }
+        } catch (error) {
+          console.warn('[Cloud data] Could not load bookmarks; using the local copy.', error);
+        }
+      }
+
+      if (active) setBookmarks(nextBookmarks);
     };
-    loadBookmarks();
-  }, []);
+    void loadBookmarks();
+    return () => { active = false; };
+  }, [cloudUserId]);
 
   // Cleanup speech on unmount
   useEffect(() => {
@@ -67,6 +93,13 @@ export default function BookmarksScreen() {
     );
     setBookmarks(newBookmarks);
     await StorageService.set('bookmarks', JSON.stringify(newBookmarks));
+    if (cloudUserId) {
+      try {
+        await saveCloudUserData(cloudUserId, { bookmarks: newBookmarks });
+      } catch (error) {
+        console.warn('[Cloud data] Bookmark removed locally but not remotely.', error);
+      }
+    }
   };
 
   return (

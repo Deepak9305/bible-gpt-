@@ -1,4 +1,5 @@
 import { StorageService } from './storageService';
+import { loadCloudUserData, saveCloudUserData } from './userDataService';
 
 export type InsightPage = 'home' | 'chat' | 'library' | 'bookmarks' | 'journal' | 'settings' | 'insights';
 
@@ -42,6 +43,7 @@ type CacheEntry = {
   data: InsightsData;
   loadPromise: Promise<void> | null;
   savePromise: Promise<void>;
+  cloudUserId: string | null;
 };
 
 const cache = new Map<string, CacheEntry>();
@@ -114,30 +116,55 @@ const normalizeData = (value: unknown): InsightsData => {
   };
 };
 
-const getEntry = (profileId: string): CacheEntry => {
+const hasInsightData = (data: InsightsData) => (
+  data.totalSeconds > 0 ||
+  data.sessions > 0 ||
+  Boolean(data.firstTrackedAt) ||
+  Boolean(data.lastUpdatedAt) ||
+  Object.keys(data.daily).length > 0
+);
+
+const getEntry = (profileId: string, cloudUserId: string | null = null): CacheEntry => {
   const existing = cache.get(profileId);
-  if (existing) return existing;
+  if (existing) {
+    if (cloudUserId) existing.cloudUserId = cloudUserId;
+    return existing;
+  }
 
   const entry: CacheEntry = {
     data: createEmptyData(),
     loadPromise: null,
     savePromise: Promise.resolve(),
+    cloudUserId,
   };
   cache.set(profileId, entry);
   return entry;
 };
 
-const ensureLoaded = async (profileId: string) => {
-  const entry = getEntry(profileId);
+const ensureLoaded = async (profileId: string, cloudUserId: string | null = null) => {
+  const entry = getEntry(profileId, cloudUserId);
   if (!entry.loadPromise) {
     entry.loadPromise = StorageService.get(`${STORAGE_PREFIX}${profileId}`)
-      .then((saved) => {
+      .then(async (saved) => {
         if (saved) {
           try {
             entry.data = normalizeData(JSON.parse(saved));
           } catch {
             entry.data = createEmptyData();
           }
+        }
+
+        if (!entry.cloudUserId) return;
+        try {
+          const cloudData = await loadCloudUserData(entry.cloudUserId);
+          const cloudInsights = cloudData?.insights;
+          if (cloudInsights && hasInsightData(normalizeData(cloudInsights))) {
+            entry.data = normalizeData(cloudInsights);
+          } else if (hasInsightData(entry.data)) {
+            await saveCloudUserData(entry.cloudUserId, { insights: entry.data });
+          }
+        } catch (error) {
+          console.warn('[Cloud data] Could not load spiritual insights; using the local copy.', error);
         }
       })
       .catch((error) => {
@@ -153,8 +180,13 @@ const persist = (profileId: string) => {
   entry.savePromise = entry.savePromise
     .catch(() => undefined)
     .then(() => StorageService.set(`${STORAGE_PREFIX}${profileId}`, JSON.stringify(entry.data)))
+    .then(async () => {
+      if (entry.cloudUserId) {
+        await saveCloudUserData(entry.cloudUserId, { insights: entry.data });
+      }
+    })
     .catch((error) => {
-      console.warn('Could not save local spiritual insights', error);
+      console.warn('[Cloud data] Could not save spiritual insights.', error);
     });
   return entry.savePromise;
 };
@@ -172,16 +204,16 @@ const pruneDailyHistory = (data: InsightsData) => {
   keys.slice(0, keys.length - MAX_DAILY_HISTORY).forEach((key) => delete data.daily[key]);
 };
 
-export async function getInsights(profileId: string): Promise<InsightsData> {
-  const entry = await ensureLoaded(profileId);
+export async function getInsights(profileId: string, cloudUserId: string | null = null): Promise<InsightsData> {
+  const entry = await ensureLoaded(profileId, cloudUserId);
   return normalizeData(JSON.parse(JSON.stringify(entry.data)));
 }
 
-export async function startInsightsSession(profileId: string) {
+export async function startInsightsSession(profileId: string, cloudUserId: string | null = null) {
   const sessionKey = `${profileId}:${appSessionId}`;
   if (countedSessions.has(sessionKey)) return;
 
-  const entry = await ensureLoaded(profileId);
+  const entry = await ensureLoaded(profileId, cloudUserId);
   countedSessions.add(sessionKey);
   entry.data.sessions += 1;
   if (!entry.data.firstTrackedAt) entry.data.firstTrackedAt = new Date().toISOString();
@@ -193,11 +225,12 @@ export async function recordInsightTime(
   page: InsightPage,
   seconds: number,
   date = new Date(),
+  cloudUserId: string | null = null,
 ) {
   const amount = Math.min(MAX_RECORDED_INTERVAL_SECONDS, Math.max(0, Math.floor(seconds)));
   if (amount < 1) return;
 
-  const entry = await ensureLoaded(profileId);
+  const entry = await ensureLoaded(profileId, cloudUserId);
   const dayKey = toInsightDateKey(date);
   const day = entry.data.daily[dayKey] || createEmptyDay();
 

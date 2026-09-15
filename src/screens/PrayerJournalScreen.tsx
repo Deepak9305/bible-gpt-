@@ -4,6 +4,8 @@ import { Plus, Trash2, CheckCircle2, Circle, Calendar, Tag, Share2 } from 'lucid
 import { motion, AnimatePresence } from 'motion/react';
 import { incrementPrayers } from '../services/statsService';
 import { StorageService } from '../services/storageService';
+import { loadCloudUserData, saveCloudUserData } from '../services/userDataService';
+import { useAuth } from '../context/AuthContext';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 
@@ -19,6 +21,8 @@ const CATEGORIES = ['General', 'Family', 'Health', 'Career', 'Faith', 'Others'];
 
 export default function PrayerJournalScreen() {
   const { theme } = useTheme();
+  const { user } = useAuth();
+  const cloudUserId = user && !user.isGuest ? user.id : null;
   const [prayers, setPrayers] = useState<Prayer[]>([]);
   const [newPrayer, setNewPrayer] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('General');
@@ -26,25 +30,53 @@ export default function PrayerJournalScreen() {
   const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
+    let active = true;
     const loadPrayers = async () => {
       const saved = await StorageService.get('prayers');
+      let localPrayers: Prayer[] = [];
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed)) {
-            setPrayers(parsed);
+            localPrayers = parsed;
           }
         } catch (e) {
           console.error("Failed to parse prayers", e);
         }
       }
+
+      let nextPrayers = localPrayers;
+      if (cloudUserId) {
+        try {
+          const cloudData = await loadCloudUserData(cloudUserId);
+          if (cloudData && cloudData.prayers.length > 0) {
+            nextPrayers = cloudData.prayers as Prayer[];
+          } else if (localPrayers.length > 0) {
+            // A newly created cloud row has an empty default. Preserve an
+            // existing local journal and migrate it once.
+            await saveCloudUserData(cloudUserId, { prayers: localPrayers });
+          }
+        } catch (error) {
+          console.warn('[Cloud data] Could not load prayers; using the local copy.', error);
+        }
+      }
+
+      if (active) setPrayers(nextPrayers);
     };
-    loadPrayers();
-  }, []);
+    void loadPrayers();
+    return () => { active = false; };
+  }, [cloudUserId]);
 
   const savePrayers = async (updated: Prayer[]) => {
     setPrayers(updated);
     await StorageService.set('prayers', JSON.stringify(updated));
+    if (cloudUserId) {
+      try {
+        await saveCloudUserData(cloudUserId, { prayers: updated });
+      } catch (error) {
+        console.warn('[Cloud data] Prayer update saved locally but not remotely.', error);
+      }
+    }
   };
 
   const addPrayer = () => {

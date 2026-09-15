@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { TextToSpeech, QueueStrategy } from '@capacitor-community/text-to-speech';
 import { StorageService } from './storageService';
+import { getAuthenticatedUserId, loadCloudUserData, saveCloudUserData } from './userDataService';
 
 const PREFERRED_VOICE_KEY = 'preferred_tts_voice_preset';
 const LEGACY_PREFERRED_VOICE_KEY = 'preferred_tts_voice';
@@ -216,27 +217,92 @@ const normalizeVoiceCustomization = (id: FatherlyVoiceId, value?: Partial<VoiceC
 };
 
 const voiceCustomizationCache: Partial<Record<FatherlyVoiceId, VoiceCustomization>> = {};
+type CloudVoiceSettings = {
+  preferredVoiceId?: FatherlyVoiceId;
+  customizations?: Partial<Record<FatherlyVoiceId, Partial<VoiceCustomization>>>;
+};
+
+let voiceCacheOwner: string | null | undefined;
+let preferredVoiceCache: FatherlyVoiceId | undefined;
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+);
+
+const prepareVoiceCache = async () => {
+  const userId = await getAuthenticatedUserId();
+  if (voiceCacheOwner !== userId) {
+    Object.keys(voiceCustomizationCache).forEach((key) => {
+      delete voiceCustomizationCache[key as FatherlyVoiceId];
+    });
+    preferredVoiceCache = undefined;
+    voiceCacheOwner = userId;
+  }
+  return userId;
+};
+
+const getCloudVoiceSettings = async (userId: string): Promise<CloudVoiceSettings> => {
+  const data = await loadCloudUserData(userId);
+  if (!data || !isRecord(data.voice)) return {};
+
+  const settings: CloudVoiceSettings = {};
+  if (isFatherlyVoiceId(data.voice.preferredVoiceId as string | null)) {
+    settings.preferredVoiceId = data.voice.preferredVoiceId as FatherlyVoiceId;
+  }
+  if (isRecord(data.voice.customizations)) {
+    settings.customizations = data.voice.customizations as CloudVoiceSettings['customizations'];
+  }
+  return settings;
+};
+
+const saveCloudVoiceSettings = async (userId: string, patch: CloudVoiceSettings) => {
+  const current = await getCloudVoiceSettings(userId);
+  await saveCloudUserData(userId, {
+    voice: {
+      ...current,
+      ...patch,
+      customizations: {
+        ...current.customizations,
+        ...patch.customizations,
+      },
+    },
+  });
+};
 
 export const getVoiceCustomization = async (id: FatherlyVoiceId): Promise<VoiceCustomization> => {
+  const userId = await prepareVoiceCache();
   const cached = voiceCustomizationCache[id];
   if (cached) return cached;
 
   const fallback = normalizeVoiceCustomization(id);
   const stored = await StorageService.get(`${VOICE_CUSTOMIZATION_KEY_PREFIX}${id}`);
-  if (!stored) {
-    voiceCustomizationCache[id] = fallback;
-    return fallback;
+  let customization = fallback;
+
+  if (stored) {
+    try {
+      customization = normalizeVoiceCustomization(id, JSON.parse(stored) as Partial<VoiceCustomization>);
+    } catch {
+      customization = fallback;
+    }
   }
 
-  try {
-    const parsed = JSON.parse(stored) as Partial<VoiceCustomization>;
-    const customization = normalizeVoiceCustomization(id, parsed);
-    voiceCustomizationCache[id] = customization;
-    return customization;
-  } catch {
-    voiceCustomizationCache[id] = fallback;
-    return fallback;
+  if (userId) {
+    try {
+      const cloudSettings = await getCloudVoiceSettings(userId);
+      const cloudCustomization = cloudSettings.customizations?.[id];
+      if (cloudCustomization) {
+        customization = normalizeVoiceCustomization(id, cloudCustomization);
+        await StorageService.set(`${VOICE_CUSTOMIZATION_KEY_PREFIX}${id}`, JSON.stringify(customization));
+      } else if (stored) {
+        await saveCloudVoiceSettings(userId, { customizations: { [id]: customization } });
+      }
+    } catch (error) {
+      console.warn('[Cloud data] Could not load voice settings; using the local copy.', error);
+    }
   }
+
+  voiceCustomizationCache[id] = customization;
+  return customization;
 };
 
 export const setVoiceCustomization = async (id: FatherlyVoiceId, value: Partial<VoiceCustomization>) => {
@@ -249,6 +315,14 @@ export const setVoiceCustomization = async (id: FatherlyVoiceId, value: Partial<
   if (persisted !== serialized) {
     throw new Error('Voice settings could not be saved on this device.');
   }
+  const userId = await prepareVoiceCache();
+  if (userId) {
+    try {
+      await saveCloudVoiceSettings(userId, { customizations: { [id]: customization } });
+    } catch (error) {
+      console.warn('[Cloud data] Voice settings saved locally but not remotely.', error);
+    }
+  }
   return customization;
 };
 
@@ -256,6 +330,14 @@ export const resetVoiceCustomization = async (id: FatherlyVoiceId) => {
   const fallback = normalizeVoiceCustomization(id);
   delete voiceCustomizationCache[id];
   await StorageService.remove(`${VOICE_CUSTOMIZATION_KEY_PREFIX}${id}`);
+  const userId = await prepareVoiceCache();
+  if (userId) {
+    try {
+      await saveCloudVoiceSettings(userId, { customizations: { [id]: fallback } });
+    } catch (error) {
+      console.warn('[Cloud data] Voice reset saved locally but not remotely.', error);
+    }
+  }
   return fallback;
 };
 
@@ -322,19 +404,47 @@ const resolveNativeVoiceIndex = async (preset: FatherlyVoicePreset): Promise<num
 };
 
 export const getPreferredVoiceId = async (): Promise<FatherlyVoiceId> => {
-  const stored = await StorageService.get(PREFERRED_VOICE_KEY);
-  if (isFatherlyVoiceId(stored)) return stored;
+  const userId = await prepareVoiceCache();
+  if (preferredVoiceCache) return preferredVoiceCache;
 
-  if (stored) await StorageService.remove(PREFERRED_VOICE_KEY);
+  const stored = await StorageService.get(PREFERRED_VOICE_KEY);
+  let preferredVoice = isFatherlyVoiceId(stored) ? stored : DEFAULT_VOICE_ID;
+
+  if (stored && !isFatherlyVoiceId(stored)) await StorageService.remove(PREFERRED_VOICE_KEY);
 
   // Drop the old numeric voice-index preference so the app uses the new male presets.
   await StorageService.remove(LEGACY_PREFERRED_VOICE_KEY);
-  return DEFAULT_VOICE_ID;
+
+  if (userId) {
+    try {
+      const cloudSettings = await getCloudVoiceSettings(userId);
+      if (cloudSettings.preferredVoiceId) {
+        preferredVoice = cloudSettings.preferredVoiceId;
+        await StorageService.set(PREFERRED_VOICE_KEY, preferredVoice);
+      } else if (isFatherlyVoiceId(stored)) {
+        await saveCloudVoiceSettings(userId, { preferredVoiceId: preferredVoice });
+      }
+    } catch (error) {
+      console.warn('[Cloud data] Could not load preferred voice; using the local copy.', error);
+    }
+  }
+
+  preferredVoiceCache = preferredVoice;
+  return preferredVoice;
 };
 
 export const setPreferredVoiceId = async (id: FatherlyVoiceId) => {
   await StorageService.set(PREFERRED_VOICE_KEY, id);
   await StorageService.remove(LEGACY_PREFERRED_VOICE_KEY);
+  const userId = await prepareVoiceCache();
+  preferredVoiceCache = id;
+  if (userId) {
+    try {
+      await saveCloudVoiceSettings(userId, { preferredVoiceId: id });
+    } catch (error) {
+      console.warn('[Cloud data] Preferred voice saved locally but not remotely.', error);
+    }
+  }
 };
 
 let nativeSpeaking = false;

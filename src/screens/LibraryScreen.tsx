@@ -13,6 +13,8 @@ import { getVerseMeaning, VerseMeaningError } from '../services/verseMeaningServ
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { StorageService } from '../services/storageService';
+import { loadCloudUserData, saveCloudUserData } from '../services/userDataService';
+import { useAuth } from '../context/AuthContext';
 import ReactMarkdown from 'react-markdown';
 
 type ViewState = 'books' | 'chapters' | 'verses';
@@ -164,6 +166,8 @@ const VerseItem = React.memo(({
 
 export default function LibraryScreen() {
   const { theme } = useTheme();
+  const { user } = useAuth();
+  const cloudUserId = user && !user.isGuest ? user.id : null;
   const { isPremium } = usePremium();
   const [view, setView] = useState<ViewState>('books');
   const [books] = useState<any[]>(BIBLE_BOOKS);
@@ -223,14 +227,38 @@ export default function LibraryScreen() {
   }, []);
 
   useEffect(() => {
+    let active = true;
     const loadBookmarks = async () => {
       const saved = await StorageService.get('bookmarks');
+      let localBookmarks: Verse[] = [];
       if (saved) {
-        try { setBookmarks(JSON.parse(saved)); } catch (e) { console.error(e); }
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) localBookmarks = parsed;
+        } catch (e) { console.error(e); }
       }
+
+      let nextBookmarks = localBookmarks;
+      if (cloudUserId) {
+        try {
+          const cloudData = await loadCloudUserData(cloudUserId);
+          if (cloudData && cloudData.bookmarks.length > 0) {
+            nextBookmarks = cloudData.bookmarks as Verse[];
+          } else if (localBookmarks.length > 0) {
+            // A newly created cloud row has an empty default. Preserve an
+            // existing local collection and migrate it once.
+            await saveCloudUserData(cloudUserId, { bookmarks: localBookmarks });
+          }
+        } catch (error) {
+          console.warn('[Cloud data] Could not load bookmarks; using the local copy.', error);
+        }
+      }
+
+      if (active) setBookmarks(nextBookmarks);
     };
-    loadBookmarks();
-  }, []);
+    void loadBookmarks();
+    return () => { active = false; };
+  }, [cloudUserId]);
 
   useEffect(() => {
     if (isPlayingPlaylist && currentPlaylistIndex >= 0 && currentPlaylistIndex < verses.length) {
@@ -425,17 +453,23 @@ export default function LibraryScreen() {
   };
 
   const toggleBookmark = React.useCallback(async (verse: Verse) => {
-    setBookmarks(prev => {
-      const newBookmarks = [...prev];
-      const index = newBookmarks.findIndex((b) =>
-        b.book_id === verse.book_id && b.chapter === verse.chapter && b.verse === verse.verse
-      );
-      if (index >= 0) newBookmarks.splice(index, 1);
-      else newBookmarks.push(verse);
-      StorageService.set('bookmarks', JSON.stringify(newBookmarks));
-      return newBookmarks;
-    });
-  }, []);
+    const newBookmarks = [...bookmarks];
+    const index = newBookmarks.findIndex((b) =>
+      b.book_id === verse.book_id && b.chapter === verse.chapter && b.verse === verse.verse
+    );
+    if (index >= 0) newBookmarks.splice(index, 1);
+    else newBookmarks.push(verse);
+
+    setBookmarks(newBookmarks);
+    await StorageService.set('bookmarks', JSON.stringify(newBookmarks));
+    if (cloudUserId) {
+      try {
+        await saveCloudUserData(cloudUserId, { bookmarks: newBookmarks });
+      } catch (error) {
+        console.warn('[Cloud data] Bookmark changed locally but not remotely.', error);
+      }
+    }
+  }, [bookmarks, cloudUserId]);
 
   const isBookmarked = React.useCallback((verse: Verse) => {
     return bookmarks.some((b) =>

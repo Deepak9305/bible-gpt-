@@ -22,9 +22,9 @@ export default function PrivacyPolicyScreen() {
 
           <h3>1. Local Data</h3>
           <p>
-            Bible Nova stores your profile, bookmarks, prayer journal, settings, and reading progress locally on your device.
-            It also stores your time spent across app pages locally so the private Insights page can show your personal rhythm.
-            If you sign in, account authentication and premium entitlement records are handled by the configured Supabase service; your local reading data remains on your device unless a feature explicitly sends it for processing.
+            Bible Nova stores a local copy of your profile, bookmarks, prayer journal, settings, voice preferences, and Insights so the app remains usable offline.
+            When you sign in, these user-owned records and your activity stats are also synchronized to the configured Bible Nova Supabase project so they can follow your account across supported devices.
+            Guest data remains local to the device. Premium entitlement records are handled separately by the configured Supabase service.
           </p>
 
           <h3>2. AI Interactions</h3>

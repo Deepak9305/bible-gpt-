@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { StorageService } from '../services/storageService';
+import { loadCloudUserData, saveCloudUserData } from '../services/userDataService';
+import { useAuth } from './AuthContext';
 
 type Theme = 'light' | 'dark';
 
@@ -14,27 +16,56 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, isLoading: authLoading } = useAuth();
+  const cloudUserId = user && !user.isGuest ? user.id : null;
   const [theme, setThemeState] = useState<Theme>('light');
   const [highContrastNav, setHighContrastNav] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return undefined;
+
+    let active = true;
     const loadTheme = async () => {
-      // Load Theme
       const savedTheme = await StorageService.get('theme');
-      if (savedTheme) {
-        setThemeState(savedTheme as Theme);
-      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        setThemeState('dark');
+      const savedHighContrast = await StorageService.get('highContrastNav') || await StorageService.get('colorBlindMode');
+      let nextTheme: Theme = savedTheme === 'dark' ? 'dark' : 'light';
+      let nextHighContrast = savedHighContrast === 'true';
+
+      if (!savedTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        nextTheme = 'dark';
       }
 
-      // Load High Contrast Nav (checking old key for backward compatibility)
-      const savedHighContrast = await StorageService.get('highContrastNav') || await StorageService.get('colorBlindMode');
-      if (savedHighContrast !== null) {
-        setHighContrastNav(String(savedHighContrast) === 'true');
+      if (cloudUserId) {
+        try {
+          const cloudData = await loadCloudUserData(cloudUserId);
+          const settings = cloudData?.settings || {};
+          const hasCloudTheme = settings.theme === 'light' || settings.theme === 'dark';
+          const hasCloudContrast = typeof settings.highContrastNav === 'boolean';
+
+          if (hasCloudTheme) nextTheme = settings.theme as Theme;
+          if (hasCloudContrast) nextHighContrast = settings.highContrastNav as boolean;
+
+          if ((!cloudData || (!hasCloudTheme && !hasCloudContrast)) && (savedTheme || savedHighContrast !== null)) {
+            await saveCloudUserData(cloudUserId, {
+              settings: {
+                theme: nextTheme,
+                highContrastNav: nextHighContrast,
+              },
+            });
+          }
+        } catch (error) {
+          console.warn('[Cloud data] Could not load app settings; using the local copy.', error);
+        }
       }
+
+      if (!active) return;
+      setThemeState(nextTheme);
+      setHighContrastNav(nextHighContrast);
     };
-    loadTheme();
-  }, []);
+
+    void loadTheme();
+    return () => { active = false; };
+  }, [authLoading, cloudUserId]);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -46,13 +77,23 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    StorageService.set('theme', newTheme);
+    void StorageService.set('theme', newTheme);
+    if (cloudUserId) {
+      void saveCloudUserData(cloudUserId, { settings: { theme: newTheme } }).catch((error) => {
+        console.warn('[Cloud data] Theme saved locally but not remotely.', error);
+      });
+    }
   };
 
   const toggleHighContrastNav = () => {
     setHighContrastNav(prev => {
       const newVal = !prev;
-      StorageService.set('highContrastNav', String(newVal));
+      void StorageService.set('highContrastNav', String(newVal));
+      if (cloudUserId) {
+        void saveCloudUserData(cloudUserId, { settings: { highContrastNav: newVal } }).catch((error) => {
+          console.warn('[Cloud data] Accessibility setting saved locally but not remotely.', error);
+        });
+      }
       return newVal;
     });
   };

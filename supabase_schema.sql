@@ -142,6 +142,45 @@ create index if not exists premium_purchase_tokens_user_id_idx
 create index if not exists premium_entitlements_expires_at_idx
   on public.premium_entitlements (expires_at);
 
+-- Private, user-owned app data synced across authenticated devices. Premium
+-- state remains server-authoritative in user_stats/premium_entitlements.
+create table if not exists public.user_data (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  profile jsonb not null default '{}'::jsonb check (jsonb_typeof(profile) = 'object'),
+  bookmarks jsonb not null default '[]'::jsonb check (jsonb_typeof(bookmarks) = 'array'),
+  prayers jsonb not null default '[]'::jsonb check (jsonb_typeof(prayers) = 'array'),
+  insights jsonb not null default '{}'::jsonb check (jsonb_typeof(insights) = 'object'),
+  settings jsonb not null default '{}'::jsonb check (jsonb_typeof(settings) = 'object'),
+  voice jsonb not null default '{}'::jsonb check (jsonb_typeof(voice) = 'object'),
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+alter table public.user_data enable row level security;
+revoke all on table public.user_data from anon, authenticated;
+grant select, insert, update, delete on table public.user_data to authenticated;
+
+drop policy if exists "Users can view their own app data" on public.user_data;
+create policy "Users can view their own app data"
+  on public.user_data for select to authenticated
+  using ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can insert their own app data" on public.user_data;
+create policy "Users can insert their own app data"
+  on public.user_data for insert to authenticated
+  with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can update their own app data" on public.user_data;
+create policy "Users can update their own app data"
+  on public.user_data for update to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can delete their own app data" on public.user_data;
+create policy "Users can delete their own app data"
+  on public.user_data for delete to authenticated
+  using ((select auth.uid()) = user_id);
+
 -- Server-side chat abuse protection. Premium users have no daily cap, but each
 -- authenticated user is limited to 35 chat requests in a rolling minute.
 create table if not exists private.chat_rate_limits (
@@ -225,7 +264,7 @@ grant insert (
 ) on table public.user_stats to authenticated;
 grant update (
   streak, last_visit, total_verses_read, total_prayers, user_name,
-  onboarding_completed, daily_usage_count, last_usage_date
+  onboarding_completed, daily_usage_count, last_usage_date, updated_at
 ) on table public.user_stats to authenticated;
 
 commit;

@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Home, MessageSquare, BookOpen, Settings, Loader2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useProfile } from '../context/ProfileContext';
+import { useAuth } from '../context/AuthContext';
 import { getInsightPage, recordInsightTime, startInsightsSession } from '../services/insightsService';
 import { motion } from 'motion/react';
 import { Keyboard } from '@capacitor/keyboard';
@@ -11,14 +12,15 @@ import { Capacitor } from '@capacitor/core';
 export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
   const { theme, highContrastNav } = useTheme();
   const { profile } = useProfile();
+  const { user } = useAuth();
   const { pathname } = useLocation();
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const isNativePlatform = Capacitor.isNativePlatform();
   const insightPage = getInsightPage(pathname);
 
   React.useEffect(() => {
-    if (profile?.id) void startInsightsSession(profile.id);
-  }, [profile?.id]);
+    if (profile?.id) void startInsightsSession(profile.id, user && !user.isGuest ? user.id : null);
+  }, [profile?.id, user?.id, user?.isGuest]);
 
   React.useEffect(() => {
     if (!profile?.id || !insightPage) return undefined;
@@ -29,7 +31,7 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
       const elapsedSeconds = Math.floor((now - lastFlushAt) / 1000);
       if (elapsedSeconds < 1) return;
       lastFlushAt = now;
-      void recordInsightTime(profile.id, insightPage, elapsedSeconds);
+      void recordInsightTime(profile.id, insightPage, elapsedSeconds, new Date(), user && !user.isGuest ? user.id : null);
     };
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') flush();
@@ -45,7 +47,7 @@ export default function Layout({ isAppReady }: { isAppReady?: boolean }) {
       window.removeEventListener('pagehide', flush);
       flush();
     };
-  }, [insightPage, profile?.id]);
+  }, [insightPage, profile?.id, user?.id, user?.isGuest]);
 
   const showNavPadding = !isKeyboardVisible;
   const paddingClass = showNavPadding ? 'pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0' : 'pb-0';

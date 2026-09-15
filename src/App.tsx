@@ -108,8 +108,8 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <ThemeProvider>
         <ProfileProvider>
           <PremiumProvider>
             <Router>
@@ -117,7 +117,7 @@ export default function App() {
             </Router>
           </PremiumProvider>
         </ProfileProvider>
-      </AuthProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

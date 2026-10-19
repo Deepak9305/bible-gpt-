@@ -31,6 +31,11 @@ const SUGGESTED_PROMPTS = [
 
 const MAX_RECORDING_MS = 60_000;
 
+// Audio controls and composer changes do not change a completed message's text.
+const MessageBody = React.memo(({ content }: { content: string }) => (
+  <ReactMarkdown>{content}</ReactMarkdown>
+));
+
 const getRecordingMimeType = () => {
   if (typeof MediaRecorder === 'undefined') return '';
 
@@ -69,7 +74,7 @@ const MessageItem = React.memo(({
           <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
         ) : message.content ? (
           <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed">
-            <ReactMarkdown>{message.content}</ReactMarkdown>
+            <MessageBody content={message.content} />
           </div>
         ) : (
           <div className="flex space-x-2 items-center h-5 px-1 py-1">
@@ -104,6 +109,25 @@ const MessageItem = React.memo(({
     </div>
   );
 });
+
+const MessageHistory = React.memo((props: {
+  messages: Message[];
+  theme: string;
+  speakingMessageId: string | null;
+  isLoadingAudio: boolean;
+  onSpeak: (text: string, id: string) => void;
+}) => (
+  <>{props.messages.map(message => (
+    <MessageItem
+      key={message.id}
+      message={message}
+      theme={props.theme}
+      speakingMessageId={props.speakingMessageId}
+      isLoadingAudio={props.isLoadingAudio}
+      onSpeak={props.onSpeak}
+    />
+  ))}</>
+));
 
 export default function ChatScreen() {
   const { theme } = useTheme();
@@ -427,16 +451,13 @@ export default function ChatScreen() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((msg) => (
-          <MessageItem
-            key={msg.id}
-            message={msg}
-            theme={theme}
-            speakingMessageId={speakingMessageId}
-            isLoadingAudio={isLoadingAudio}
-            onSpeak={handleSpeak}
-          />
-        ))}
+        <MessageHistory
+          messages={messages}
+          theme={theme}
+          speakingMessageId={speakingMessageId}
+          isLoadingAudio={isLoadingAudio}
+          onSpeak={handleSpeak}
+        />
         <div ref={messagesEndRef} />
       </div>
 

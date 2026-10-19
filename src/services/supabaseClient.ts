@@ -69,8 +69,13 @@ const capacitorStorage = {
   },
 };
 
+// Keep the client fail-closed when a local checkout has no env file. The
+// Android app gets the real values from .env or from the deployed Vercel build;
+// it must never silently call a developer's localhost Supabase instance.
+const fallbackSupabaseUrl = 'https://placeholder.invalid';
+
 export const supabase = createClient(
-  isSupabaseConfigured ? supabaseUrl : 'http://localhost:54321',
+  isSupabaseConfigured ? supabaseUrl : fallbackSupabaseUrl,
   isSupabaseConfigured ? supabaseAnonKey : 'placeholder-anon-key',
   {
     auth: {

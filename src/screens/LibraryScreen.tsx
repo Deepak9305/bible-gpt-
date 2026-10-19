@@ -21,6 +21,11 @@ type ViewState = 'books' | 'chapters' | 'verses';
 
 const getVerseKey = (verse: Verse) => `${verse.book_id}-${verse.chapter}-${verse.verse}`;
 
+// Markdown parsing is independent of bookmark, audio and premium state.
+const VerseText = React.memo(({ text }: { text: string }) => (
+  <ReactMarkdown components={{ p: 'span' }}>{text}</ReactMarkdown>
+));
+
 const BookItem = React.memo(({ book, theme, onClick }: { book: any; theme: string; onClick: (book: any) => void }) => (
   <button
     onClick={() => onClick(book)}
@@ -93,7 +98,7 @@ const VerseItem = React.memo(({
     <div
       id={`verse-${verseId}`}
       style={{ contentVisibility: 'auto', containIntrinsicSize: '0 140px' }}
-      className={`p-4 rounded-xl transition-colors duration-500 will-change-[background-color,border-color,transform] ${isCurrentInPlaylist
+      className={`p-4 rounded-xl transition-colors duration-200 ${isCurrentInPlaylist
         ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 border shadow-md scale-[1.02]'
         : (theme === 'dark' ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900 border-transparent border shadow-sm')
         } `}
@@ -102,9 +107,7 @@ const VerseItem = React.memo(({
         <span className={`text-xs font-bold mt-1 ${isCurrentInPlaylist ? 'text-blue-600' : 'text-blue-500'
           }`}>{verse.verse}</span>
         <div className="flex-1 leading-relaxed font-serif text-lg">
-          <ReactMarkdown components={{ p: 'span' }}>
-            {verse.text}
-          </ReactMarkdown>
+          <VerseText text={verse.text} />
         </div>
         <div className="flex flex-col gap-2">
           <button
@@ -190,6 +193,7 @@ export default function LibraryScreen() {
   const [meaningError, setMeaningError] = useState<{ id: string; message: string } | null>(null);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const chapterRequestId = useRef(0);
+  const openPremium = React.useCallback(() => setIsPremiumModalOpen(true), []);
 
   useEffect(() => {
     // Warm the bundled Bible after the first library paint. Once loaded,
@@ -379,17 +383,26 @@ export default function LibraryScreen() {
   }, [isPremium, verseMeanings]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    const query = searchQuery.trim();
+    setIsSearching(query.length >= 3);
+    setSearchResults([]);
     const timer = setTimeout(async () => {
-      if (searchQuery.length >= 3) {
-        setIsSearching(true);
+      if (query.length >= 3) {
         try {
           const { searchVerses } = await import('../services/bibleService');
-          const results = await searchVerses(searchQuery);
-          setSearchResults(results);
-        } catch (error) { console.error(error); } finally { setIsSearching(false); }
-      } else { setSearchResults([]); }
-    }, 500);
-    return () => clearTimeout(timer);
+          if (controller.signal.aborted) return;
+          const results = await searchVerses(query, controller.signal);
+          if (!controller.signal.aborted) setSearchResults(results);
+        } catch (error) { console.error(error); } finally {
+          if (!controller.signal.aborted) setIsSearching(false);
+        }
+      }
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [searchQuery]);
 
   const highlightText = (text: string, query: string) => {
@@ -471,11 +484,8 @@ export default function LibraryScreen() {
     }
   }, [bookmarks, cloudUserId]);
 
-  const isBookmarked = React.useCallback((verse: Verse) => {
-    return bookmarks.some((b) =>
-      b.book_id === verse.book_id && b.chapter === verse.chapter && b.verse === verse.verse
-    );
-  }, [bookmarks]);
+  const bookmarkKeys = React.useMemo(() => new Set(bookmarks.map(getVerseKey)), [bookmarks]);
+  const isBookmarked = (verse: Verse) => bookmarkKeys.has(getVerseKey(verse));
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -589,7 +599,7 @@ export default function LibraryScreen() {
                           onShare={handleShare}
                           onSpeak={handleSpeak}
                           onMeaning={handleMeaning}
-                          onOpenPremium={() => setIsPremiumModalOpen(true)}
+                          onOpenPremium={openPremium}
                         />
                       ))}
                     </div>
@@ -642,7 +652,7 @@ export default function LibraryScreen() {
                             onShare={handleShare}
                             onSpeak={handleSpeak}
                             onMeaning={handleMeaning}
-                            onOpenPremium={() => setIsPremiumModalOpen(true)}
+                            onOpenPremium={openPremium}
                           />
                         ))}
                       </div>

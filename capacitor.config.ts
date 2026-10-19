@@ -1,6 +1,9 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+const productionAppUrl = 'https://biblenova.vercel.app';
 const liveReloadUrl = process.env.CAPACITOR_LIVE_RELOAD_URL?.trim();
+const useBundledAssets = process.env.CAPACITOR_USE_BUNDLED_ASSETS === 'true';
+const serverUrl = liveReloadUrl || (!useBundledAssets ? productionAppUrl : '');
 
 const config: CapacitorConfig = {
   appId: 'com.biblenova.app',
@@ -29,12 +32,14 @@ const config: CapacitorConfig = {
       iconColor: '#3B82F6',
     },
   },
-  // Production builds use the bundled dist/ assets. Set this only for live reload.
-  ...(liveReloadUrl
+  // Android loads the deployed Vercel app by default so it does not depend on
+  // a missing local dist/ folder or localhost. Set CAPACITOR_USE_BUNDLED_ASSETS
+  // to true when intentionally packaging a locally built dist/ directory.
+  ...(serverUrl
     ? {
       server: {
-        url: liveReloadUrl,
-        cleartext: liveReloadUrl.startsWith('http://'),
+        url: serverUrl,
+        cleartext: serverUrl.startsWith('http://'),
       },
     }
     : {}),

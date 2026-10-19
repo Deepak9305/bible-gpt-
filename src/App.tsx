@@ -8,7 +8,6 @@ import Layout from './components/Layout';
 
 import SplashScreen from './components/SplashScreen';
 import { AnimatePresence } from 'motion/react';
-import { initializeNativeServices } from './services/nativeService';
 import { Loader2 } from 'lucide-react';
 
 // Lazy load screens for performance
@@ -38,23 +37,22 @@ function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
   const { profile, isLoading: profileLoading } = useProfile();
   const { user, isLoading: authLoading } = useAuth();
-  const [isInitializing, setIsInitializing] = useState(true);
   const [isAppReady, setIsAppReady] = useState(false);
 
   useEffect(() => {
-    const bootApp = async () => {
-      // Safety timeout for native services (5s)
-      const nativeBoot = initializeNativeServices();
-      const timeout = new Promise(resolve => setTimeout(resolve, 5000));
-      await Promise.race([nativeBoot, timeout]);
-      setIsInitializing(false);
-    };
-    bootApp();
-  }, []);
+    // Permission dialogs and notification scheduling must not hold the splash.
+    if (showSplash) return;
+    const timer = window.setTimeout(() => {
+      void import('./services/nativeService')
+        .then(({ initializeNativeServices }) => initializeNativeServices())
+        .catch(error => console.warn('Native setup failed', error));
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [showSplash]);
 
   // Always render splash first — never return null which would show white
-  // The splash only exits once auth, local profile, and native init are done.
-  const splashReady = !profileLoading && !authLoading && !isInitializing;
+  // The splash only waits for account and local profile data.
+  const splashReady = !profileLoading && !authLoading;
 
   // STABLE reference — must not change on every render or SplashScreen's
   // 2-second timer will be cleared & restarted on each profile/init state update.

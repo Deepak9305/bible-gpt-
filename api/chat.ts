@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 const CHAT_MODEL = "openai/gpt-oss-20b";
 const CHAT_RATE_LIMIT = 35;
 const ALLOWED_NATIVE_ORIGINS = new Set([
+    "https://biblenova.vercel.app",
     "https://localhost",
     "http://localhost",
     "capacitor://localhost",

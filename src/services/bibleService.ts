@@ -15,8 +15,27 @@ export interface Verse {
 
 // Cache for the full Bible in memory after loading
 let fullBibleCache: any[] | null = null;
-let isBibleDownloading = false;
+let bibleLoadPromise: Promise<any[]> | null = null;
 const chapterCache = new Map<string, Verse[]>();
+
+const isCompleteBible = (value: any): value is any[] => Array.isArray(value) &&
+  value.length === BIBLE_BOOKS.length && value.every((book, index) =>
+    book.name === BIBLE_BOOKS[index].name && Array.isArray(book.chapters) &&
+    book.chapters.length === BIBLE_BOOKS[index].chapters
+  );
+
+// Use a controller rather than AbortSignal.timeout for older Android WebViews.
+const fetchWithTimeout = async (url: string) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new Error(`Bible request failed: ${response.status}`);
+    return await response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+};
 
 export const getBooks = async () => {
   return BIBLE_BOOKS;
@@ -28,49 +47,29 @@ export const isBibleReady = () => !!fullBibleCache;
 export const loadFullBible = async (): Promise<any[]> => {
   if (fullBibleCache) return fullBibleCache;
 
-  // Prevent multiple simultaneous downloads
-  if (isBibleDownloading) {
-    // Wait for the existing download to finish
-    return new Promise((resolve) => {
-      const check = setInterval(() => {
-        if (fullBibleCache) {
-          clearInterval(check);
-          resolve(fullBibleCache);
-        } else if (!isBibleDownloading) {
-          clearInterval(check);
-          resolve([]); // Download failed
-        }
-      }, 100);
-    });
-  }
+  // Share one load instead of polling every 100 ms for every caller.
+  if (bibleLoadPromise) return bibleLoadPromise;
+  bibleLoadPromise = (async () => {
+    try {
+      const cached = await Promise.resolve().then(() => get(DB_KEY)).catch(() => null);
+      if (isCompleteBible(cached)) {
+        fullBibleCache = cached;
+        return cached;
+      }
 
-  isBibleDownloading = true;
-
-  try {
-    // Try to get from IndexedDB first
-    const cached = await get(DB_KEY);
-    if (cached) {
-      fullBibleCache = cached;
-      isBibleDownloading = false;
-      return cached;
+      const data = await fetchWithTimeout(KJV_JSON_URL);
+      if (!isCompleteBible(data)) throw new Error('Incomplete Bible data');
+      fullBibleCache = data;
+      // Reading must not wait for a multi-megabyte storage write. Disabled or
+      // full IndexedDB must not prevent the in-memory Bible from working.
+      void Promise.resolve().then(() => set(DB_KEY, data)).catch(() => {});
+      return data;
+    } catch (error) {
+      console.error('Error loading full Bible:', error);
+      return [];
     }
-
-    // If not in DB, fetch from local bundle
-    console.log('Loading bundled Bible...');
-    const response = await fetch(KJV_JSON_URL);
-    if (!response.ok) throw new Error('Failed to download Bible');
-
-    const data = await response.json();
-
-    await set(DB_KEY, data);
-    fullBibleCache = data;
-    isBibleDownloading = false;
-    return data;
-  } catch (error) {
-    console.error('Error loading full Bible:', error);
-    isBibleDownloading = false;
-    return [];
-  }
+  })().finally(() => { bibleLoadPromise = null; });
+  return bibleLoadPromise;
 };
 
 export const getChapter = async (bookName: string, chapter: number, translation: string = 'kjv'): Promise<Verse[]> => {
@@ -78,10 +77,11 @@ export const getChapter = async (bookName: string, chapter: number, translation:
   const cachedChapter = chapterCache.get(cacheKey);
   if (cachedChapter) return cachedChapter;
 
-  // Once the bundled KJV is warmed, use it immediately. This keeps chapter
-  // selection responsive on mobile and avoids a network round trip per tap.
-  if (translation.toLowerCase() === 'kjv' && fullBibleCache) {
-    const book = fullBibleCache.find((item: any) => item.name === bookName);
+  // Reuse the shared KJV load even on a cold start, instead of racing it with
+  // an external chapter request and potentially waiting on a slow third party.
+  if (translation.toLowerCase() === 'kjv') {
+    const bible = await loadFullBible();
+    const book = bible.find((item: any) => item.name === bookName);
     const chapterData = book?.chapters?.[chapter - 1];
     if (Array.isArray(chapterData)) {
       const localChapter = chapterData.map((text: string, index: number) => ({
@@ -96,13 +96,10 @@ export const getChapter = async (bookName: string, chapter: number, translation:
     }
   }
 
-  // If the bundled Bible is not warmed yet, use the web API and retain the
-  // local fallback for offline or unavailable-network sessions.
+  // Other translations and unavailable local assets use a bounded API request.
   try {
     const encodedBook = encodeURIComponent(bookName);
-    const response = await fetch(`${API_BASE_URL}/${encodedBook}+${chapter}?translation=${translation}`);
-    if (!response.ok) throw new Error('API request failed');
-    const data = await response.json();
+    const data = await fetchWithTimeout(`${API_BASE_URL}/${encodedBook}+${chapter}?translation=${translation}`);
     const remoteChapter = data.verses.map((v: any) => ({
       book_id: v.book_id,
       book_name: v.book_name,
@@ -113,34 +110,7 @@ export const getChapter = async (bookName: string, chapter: number, translation:
     chapterCache.set(cacheKey, remoteChapter);
     return remoteChapter;
   } catch (apiError) {
-    console.warn('Web API failed, attempting local fallback:', apiError);
-
-    // 2. Fallback to local data ONLY if API fails
-    if (translation.toLowerCase() === 'kjv') {
-      try {
-        let bible = await loadFullBible();
-        if (!bible || bible.length === 0) throw new Error('Local Bible not available');
-
-        const book = bible.find((b: any) => b.name === bookName);
-        if (!book) throw new Error('Book not found locally');
-
-        const chapterData = book.chapters[chapter - 1];
-        if (!chapterData) throw new Error('Chapter not found locally');
-
-        const localChapter = chapterData.map((text: string, index: number) => ({
-          book_id: book.abbrev || book.name.substring(0, 3).toLowerCase(),
-          book_name: book.name,
-          chapter: chapter,
-          verse: index + 1,
-          text: text
-        }));
-        chapterCache.set(cacheKey, localChapter);
-        return localChapter;
-      } catch (localError) {
-        console.error('Local fallback also failed:', localError);
-        return [];
-      }
-    }
+    console.warn('Bible chapter request failed:', apiError);
     return [];
   }
 };
@@ -168,12 +138,12 @@ export const getRandomVerseLocally = async (): Promise<Verse | null> => {
   }
 };
 
-export const searchVerses = async (keyword: string): Promise<Verse[]> => {
-  if (!keyword || keyword.length < 3) return [];
+export const searchVerses = async (keyword: string, signal?: AbortSignal): Promise<Verse[]> => {
+  if (!keyword || keyword.trim().length < 3 || signal?.aborted) return [];
 
   try {
     const bible = await loadFullBible();
-    if (!bible || !Array.isArray(bible) || bible.length === 0) return [];
+    if (!bible || !Array.isArray(bible) || bible.length === 0 || signal?.aborted) return [];
 
     const lowerKeyword = keyword.toLowerCase().trim();
 
@@ -280,6 +250,8 @@ export const searchVerses = async (keyword: string): Promise<Verse[]> => {
     const keywordRegex = new RegExp(lowerKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
 
     const scoredResults: { verse: Verse, score: number }[] = [];
+    let processed = 0;
+    let sliceStartedAt = performance.now();
 
     for (const book of bible) {
       if (!book.chapters || !Array.isArray(book.chapters)) continue;
@@ -287,6 +259,13 @@ export const searchVerses = async (keyword: string): Promise<Verse[]> => {
         const chapter = book.chapters[c];
         if (!Array.isArray(chapter)) continue;
         for (let v = 0; v < chapter.length; v++) {
+          // Bound synchronous scanning to short slices, leaving time for
+          // Android input/scrolling and cancelling obsolete searches promptly.
+          if (++processed % 128 === 0 && performance.now() - sliceStartedAt >= 8) {
+            await new Promise<void>(resolve => setTimeout(resolve, 0));
+            if (signal?.aborted) return [];
+            sliceStartedAt = performance.now();
+          }
           const text = chapter[v];
           const lowerText = text.toLowerCase();
           let score = 0;
@@ -333,6 +312,7 @@ export const searchVerses = async (keyword: string): Promise<Verse[]> => {
       }
     }
 
+    if (signal?.aborted) return [];
     scoredResults.sort((a, b) => b.score - a.score);
     return scoredResults.slice(0, 50).map(r => r.verse);
 

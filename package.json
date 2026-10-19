@@ -9,7 +9,9 @@
     "build:android": "node scripts/build-android.mjs",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "node --import tsx --test scripts/performance.test.ts",
+    "restore:bible": "tsx scripts/restore-bible.ts"
   },
   "dependencies": {
     "@capacitor-community/text-to-speech": "^8.0.2",

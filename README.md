@@ -27,4 +27,17 @@ The server verification route is `POST /api/premium/verify`. To enable server-au
 
 - `npm run dev`
 - `npm run lint`
+- `npm test` — validate all 66 KJV books, chapter caching, search cancellation and responsiveness
 - `npm run build`
+
+## Android and Bible assets
+
+Android loads `https://biblenova.vercel.app` by default. Refresh its native settings with
+`npx cap sync android`, then open the `android` folder in Android Studio. This sync
+does not compile an APK. For a bundled build, set `CAPACITOR_USE_BUNDLED_ASSETS=true`
+and generate `dist` before syncing. The hosted mode requires an internet connection.
+
+The complete KJV data is checked into `public/bible.json` and cached in IndexedDB
+for reading and search. `npm run restore:bible` regenerates it from the pinned
+[upstream KJV source](https://github.com/thiagobodruk/bible/blob/0e8fd65a89727f5b73e9f88edb220da8e0d5daba/json/en_kjv.json),
+validates book/chapter/verse counts, and includes its license in `public/bible.LICENSE.txt`.
